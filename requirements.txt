@@ -1,0 +1,9 @@
+langchain
+openai
+google-search-results
+chromadb
+tiktoken
+unstructured
+click
+pinecone-client
+pinecone-text
