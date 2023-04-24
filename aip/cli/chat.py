@@ -24,8 +24,11 @@ def chat(index_name, namespace):
         if 'Exit' == line.rstrip():
             break
 
-        result = agent.codex_chain.predict(input=line)
-
-        print(result)
+        try:
+            result = agent.codex_chain.predict(input=line)
+            print(result)
+        except Exception as err:
+            print("### EXCEPTION ###")
+            print(err)
 
     print("Done")
