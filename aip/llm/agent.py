@@ -40,7 +40,7 @@ chat_prompt = PromptTemplate(
 class Agent:
     def __init__(self, retriever, model, **kwargs):
         self.llm_memory = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
-        self.llm_codex = ChatOpenAI(model_name=model, temperature=0.70)
+        self.llm_codex = ChatOpenAI(model_name=model, temperature=0.70, request_timeout=600)
 
         # self.llm_feeling = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.30)
         # self.llm_reason = ChatOpenAI(model_name="gpt-4-32k", temperature=0.70)
