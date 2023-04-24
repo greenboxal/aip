@@ -38,14 +38,15 @@ chat_prompt = PromptTemplate(
 )
 
 class Agent:
-    def __init__(self, retriever, **kwargs):
-        self.llm_feeling = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.30)
+    def __init__(self, retriever, model, **kwargs):
         self.llm_memory = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
-        self.llm_codex = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
-        self.llm_reason = ChatOpenAI(model_name="gpt-4-32k", temperature=0.70)
+        self.llm_codex = ChatOpenAI(model_name=model, temperature=0.70)
 
+        # self.llm_feeling = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.30)
+        # self.llm_reason = ChatOpenAI(model_name="gpt-4-32k", temperature=0.70)
         # self.short_term_memory = ConversationSummaryBufferMemory(llm=self.llm_memory, max_token_limit=200, memory_key="short_term_memory", input_key="input", ai_prefix = "AI Assistant")
         # self.long_term_memory = ConversationSummaryBufferMemory(llm=self.llm_feeling, max_token_limit=500, memory_key="long_term_memory", input_key="input", ai_prefix = "AI Assistant")
+
         self.chat_memory = ConversationBufferWindowMemory(memory_key="chat_memory", input_key="input",
                                                           ai_prefix="AI Assistant", k=1000)
         # self.entity_memory = ConversationEntityMemory(llm=self.llm_memory, ai_prefix="AI Assistant", chat_history_key="chat_memory", input_key="input")

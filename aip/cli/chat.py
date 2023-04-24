@@ -11,10 +11,12 @@ from aip.llm import Agent
 @click.command("chat")
 @click.option("--index-name", default=lambda: os.environ["PINECONE_INDEX_NAME"])
 @click.option("--namespace", default=None)
-def chat(index_name, namespace):
+@click.option("--model", default="gpt-3.5-turbo")
+def chat(index_name, namespace, model):
+    print("Using model {}".format(model))
     indexer = Indexer(index_name=index_name, namespace=namespace)
     retriever = indexer.as_retriever()
-    agent = Agent(retriever)
+    agent = Agent(retriever, model)
 
     readline.parse_and_bind('set editing-mode emacs')
 
