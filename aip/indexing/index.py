@@ -4,7 +4,7 @@ import pinecone
 from langchain.vectorstores import Pinecone
 from langchain.embeddings.openai import OpenAIEmbeddings
 
-class Indexer:
+class Index:
     def __init__(
             self,
             index_name,

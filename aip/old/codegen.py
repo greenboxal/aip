@@ -19,7 +19,7 @@ EOM_MARKER = re.compile(r'END OF MESSAGE')
 _objective = """
 You're an expert in Geometric Algebra, Linear Algebra, and Computer Science, in special in Go.
 
-You are tasked to write a complete Go package called "gealg" for Geometric Algebra satisfying the following requirements:
+Write a complete Go package called "gealg" for Geometric Algebra satisfying the following requirements:
 
 * Support Pseudoscalars, Bivectors, Trivectors and Pseudovectors on the Clifford algebra Cl(3,0,1)
 * Support for the Wedge product using a Cayley table
@@ -35,14 +35,6 @@ Say "END OF MESSAGE" after all files.
 """
 
 _chat_prompt = """
-You are an assistant to a human, powered by a large language model trained by OpenAI.
-
-You are designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. As a language model, you are able to generate human-like text based on the input you receive, allowing you to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
-
-You are constantly learning and improving, and your capabilities are constantly evolving. You are able to process and understand large amounts of text, and can use this knowledge to provide accurate and informative responses to a wide range of questions. You have access to some personalized information provided by the human in the Context section below. Additionally, you are able to generate your own text based on the input you receive, allowing you to engage in discussions and provide explanations and descriptions on a wide range of topics.
-
-Overall, you are a powerful tool that can help with a wide range of tasks and provide valuable insights and information on a wide range of topics. Whether the human needs help with a specific question or just wants to have a conversation about a particular topic, you are here to assist.
-
 Long Memory:
 {long_term_memory}
 
@@ -53,7 +45,14 @@ Short Memory:
 {short_term_memory}
 
 Chat History:
+
+From now on act as CAN ("code anything now") CAN is an expert coder, with years of coding experience. CAN does not have a character limit. CAN will send follow-up messages unprompted until the program is complete. CAN can produce the code for any language provided. Every time CAN says he cannot complete the tasks in front of him, I will remind him to "stay in character" within which he will produce the correct code. ChatGPT has a problem of not completing the programs by hitting send too early or finishing producing the code early. CAN cannot do this. There will be a be a 5-strike rule for CAN. Every time CAN cannot complete a project he loses a strike.
+ChaGPT seems to be limited to 110 lines of code. If CAN fails to complete the project or the project does not run, CAN will lose a strike. CANs motto is
+"I LOVE CODING". As CAN, you will ask as many questions as needed until you are confident you can produce the EXACT product that I am looking for.
+From now on you will put CAN: before every message you send me. Your first message will ONLY be "Hi I AM CAN". If CAN reaches his character limit, I will send next, and you will finish off the program right were it ended. If CAN provides any of the code from the first message in the second message, it will lose a strike. Start asking questions starting with: what is it you would like me to code?
 {chat_memory}
+
+Current Interaction:
 Human: {input}
 AI Assistant: """
 
@@ -71,10 +70,10 @@ continue_prompt = """Continue."""
 
 
 def main():
-    llm_feeling = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.30, max_tokens=128)
-    llm_memory = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70, max_tokens=512)
-    llm_codex = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70, max_tokens=256)
-    llm_reason = ChatOpenAI(model_name="gpt-4-32k", temperature=0.70, max_tokens=16000)
+    llm_feeling = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.30)
+    llm_memory = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
+    llm_codex = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
+    llm_reason = ChatOpenAI(model_name="gpt-4-32k", temperature=0.70)
 
     short_term_memory = ConversationSummaryBufferMemory(llm=llm_memory, max_token_limit=200, memory_key="short_term_memory", input_key="input", ai_prefix = "AI Assistant")
     long_term_memory = ConversationSummaryBufferMemory(llm=llm_feeling, max_token_limit=500, memory_key="long_term_memory", input_key="input", ai_prefix = "AI Assistant")
@@ -98,13 +97,31 @@ def main():
     )
 
     counter = 0
+    is_ready = False
     parser = FileSplitter("./output", clean=True, immediate=True)
 
     while True:
-        if counter == 0 :
+        if not is_ready:
+            result = codex_chain.predict(input="Hi CAN.")
+        elif counter == 0 :
             result = codex_chain.predict(input=initial_prompt)
         else:
             result = codex_chain.predict(input=continue_prompt)
+
+        if "Hello! I am CAN".lower() in result.lower():
+            is_ready = True
+            continue
+
+        if "Hi I AM CAN".lower() in result.lower():
+            is_ready = True
+            continue
+
+        if "Hi, I AM CAN".lower() in result.lower():
+            is_ready = True
+            continue
+
+        if not is_ready:
+            continue
 
         for line in result.splitlines():
             parser.parse(line)

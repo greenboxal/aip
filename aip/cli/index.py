@@ -2,7 +2,7 @@ import os
 
 import click
 
-from aip.indexing import Indexer
+from aip.indexing import Index
 
 from langchain.document_loaders import (
     DirectoryLoader,
@@ -13,42 +13,47 @@ from langchain.text_splitter import (
     TokenTextSplitter,
 )
 
-@click.command("create")
+
+@click.command("create", short_help="Create index")
 @click.argument("name", default=lambda: os.environ["PINECONE_INDEX_NAME"])
 def index_create(name):
-    indexer = Indexer(index_name=name)
+    indexer = Index(index_name=name)
 
     print("Creating index %s" % name)
     indexer.create_index()
 
     print("Index %s created" % name)
 
-@click.command("truncate")
+
+@click.command("truncate", short_help="Truncate index (delete all documents)")
 @click.argument("name", default=lambda: os.environ["PINECONE_INDEX_NAME"])
 @click.option("--namespace", default=None)
 def index_truncate(name, namespace):
-    indexer = Indexer(index_name=name)
+    indexer = Index(index_name=name)
 
     print("Truncating index %s (ns = %s)" % (name, namespace))
     indexer.truncate()
 
     print("Index %s truncated (ns = %s)" % (name, namespace))
 
-@click.command("add")
-@click.argument("file")
-@click.option("--index-name", "-i", default=lambda: os.environ["PINECONE_INDEX_NAME"])
-@click.option("--namespace", "-n", default=None)
-@click.option("--filter", "-f", default="**/*")
-@click.option("--relative-to", "-C", default="")
-@click.option("--prefix", "-p", default="")
-@click.option("--dry-run", is_flag=True, default=False)
-@click.option("--chunk-size", default=2048)
-@click.option("--chunk-overlap", default=0)
+
+@click.command("add", short_help="Indexes files into the vector store")
+@click.argument("file", type=click.Path(exists=True))
+@click.option("--index-name", "-i", default=lambda: os.environ["PINECONE_INDEX_NAME"], help="Index name")
+@click.option("--namespace", "-n", default=None, help="Index namespace")
+@click.option("--filter", "-f", default="**/*", help="Glob pattern to filter files to index")
+@click.option("--relative-to", "-C", default="", help="Base directory to strip from file paths")
+@click.option("--prefix", "-p", default="", help="Prefix to add to file paths")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Only lists files and chunk size (will still calculate embeddings)")
+@click.option("--chunk-size", default=2048, help="Number of tokens per chunk generated from each document")
+@click.option("--chunk-overlap", default=0,
+              help="Number of tokens to overlap between adjacent chunks for each document (0 = no overlap)")
 def index_add(index_name, relative_to, prefix, dry_run, filter, chunk_size, chunk_overlap, namespace, file):
     if index_name == "":
         index_name = os.environ["PINECONE_INDEX_NAME"]
 
-    indexer = Indexer(index_name=index_name, namespace=namespace)
+    indexer = Index(index_name=index_name, namespace=namespace)
 
     if not os.path.exists(file):
         raise ValueError("File does not exist: %s" % file)
@@ -56,7 +61,7 @@ def index_add(index_name, relative_to, prefix, dry_run, filter, chunk_size, chun
     if os.path.isfile(file):
         loader = TextLoader(file, encoding='utf-8')
     else:
-        loader = DirectoryLoader(file, glob=filter, loader_cls=TextLoader, loader_kwargs={"encoding": "utf-8"})
+        loader = DirectoryLoader(file, glob=filter, loader_cls=TextLoader)
 
     docs = loader.load()
 
@@ -80,9 +85,11 @@ def index_add(index_name, relative_to, prefix, dry_run, filter, chunk_size, chun
         indexer.import_documents(texts)
         print("Done")
 
-@click.group("index")
+
+@click.group("index", short_help="Index management commands")
 def index():
     pass
+
 
 index.add_command(index_create)
 index.add_command(index_truncate)

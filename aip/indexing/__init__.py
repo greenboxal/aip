@@ -1,3 +1,3 @@
-from aip.indexing.indexer import Indexer
+from aip.indexing.index import Index
 
-__all__ = ["Indexer"]
+__all__ = ["Index"]

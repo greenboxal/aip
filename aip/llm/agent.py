@@ -1,7 +1,8 @@
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
 
-from langchain.prompts import PromptTemplate
+from langchain.prompts import PromptTemplate as LlmPromptTemplate
+from aip.llm.prompt import PromptTemplate
 
 from langchain.memory import (
     ConversationSummaryBufferMemory,
@@ -10,10 +11,6 @@ from langchain.memory import (
     CombinedMemory,
     VectorStoreRetrieverMemory,
 )
-
-_objective = """
-You are a helpful AI that describes code functions in one sentence.
-"""
 
 _chat_prompt = """
 You are an assistant to a human, powered by a large language model trained by OpenAI.
@@ -29,16 +26,23 @@ Context:
 
 Chat History:
 {chat_memory}
-Human: {input}
+
+Current Interaction:
+{input}
 AI Assistant: """
 
-chat_prompt = PromptTemplate(
-    input_variables=["input", "code_memory", "chat_memory"],
-    template=_chat_prompt,
-)
-
 class Agent:
-    def __init__(self, retriever, **kwargs):
+    prompt: PromptTemplate
+
+    def __init__(
+        self,
+        retriever,
+        prompt,
+        ai_identity="AI Assistant",
+        **kwargs
+    ):
+        self.ai_identity = ai_identity
+
         self.llm_feeling = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.30)
         self.llm_memory = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
         self.llm_codex = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.70)
@@ -46,12 +50,21 @@ class Agent:
 
         # self.short_term_memory = ConversationSummaryBufferMemory(llm=self.llm_memory, max_token_limit=200, memory_key="short_term_memory", input_key="input", ai_prefix = "AI Assistant")
         # self.long_term_memory = ConversationSummaryBufferMemory(llm=self.llm_feeling, max_token_limit=500, memory_key="long_term_memory", input_key="input", ai_prefix = "AI Assistant")
-        self.chat_memory = ConversationBufferWindowMemory(memory_key="chat_memory", input_key="input",
-                                                          ai_prefix="AI Assistant", k=1000)
         # self.entity_memory = ConversationEntityMemory(llm=self.llm_memory, ai_prefix="AI Assistant", chat_history_key="chat_memory", input_key="input")
 
-        self.code_memory = VectorStoreRetrieverMemory(memory_key="code_memory", input_key="input", retriever=retriever,
-                                                      return_docs=True)
+        self.chat_memory = ConversationBufferWindowMemory(
+            memory_key="chat_memory",
+            input_key="input",
+            ai_prefix="AI Assistant",
+            k=1000,
+        )
+
+        self.code_memory = VectorStoreRetrieverMemory(
+            memory_key="code_memory",
+            input_key="input",
+            retriever=retriever,
+            return_docs=True,
+        )
 
         self.memory = CombinedMemory(memories=[
             # self.short_term_memory,
@@ -62,6 +75,13 @@ class Agent:
         ])
 
         verbose = kwargs.pop("verbose", True)
+        prompt_template = kwargs.pop("prompt_template", _chat_prompt)
+
+        chat_prompt = PromptTemplate(
+            input_variables=["input", "code_memory", "chat_memory"],
+            template=prompt_template,
+            validate_template=False,
+        )
 
         self.codex_chain = ConversationChain(
             llm=self.llm_codex,
@@ -70,3 +90,7 @@ class Agent:
             verbose=verbose,
             **kwargs,
         )
+
+    def predict(self, input):
+        return self.codex_chain.predict(input=input)
+

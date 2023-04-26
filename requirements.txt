@@ -5,5 +5,13 @@ chromadb
 tiktoken
 unstructured
 click
+click-repl
 pinecone-client
 pinecone-text
+pygit2
+irc
+toml
+python-easy-json
+wikipedia
+wolframalpha
+arxiv
