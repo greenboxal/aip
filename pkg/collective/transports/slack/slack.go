@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"sync"
 
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackutilsx"
 	"go.uber.org/fx"
 
 	"github.com/greenboxal/aip/pkg/collective"
@@ -26,6 +28,8 @@ type Transport struct {
 
 	incoming chan collective.Message
 }
+
+var messageHeaderRegex = regexp.MustCompile(":thread: (?P<thread_id>[^ ]+) \\[(?P<reply_to_id>[^]]+)]: (?P<text>.*)")
 
 func NewTransport(lc fx.Lifecycle) *Transport {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -68,12 +72,39 @@ func NewTransport(lc fx.Lifecycle) *Transport {
 						fmt.Println("Connected to Slack with Socket Mode.")
 
 					case *slack.MessageEvent:
-						t.incoming <- collective.Message{
-							ID:      evt.ClientMsgID,
-							Channel: t.resolveChannel(evt),
-							From:    t.resolveUser(evt),
-							Text:    evt.Text,
+						slackMsg := (*slack.Message)(evt)
+
+						msg := collective.Message{
+							ID:       slackMsg.Timestamp,
+							ThreadID: slackMsg.ThreadTimestamp,
+							Channel:  t.resolveChannel(slackMsg),
+							From:     t.resolveUser(slackMsg),
+							Text:     evt.Text,
 						}
+
+						if slackMsg.Metadata.EventType == "aip_say" {
+							if slackMsg.Metadata.EventPayload != nil {
+								msg.ReplyToID = slackMsg.Metadata.EventPayload["reply_to_id"].(string)
+								msg.ThreadID = slackMsg.Metadata.EventPayload["thread_id"].(string)
+								msg.ID = slackMsg.Metadata.EventPayload["id"].(string)
+								msg.From = slackMsg.Metadata.EventPayload["from"].(string)
+							}
+
+							groups := messageHeaderRegex.FindStringSubmatch(slackMsg.Text)
+
+							if groups != nil {
+								msg.ThreadID = groups[1]
+								msg.ReplyToID = groups[2]
+								msg.Text = groups[3]
+							}
+
+							if err != nil {
+								fmt.Println(err)
+								continue
+							}
+						}
+
+						t.incoming <- msg
 					}
 				}
 			}()
@@ -98,11 +129,33 @@ func (t *Transport) Incoming() <-chan collective.Message {
 }
 
 func (t *Transport) RouteMessage(ctx context.Context, msg collective.Message) error {
-	_, _, err := t.rtm.PostMessage(
-		msg.Channel,
-		slack.MsgOptionText(msg.Text, true),
+	var options []slack.MsgOption
+
+	thread := fmt.Sprintf(":thread: %s ", msg.ThreadID)
+	reply := fmt.Sprintf("[%s]: ", msg.ReplyToID)
+
+	text := fmt.Sprintf("%s%s%s", thread, reply, slackutilsx.EscapeMessage(msg.Text))
+
+	options = append(
+		options,
+		slack.MsgOptionText(text, false),
 		slack.MsgOptionUsername(msg.From),
+		slack.MsgOptionMetadata(slack.SlackMetadata{
+			EventType: "aip_say",
+			EventPayload: map[string]interface{}{
+				"mid":         msg.ID,
+				"reply_to_id": msg.ReplyToID,
+				"thread_id":   msg.ThreadID,
+				"from":        msg.From,
+			},
+		}),
 	)
+
+	if msg.ThreadID != "" {
+		options = append(options, slack.MsgOptionTS(msg.ThreadID))
+	}
+
+	_, _, err := t.rtm.PostMessage(msg.Channel, options...)
 
 	return err
 }
@@ -115,7 +168,7 @@ func (t *Transport) Close() error {
 	return nil
 }
 
-func (t *Transport) resolveChannel(evt *slack.MessageEvent) string {
+func (t *Transport) resolveChannel(evt *slack.Message) string {
 	if existing, ok := t.channelNameCache[evt.Channel]; ok {
 		return existing
 	}
@@ -134,7 +187,7 @@ func (t *Transport) resolveChannel(evt *slack.MessageEvent) string {
 	return ch.Name
 }
 
-func (t *Transport) resolveUser(evt *slack.MessageEvent) string {
+func (t *Transport) resolveUser(evt *slack.Message) string {
 	if existing, ok := t.userNameCache[evt.User]; ok {
 		return existing
 	}

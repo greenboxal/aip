@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import click
 import readline
@@ -64,8 +65,14 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
     readline.parse_and_bind('set editing-mode emacs')
 
     while True:
-        id = None
-        channel = None
+        reply = {
+            "id": str(time.time_ns()),
+            "from": profile.name,
+            "thread_id": None,
+            "reply_to_id": None,
+            "channel": None,
+        }
+
         line = input("")
 
         if 'Exit' == line.rstrip():
@@ -73,18 +80,28 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
 
         if raw:
             msg = json.loads(line)
-            id = msg["id"]
-            channel = msg["channel"]
-            line = "%s: %s" % (msg["from"], msg["text"])
+            reply["reply_to_id"] = msg["id"]
+            reply["thread_id"] = msg["thread_id"]
+            reply["channel"] = msg["channel"]
+
+            if reply["thread_id"] is None or reply["thread_id"] == "":
+                reply["thread_id"] = msg["id"]
+
+            line = "#{channel}%{thread} @{user}:".format(
+                channel=reply["channel"],
+                thread=reply["thread_id"],
+                user=reply["from"],
+            )
 
         try:
             result = agent.run(line)
         except Exception as e:
             result = "ERROR: %s" % e
 
+        reply["text"] = result
+
         if raw:
-            result = {"text": result, "id": id, "from": profile.name, "channel": channel}
-            result = json.dumps(result)
+            result = json.dumps(reply)
 
         print(result)
 
