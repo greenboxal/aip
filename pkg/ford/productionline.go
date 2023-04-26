@@ -3,7 +3,7 @@ package ford
 import (
 	"context"
 
-	"github.com/greenboxal/aip/collective"
+	"github.com/greenboxal/aip/pkg/collective"
 )
 
 type ProductionLineStep struct {

@@ -131,7 +131,7 @@ class Persona:
             verbose=self.verbose,
         )
 
-        self._update()
+        #self._update()
 
     def run(self, *args, **kwargs) -> str:
         return self.agent.run(*args, **kwargs)

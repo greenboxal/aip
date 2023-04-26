@@ -36,7 +36,7 @@ Current Interaction:
 @click.command("chat", short_help="Chat with the codex chain")
 @click.option("--index-name", default=lambda: os.environ["PINECONE_INDEX_NAME"], help="Index name")
 @click.option("--namespace", default=None, help="Index namespace")
-@click.option("--ai-identity", default=None, help="AI agent name")
+@click.option("--ai-identity", "-i", default=None, help="AI agent name")
 @click.option("--profile", "-p", default=None, help="AI agent profile", type=click.Path(exists=True, dir_okay=False))
 @click.option("--raw", is_flag=True, default=False, help="Do not prepend input prompt chat role")
 @click.option("--verbose", is_flag=True, default=False, help="Enable verbose logging")
@@ -64,14 +64,18 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
     readline.parse_and_bind('set editing-mode emacs')
 
     while True:
+        id = None
+        channel = None
         line = input("")
 
         if 'Exit' == line.rstrip():
             break
 
         if raw:
-            line = json.loads(line)
-            line = line["input"]
+            msg = json.loads(line)
+            id = msg["id"]
+            channel = msg["channel"]
+            line = "%s: %s" % (msg["from"], msg["text"])
 
         try:
             result = agent.run(line)
@@ -79,7 +83,7 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
             result = "ERROR: %s" % e
 
         if raw:
-            result = {"output": result}
+            result = {"text": result, "id": id, "from": profile.name, "channel": channel}
             result = json.dumps(result)
 
         print(result)

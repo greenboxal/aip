@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"sync"
 
 	"github.com/greenboxal/aip/tools/ircproxy/irc"
 )
@@ -57,6 +58,11 @@ func main() {
 		panic(err)
 	}
 
+	messageBuffersMutex := sync.Mutex{}
+	messageBuffers := map[string][]string{}
+
+	reader := bufio.NewReader(stdoutPipe)
+
 	client := irc.NewClient(stream, irc.ClientConfig{
 		Nick: nickname,
 		User: nickname,
@@ -64,6 +70,9 @@ func main() {
 		Name: nickname,
 		Handler: irc.HandlerFunc(func(client *irc.Client, message *irc.Message) {
 			if message.Command == "PRIVMSG" {
+				messageBuffersMutex.Lock()
+				defer messageBuffersMutex.Unlock()
+
 				sender := message.Name
 
 				if sender == "" {
@@ -72,29 +81,32 @@ func main() {
 
 				msg := message.Params[1]
 
-				line := fmt.Sprintf("%s: %s", sender, msg)
+				if msg == "### END OF MESSAGE ###" || !strings.HasPrefix(sender, "aip-testbot-") {
+					messageBuffer := messageBuffers[sender]
+					messageBuffers[sender] = nil
+					newMsg := strings.TrimSpace(strings.Join(messageBuffer, "\n"))
 
-				fmt.Printf("%s\n", line)
+					if newMsg == "" {
+						newMsg = msg
+					}
 
-				line, err = encodeMessage(line)
+					line := fmt.Sprintf("%s: %s", sender, newMsg)
 
-				if err != nil {
-					panic(err)
-				}
+					fmt.Printf("%s\n", line)
 
-				_, err := stdinPipe.Write([]byte(line + "\n"))
+					line, err = encodeMessage(message.Params[0], line)
 
-				if err != nil {
-					panic(err)
-				}
-			} else if message.Command == "PING" {
-				err := client.WriteMessage(&irc.Message{
-					Command: "PONG",
-					Params:  message.Params,
-				})
+					if err != nil {
+						panic(err)
+					}
 
-				if err != nil {
-					panic(err)
+					_, err := stdinPipe.Write([]byte(line + "\n"))
+
+					if err != nil {
+						panic(err)
+					}
+				} else {
+					messageBuffers[sender] = append(messageBuffers[sender], msg)
 				}
 			} else if message.Command == "MODE" {
 				if message.Params[0] == nickname {
@@ -118,8 +130,6 @@ func main() {
 	}()
 
 	go func() {
-		reader := bufio.NewReader(stdoutPipe)
-
 		_, _ = <-waitCh
 
 		fmt.Printf("Joining channel...\n")
@@ -150,7 +160,7 @@ func main() {
 				return
 			}
 
-			line, err = decodeMessage(line)
+			msg, err := decodeMessage(line)
 
 			if err != nil {
 				fmt.Printf("Invalid message from stdout: %s\n", err)
@@ -159,17 +169,32 @@ func main() {
 
 			fmt.Printf("%s\n", line)
 
-			select {
-			case <-ctx.Done():
-				return
-			default:
+			for _, s := range strings.Split(string(msg.Output), "\n") {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				err = client.WriteMessage(&irc.Message{
+					Command: "PRIVMSG",
+					Params: []string{
+						msg.Tag,
+						s,
+					},
+				})
+
+				if err != nil {
+					errCh <- err
+					return
+				}
 			}
 
 			err = client.WriteMessage(&irc.Message{
 				Command: "PRIVMSG",
 				Params: []string{
-					ChannelName,
-					string(line),
+					msg.Tag,
+					"### END OF MESSAGE ###",
 				},
 			})
 
@@ -177,6 +202,7 @@ func main() {
 				errCh <- err
 				return
 			}
+
 		}
 	}()
 
@@ -197,28 +223,31 @@ func main() {
 }
 
 type IncomingMessage struct {
+	Tag   string `json:"tag"`
 	Input string `json:"input"`
 }
 
 type OutgoingMessage struct {
+	Tag    string `json:"tag"`
 	Output string `json:"output"`
 }
 
-func decodeMessage(line []byte) ([]byte, error) {
+func decodeMessage(line []byte) (OutgoingMessage, error) {
 	var msg OutgoingMessage
 
 	if err := json.Unmarshal(line, &msg); err != nil {
-		return nil, err
+		return OutgoingMessage{}, err
 	}
 
 	msg.Output = strings.Replace(msg.Output, "\n", " #LB# ", -1)
 
-	return []byte(msg.Output), nil
+	return msg, nil
 }
 
-func encodeMessage(input string) (string, error) {
+func encodeMessage(tag, input string) (string, error) {
 	var msg IncomingMessage
 
+	msg.Tag = tag
 	msg.Input = input
 	msg.Input = strings.Replace(msg.Input, " #LB# ", "\n", -1)
 
