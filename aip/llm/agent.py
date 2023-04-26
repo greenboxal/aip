@@ -9,6 +9,7 @@ from langchain.memory import (
     ConversationBufferWindowMemory,
     CombinedMemory,
     VectorStoreRetrieverMemory,
+    ReadOnlySharedMemory,
 )
 
 _objective = """
@@ -59,7 +60,7 @@ class Agent:
             # self.long_term_memory,
             self.chat_memory,
             # self.entity_memory,
-            self.code_memory,
+            ReadOnlySharedMemory(memory = self.code_memory),
         ])
 
         verbose = kwargs.pop("verbose", True)
