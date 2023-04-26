@@ -19,10 +19,10 @@ type Supervisor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	config *Config
+	Config *Config
 
-	process *Process
-	port    collective.Port
+	Process *Process
+	Port    collective.Port
 }
 
 func NewSupervisor(ctx context.Context, config *Config, port collective.Port) (*Supervisor, error) {
@@ -39,9 +39,9 @@ func NewSupervisor(ctx context.Context, config *Config, port collective.Port) (*
 		ctx:    ctx,
 		cancel: cancel,
 
-		config:  config,
-		process: proc,
-		port:    port,
+		Config:  config,
+		Process: proc,
+		Port:    port,
 	}, nil
 }
 
@@ -49,7 +49,7 @@ func (s *Supervisor) Run() error {
 	wg, gctx := errgroup.WithContext(s.ctx)
 
 	wg.Go(func() error {
-		return s.process.Run()
+		return s.Process.Run()
 	})
 
 	wg.Go(func() error {
@@ -58,15 +58,15 @@ func (s *Supervisor) Run() error {
 			case <-gctx.Done():
 				return gctx.Err()
 
-			case msg := <-s.port.Incoming():
-				if msg.From == s.config.ID {
+			case msg := <-s.Port.Incoming():
+				if msg.From == s.Config.ID {
 					continue
 				}
 
-				s.process.Incoming() <- msg
+				s.Process.Incoming() <- msg
 
-			case msg := <-s.process.Outgoing():
-				if err := s.port.Send(gctx, msg); err != nil {
+			case msg := <-s.Process.Outgoing():
+				if err := s.Port.Send(gctx, msg); err != nil {
 					return err
 				}
 			}
@@ -79,5 +79,5 @@ func (s *Supervisor) Run() error {
 func (s *Supervisor) Close() error {
 	s.cancel()
 
-	return s.process.Close()
+	return s.Process.Close()
 }

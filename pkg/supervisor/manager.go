@@ -2,6 +2,8 @@ package supervisor
 
 import (
 	"context"
+	"errors"
+	"sync"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -10,10 +12,14 @@ import (
 )
 
 type Manager struct {
+	m sync.RWMutex
+
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	logger *zap.SugaredLogger
+
+	children map[string]*Supervisor
 }
 
 func NewManager(lc fx.Lifecycle, logger *zap.SugaredLogger) *Manager {
@@ -24,6 +30,8 @@ func NewManager(lc fx.Lifecycle, logger *zap.SugaredLogger) *Manager {
 
 		ctx:    ctx,
 		cancel: cancel,
+
+		children: map[string]*Supervisor{},
 	}
 
 	lc.Append(fx.Hook{
@@ -35,12 +43,23 @@ func NewManager(lc fx.Lifecycle, logger *zap.SugaredLogger) *Manager {
 	return m
 }
 
+var ErrSupervisorAlreadyExists = errors.New("supervisor already exists")
+
 func (m *Manager) Spawn(config *Config, port collective.Port) (*Supervisor, error) {
+	m.m.Lock()
+	defer m.m.Unlock()
+
+	if _, ok := m.children[config.ID]; ok {
+		return nil, ErrSupervisorAlreadyExists
+	}
+
 	sup, err := NewSupervisor(m.ctx, config, port)
 
 	if err != nil {
 		return nil, err
 	}
+
+	m.children[config.ID] = sup
 
 	go func() {
 		defer func() {
@@ -65,4 +84,24 @@ func (m *Manager) Close() error {
 	m.cancel()
 
 	return nil
+}
+
+func (m *Manager) Child(child string) *Supervisor {
+	m.m.RLock()
+	defer m.m.RUnlock()
+
+	return m.children[child]
+}
+
+func (m *Manager) Children() []*Supervisor {
+	m.m.RLock()
+	defer m.m.RUnlock()
+
+	result := make([]*Supervisor, 0, len(m.children))
+
+	for _, sup := range m.children {
+		result = append(result, sup)
+	}
+
+	return result
 }

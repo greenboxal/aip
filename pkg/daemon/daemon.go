@@ -1,4 +1,4 @@
-package main
+package daemon
 
 import (
 	"os"
@@ -48,7 +48,7 @@ func (d *Daemon) StartSupervised(name string, extraArgs ...string) error {
 	args = append(args, extraArgs...)
 
 	cfg := supervisor.Config{
-		ID:      "chat",
+		ID:      name,
 		Program: "/usr/bin/env",
 		Args:    args,
 	}

@@ -4,17 +4,56 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 
+	"github.com/greenboxal/aip/pkg/api"
 	"github.com/greenboxal/aip/pkg/collective/transports/slack"
+	daemon "github.com/greenboxal/aip/pkg/daemon"
 	"github.com/greenboxal/aip/pkg/supervisor"
 )
 
 func main() {
 	app := fx.New(
+		BuildLogging(),
+
+		api.Module,
+		daemon.Module,
+
+		fx.Provide(supervisor.NewManager),
+		fx.Provide(slack.NewTransport),
+
+		fx.Invoke(func(d *daemon.Daemon, _api *api.API) error {
+			return d.Run()
+		}),
+	)
+
+	go func() {
+		signalCh := make(chan os.Signal, 1)
+
+		signal.Notify(signalCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+		<-signalCh
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := app.Stop(shutdownCtx); err != nil {
+			panic(err)
+		}
+	}()
+
+	app.Run()
+}
+
+func BuildLogging() fx.Option {
+	return fx.Module(
+		"Logging",
+
 		fx.Provide(func() (*zap.Logger, error) {
 			return zap.NewDevelopment()
 		}),
@@ -29,29 +68,5 @@ func main() {
 			zl.UseErrorLevel(zap.ErrorLevel)
 			return zl
 		}),
-
-		fx.Provide(supervisor.NewManager),
-		fx.Provide(slack.NewTransport),
-
-		fx.Provide(NewRouting),
-		fx.Provide(NewDaemon),
-
-		fx.Invoke(func(d *Daemon) error {
-			return d.Run()
-		}),
 	)
-
-	go func() {
-		signalCh := make(chan os.Signal, 1)
-
-		signal.Notify(signalCh, os.Interrupt)
-
-		<-signalCh
-
-		if err := app.Stop(context.Background()); err != nil {
-			panic(err)
-		}
-	}()
-
-	app.Run()
 }
