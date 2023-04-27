@@ -87,10 +87,11 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
             if reply["thread_id"] is None or reply["thread_id"] == "":
                 reply["thread_id"] = msg["id"]
 
-            line = "#{channel}%{thread} @{user}:".format(
+            line = "#{channel}%{thread} @{user}: {msg}".format(
                 channel=reply["channel"],
                 thread=reply["thread_id"],
-                user=reply["from"],
+                user=msg["from"],
+                msg=msg["text"],
             )
 
         try:

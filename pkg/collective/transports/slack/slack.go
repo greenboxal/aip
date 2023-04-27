@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/slack-go/slack"
-	"github.com/slack-go/slack/slackutilsx"
 	"go.uber.org/fx"
 
 	"github.com/greenboxal/aip/pkg/collective"
@@ -131,14 +130,9 @@ func (t *Transport) Incoming() <-chan collective.Message {
 func (t *Transport) RouteMessage(ctx context.Context, msg collective.Message) error {
 	var options []slack.MsgOption
 
-	thread := fmt.Sprintf(":thread: %s ", msg.ThreadID)
-	reply := fmt.Sprintf("[%s]: ", msg.ReplyToID)
-
-	text := fmt.Sprintf("%s%s%s", thread, reply, slackutilsx.EscapeMessage(msg.Text))
-
 	options = append(
 		options,
-		slack.MsgOptionText(text, false),
+		slack.MsgOptionText(msg.Text, false),
 		slack.MsgOptionUsername(msg.From),
 		slack.MsgOptionMetadata(slack.SlackMetadata{
 			EventType: "aip_say",

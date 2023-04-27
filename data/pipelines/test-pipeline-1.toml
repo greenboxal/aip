@@ -1,0 +1,22 @@
+[pipeline]
+name = "test-pipeline-1"
+
+[[teams]]
+name = "ai-eng-team-1"
+manager = "test-persona-3"
+members = ["test-persona-1", "test-persona-2", "test-persona-3"]
+
+[[teams]]
+name = "ai-qa-team-1"
+manager = "test-persona-3"
+members = ["test-persona-1", "test-persona-2", "test-persona-3"]
+
+[[stages]]
+name = "build"
+assigned_team = "ai-eng-team-1"
+
+[[stages]]
+name = "check"
+assigned_team = "ai-qa-team-1"
+depends_on = ["build"]
+
