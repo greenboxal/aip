@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/greenboxal/aip/pkg/collective"
-	"github.com/greenboxal/aip/pkg/collective/transports"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports"
 )
 
 type Transport struct {

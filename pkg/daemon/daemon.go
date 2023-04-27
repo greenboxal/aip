@@ -6,15 +6,16 @@ import (
 
 	"github.com/pelletier/go-toml/v2"
 
-	"github.com/greenboxal/aip/pkg/supervisor"
+	"github.com/greenboxal/aip/pkg/collective/comms"
+	"github.com/greenboxal/aip/pkg/collective/supervisor"
 )
 
 type Daemon struct {
-	routing *Routing
+	routing *comms.Routing
 	manager *supervisor.Manager
 }
 
-func NewDaemon(routing *Routing, manager *supervisor.Manager) *Daemon {
+func NewDaemon(routing *comms.Routing, manager *supervisor.Manager) *Daemon {
 	return &Daemon{
 		routing: routing,
 		manager: manager,

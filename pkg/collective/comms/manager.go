@@ -2,18 +2,16 @@ package comms
 
 import (
 	"sync"
-
-	"github.com/greenboxal/aip/pkg/daemon"
 )
 
 type Manager struct {
 	m     sync.RWMutex
 	rooms map[string]*Room
 
-	routing *daemon.Routing
+	routing *Routing
 }
 
-func NewManager(routing *daemon.Routing) *Manager {
+func NewManager(routing *Routing) *Manager {
 	return &Manager{
 		rooms: map[string]*Room{},
 

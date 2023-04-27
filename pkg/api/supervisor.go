@@ -5,8 +5,8 @@ import (
 
 	"github.com/samber/lo"
 
+	"github.com/greenboxal/aip/pkg/collective/supervisor"
 	"github.com/greenboxal/aip/pkg/daemon"
-	"github.com/greenboxal/aip/pkg/supervisor"
 )
 
 type ListChildrenRequest struct {

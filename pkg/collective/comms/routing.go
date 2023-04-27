@@ -1,4 +1,4 @@
-package daemon
+package comms
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 
 	"go.uber.org/fx"
 
-	"github.com/greenboxal/aip/pkg/collective/transports"
-	"github.com/greenboxal/aip/pkg/collective/transports/local"
-	"github.com/greenboxal/aip/pkg/collective/transports/pubsub"
-	"github.com/greenboxal/aip/pkg/collective/transports/slack"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports/local"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports/pubsub"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports/slack"
 )
 
 type Routing struct {

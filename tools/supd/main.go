@@ -13,12 +13,9 @@ import (
 
 	"github.com/greenboxal/aip/pkg/api"
 	"github.com/greenboxal/aip/pkg/collective/comms"
-	"github.com/greenboxal/aip/pkg/collective/transports/pubsub"
-	"github.com/greenboxal/aip/pkg/collective/transports/slack"
 	"github.com/greenboxal/aip/pkg/daemon"
 	"github.com/greenboxal/aip/pkg/ford"
 	"github.com/greenboxal/aip/pkg/network/p2p"
-	"github.com/greenboxal/aip/pkg/supervisor"
 )
 
 func main() {
@@ -26,14 +23,10 @@ func main() {
 		BuildLogging(),
 
 		api.Module,
-		daemon.Module,
 		p2p.Module,
+		comms.Module,
 		ford.Module,
-
-		fx.Provide(supervisor.NewManager),
-		fx.Provide(comms.NewManager),
-		fx.Provide(slack.NewTransport),
-		fx.Provide(pubsub.NewTransport),
+		daemon.Module,
 
 		fx.Invoke(func(d *daemon.Daemon, _api *api.API) error {
 			return d.Run()
