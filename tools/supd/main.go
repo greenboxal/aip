@@ -12,8 +12,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/greenboxal/aip/pkg/api"
+	"github.com/greenboxal/aip/pkg/collective/transports/pubsub"
 	"github.com/greenboxal/aip/pkg/collective/transports/slack"
-	daemon "github.com/greenboxal/aip/pkg/daemon"
+	"github.com/greenboxal/aip/pkg/daemon"
+	"github.com/greenboxal/aip/pkg/network/p2p"
 	"github.com/greenboxal/aip/pkg/supervisor"
 )
 
@@ -23,9 +25,11 @@ func main() {
 
 		api.Module,
 		daemon.Module,
+		p2p.Module,
 
 		fx.Provide(supervisor.NewManager),
 		fx.Provide(slack.NewTransport),
+		fx.Provide(pubsub.NewTransport),
 
 		fx.Invoke(func(d *daemon.Daemon, _api *api.API) error {
 			return d.Run()

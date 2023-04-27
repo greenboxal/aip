@@ -5,7 +5,9 @@ import "go.uber.org/fx"
 var Module = fx.Module(
 	"api",
 
-	fx.Provide(NewApi),
+	fx.Provide(NewServer),
 	fx.Provide(NewRpcServer),
-	fx.Provide(NewSupervisorApi),
+
+	ProvideRpcService[*SupervisorAPI]("supervisor", NewSupervisorApi),
+	ProvideRpcService[*CommunicationAPI]("comms", NewCommunicationApi),
 )

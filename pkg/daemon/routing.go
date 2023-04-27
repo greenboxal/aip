@@ -8,6 +8,7 @@ import (
 
 	"github.com/greenboxal/aip/pkg/collective/transports"
 	"github.com/greenboxal/aip/pkg/collective/transports/local"
+	"github.com/greenboxal/aip/pkg/collective/transports/pubsub"
 	"github.com/greenboxal/aip/pkg/collective/transports/slack"
 )
 
@@ -15,11 +16,16 @@ type Routing struct {
 	*local.Transport
 }
 
-func NewRouting(lc fx.Lifecycle, slack *slack.Transport) *Routing {
+func NewRouting(
+	lc fx.Lifecycle,
+	slack *slack.Transport,
+	pubsub *pubsub.Transport,
+) *Routing {
 	gw := transports.Tee(
 		&transports.StdioTransport{Stdout: os.Stdout},
 
 		slack,
+		pubsub,
 	)
 
 	r := &Routing{

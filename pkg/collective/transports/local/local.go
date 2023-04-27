@@ -54,11 +54,7 @@ func (t *Transport) AddPort(name string) (collective.Port, error) {
 		return nil, errors.New("port already exists")
 	}
 
-	p := &Port{
-		name:     name,
-		local:    t,
-		incoming: make(chan collective.Message, 16),
-	}
+	p := NewPort(t, name)
 
 	t.knownPorts[name] = p
 
@@ -80,7 +76,8 @@ func (t *Transport) routeMessage(ctx context.Context, msg collective.Message, al
 		p := t.getPort(msg.Channel)
 
 		if p != nil {
-			p.incoming <- msg
+			p.routeMessage(ctx, msg)
+
 			return nil
 		}
 	}
@@ -147,6 +144,6 @@ func (t *Transport) routeSubscriptions(ctx context.Context, msg collective.Messa
 			continue
 		}
 
-		p.incoming <- msg
+		p.routeMessage(ctx, msg)
 	}
 }

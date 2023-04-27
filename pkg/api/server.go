@@ -21,7 +21,7 @@ type API struct {
 	mux    *chi.Mux
 }
 
-func NewApi(lc fx.Lifecycle, logger *zap.SugaredLogger, rpc *jsonrpc.Handler) *API {
+func NewServer(lc fx.Lifecycle, logger *zap.SugaredLogger, rpc *jsonrpc.Handler) *API {
 
 	api := &API{}
 

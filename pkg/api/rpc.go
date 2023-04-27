@@ -6,9 +6,13 @@ import (
 
 	"github.com/swaggest/jsonrpc"
 	"github.com/swaggest/usecase"
+	"go.uber.org/fx"
 )
 
-func NewRpcServer(supapi *SupervisorAPI) *jsonrpc.Handler {
+func NewRpcServer(
+	supapi *SupervisorAPI,
+	comms *CommunicationAPI,
+) *jsonrpc.Handler {
 	handler := &jsonrpc.Handler{}
 
 	apiSchema := jsonrpc.OpenAPI{}
@@ -20,8 +24,19 @@ func NewRpcServer(supapi *SupervisorAPI) *jsonrpc.Handler {
 	handler.SkipResultValidation = true
 
 	mustRegister(handler, "supervisor", supapi)
+	mustRegister(handler, "comms", comms)
 
 	return handler
+}
+
+func ProvideRpcService[T any](name string, iface interface{}) fx.Option {
+	return fx.Options(
+		fx.Provide(iface),
+
+		fx.Invoke(func(handler *jsonrpc.Handler, svc T) {
+			mustRegister(handler, name, svc)
+		}),
+	)
 }
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
