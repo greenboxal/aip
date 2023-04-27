@@ -3,20 +3,41 @@ package ford
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
 type TaskReconciler struct {
+	logger *zap.SugaredLogger
+
 	db forddb.Database
 }
 
 func NewTaskReconciler(
+	logger *zap.SugaredLogger,
 	db forddb.Database,
 ) *TaskReconciler {
-	return &TaskReconciler{
+	tr := &TaskReconciler{
+		logger: logger.Named("task-reconciler"),
+
 		db: db,
 	}
+
+	db.AddListener(
+		forddb.TypedListenerFunc[collective.TaskID, *collective.Task](
+			func(id collective.TaskID, previous, current *collective.Task) {
+				_, err := tr.Reconcile(context.Background(), previous, current)
+
+				if err != nil {
+					tr.logger.Error(err)
+				}
+			},
+		),
+	)
+
+	return tr
 }
 
 func (tr *TaskReconciler) Reconcile(ctx context.Context, previous, current *collective.Task) (*collective.Task, error) {

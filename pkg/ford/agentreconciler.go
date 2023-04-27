@@ -3,24 +3,44 @@ package ford
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
 type AgentReconciler struct {
+	logger *zap.SugaredLogger
+
 	manager *Manager
 
 	db forddb.Database
 }
 
 func NewAgentReconciler(
+	logger *zap.SugaredLogger,
 	db forddb.Database,
 	manager *Manager,
 ) *AgentReconciler {
-	return &AgentReconciler{
+	ar := &AgentReconciler{
+		logger:  logger.Named("agent-reconciler"),
 		db:      db,
 		manager: manager,
 	}
+
+	db.AddListener(
+		forddb.TypedListenerFunc[collective.AgentID, *collective.Agent](
+			func(id collective.AgentID, previous, current *collective.Agent) {
+				_, err := ar.Reconcile(context.Background(), previous, current)
+
+				if err != nil {
+					logger.Error(err)
+				}
+			},
+		),
+	)
+
+	return ar
 }
 
 func (tr *AgentReconciler) Reconcile(ctx context.Context, previous, current *collective.Agent) (*collective.Agent, error) {

@@ -28,8 +28,8 @@ func NewInMemory() Database {
 	return db
 }
 
-func (i *inMemoryDatabase) List(typ ResourceTypeID) ([]BasicResource, error) {
-	rt := i.getTable(typ, false)
+func (db *inMemoryDatabase) List(typ ResourceTypeID) ([]BasicResource, error) {
+	rt := db.getTable(typ, false)
 
 	if rt == nil {
 		return nil, nil
@@ -38,8 +38,8 @@ func (i *inMemoryDatabase) List(typ ResourceTypeID) ([]BasicResource, error) {
 	return rt.List()
 }
 
-func (i *inMemoryDatabase) Get(typ ResourceTypeID, id BasicResourceID) (BasicResource, error) {
-	slot := i.getSlot(typ, id, false, false)
+func (db *inMemoryDatabase) Get(typ ResourceTypeID, id BasicResourceID) (BasicResource, error) {
+	slot := db.getSlot(typ, id, false, false)
 
 	if slot == nil {
 		return nil, nil
@@ -48,8 +48,8 @@ func (i *inMemoryDatabase) Get(typ ResourceTypeID, id BasicResourceID) (BasicRes
 	return slot.Get()
 }
 
-func (i *inMemoryDatabase) UpdateOrCreate(resource BasicResource) (BasicResource, error) {
-	slot := i.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
+func (db *inMemoryDatabase) UpdateOrCreate(resource BasicResource) (BasicResource, error) {
+	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
 		return nil, nil
@@ -58,8 +58,8 @@ func (i *inMemoryDatabase) UpdateOrCreate(resource BasicResource) (BasicResource
 	return slot.Update(resource)
 }
 
-func (i *inMemoryDatabase) Delete(resource BasicResource) (BasicResource, error) {
-	slot := i.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
+func (db *inMemoryDatabase) Delete(resource BasicResource) (BasicResource, error) {
+	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
 		return nil, nil
@@ -68,8 +68,8 @@ func (i *inMemoryDatabase) Delete(resource BasicResource) (BasicResource, error)
 	return slot.Delete()
 }
 
-func (i *inMemoryDatabase) getSlot(typ ResourceTypeID, id BasicResourceID, create, lock bool) *resourceSlot {
-	tb := i.getTable(typ, create)
+func (db *inMemoryDatabase) getSlot(typ ResourceTypeID, id BasicResourceID, create, lock bool) *resourceSlot {
+	tb := db.getTable(typ, create)
 
 	if tb == nil {
 		return nil
@@ -84,11 +84,11 @@ func (i *inMemoryDatabase) getSlot(typ ResourceTypeID, id BasicResourceID, creat
 	return slot
 }
 
-func (i *inMemoryDatabase) getTable(typ ResourceTypeID, create bool) *resourceTable {
-	i.m.Lock()
-	defer i.m.Unlock()
+func (db *inMemoryDatabase) getTable(typ ResourceTypeID, create bool) *resourceTable {
+	db.m.Lock()
+	defer db.m.Unlock()
 
-	if existing := i.resources[typ]; existing != nil {
+	if existing := db.resources[typ]; existing != nil {
 		return existing
 	}
 
@@ -97,12 +97,13 @@ func (i *inMemoryDatabase) getTable(typ ResourceTypeID, create bool) *resourceTa
 	}
 
 	rt := &resourceTable{
+		db:  db,
 		typ: typ,
 
 		resources: make(map[BasicResourceID]*resourceSlot, 32),
 	}
 
-	i.resources[typ] = rt
+	db.resources[typ] = rt
 
 	return rt
 }
@@ -111,6 +112,7 @@ type resourceTable struct {
 	HasListenersBase
 
 	m         sync.RWMutex
+	db        *inMemoryDatabase
 	typ       ResourceTypeID
 	resources map[BasicResourceID]*resourceSlot
 }
@@ -129,6 +131,7 @@ func (rt *resourceTable) getSlot(id BasicResourceID, create bool, lock bool) *re
 
 	rs := &resourceSlot{
 		table: rt,
+		id:    id,
 	}
 
 	rt.resources[id] = rs
@@ -168,6 +171,7 @@ type resourceSlot struct {
 	HasListenersBase
 
 	table *resourceTable
+	id    BasicResourceID
 
 	hasValue bool
 
@@ -198,22 +202,38 @@ func (s *resourceSlot) Get() (BasicResource, error) {
 }
 
 func (s *resourceSlot) Update(resource BasicResource) (BasicResource, error) {
-	s.RLock()
-	defer s.RUnlock()
-
-	if s.hasValue && s.version != resource.GetVersion() {
-		return nil, ErrVersionMismatch
-	}
-
-	current, err := s.Get()
+	old, current, changed, err := s.doUpdate(resource)
 
 	if err != nil {
 		return nil, err
 	}
 
+	if changed {
+		FireListeners(&s.HasListenersBase, s.id, old, current)
+		FireListeners(&s.table.HasListenersBase, s.id, old, current)
+		FireListeners(&s.table.db.HasListenersBase, s.id, old, current)
+	}
+
+	return current, nil
+}
+
+func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicResource, bool, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	if s.hasValue && s.version != resource.GetVersion() {
+		return nil, nil, false, ErrVersionMismatch
+	}
+
+	current, err := s.Get()
+
+	if err != nil {
+		return nil, nil, false, err
+	}
+
 	if current != nil {
 		if reflect.DeepEqual(current, resource) {
-			return resource, nil
+			return current, resource, false, nil
 		}
 	}
 
@@ -232,7 +252,7 @@ func (s *resourceSlot) Update(resource BasicResource) (BasicResource, error) {
 		data, err := json.Marshal(resource)
 
 		if err != nil {
-			return nil, err
+			return nil, nil, false, err
 		}
 
 		s.serialized = data
@@ -241,7 +261,7 @@ func (s *resourceSlot) Update(resource BasicResource) (BasicResource, error) {
 	s.version = resource.GetVersion()
 	s.hasValue = true
 
-	return resource, nil
+	return current, resource, true, nil
 }
 
 func (s *resourceSlot) Delete() (BasicResource, error) {

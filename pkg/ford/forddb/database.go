@@ -6,6 +6,8 @@ import (
 )
 
 type Database interface {
+	HasListeners
+
 	List(typ ResourceTypeID) ([]BasicResource, error)
 	Get(typ ResourceTypeID, id BasicResourceID) (BasicResource, error)
 	UpdateOrCreate(resource BasicResource) (BasicResource, error)

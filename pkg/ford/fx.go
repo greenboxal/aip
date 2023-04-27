@@ -13,6 +13,8 @@ var Module = fx.Module(
 	fx.Provide(NewManager),
 	fx.Provide(NewTaskReconciler),
 	fx.Provide(NewAgentReconciler),
+
+	fx.Invoke(func(tr *TaskReconciler, ar *AgentReconciler) {}),
 )
 
 func NewDatabase() forddb.Database {

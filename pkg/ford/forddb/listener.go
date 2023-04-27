@@ -8,7 +8,7 @@ import (
 )
 
 type Listener interface {
-	OnResourceChanged(resource BasicResource)
+	OnResourceChanged(id BasicResourceID, previous, current BasicResource)
 }
 
 type ListenerFunc func(resource BasicResource)
@@ -17,21 +17,21 @@ func (f ListenerFunc) OnResourceChanged(resource BasicResource) {
 	f(resource)
 }
 
-type TypedListenerFunc[ID ResourceID[T], T Resource[ID]] func(resource T)
+type TypedListenerFunc[ID ResourceID[T], T Resource[ID]] func(id ID, previous, current T)
 
-func (t TypedListenerFunc[ID, T]) OnResourceChanged(resource BasicResource) {
-	if resource == nil {
-		return
-	}
-
+func (t TypedListenerFunc[ID, T]) OnResourceChanged(id BasicResourceID, previous, current BasicResource) {
 	myType := reflect.TypeOf((*T)(nil)).Elem()
 	myTypeId := typeSystem.LookupByResourceType(myType).ID()
 
-	if resource.GetType() != myTypeId {
+	if previous != nil && previous.GetType() != myTypeId {
 		return
 	}
 
-	t(resource.(T))
+	if current != nil && current.GetType() != myTypeId {
+		return
+	}
+
+	t(id.(ID), previous.(T), current.(T))
 }
 
 type ListenerSet struct {
@@ -65,12 +65,12 @@ func (l *ListenerSet) RemoveListener(listener Listener) {
 	l.listeners = slices.Delete(l.listeners, index, index+1)
 }
 
-func (l *ListenerSet) OnResourceChanged(resource BasicResource) {
+func (l *ListenerSet) OnResourceChanged(id BasicResourceID, previous, current BasicResource) {
 	l.m.RLock()
 	defer l.m.RUnlock()
 
 	for _, l := range l.listeners {
-		l.OnResourceChanged(resource)
+		l.OnResourceChanged(id, previous, current)
 	}
 }
 
@@ -83,8 +83,8 @@ type HasListenersBase struct {
 	listeners ListenerSet
 }
 
-func FireListeners(hlb *HasListenersBase, resource BasicResource) {
-	hlb.listeners.OnResourceChanged(resource)
+func FireListeners(hlb *HasListenersBase, id BasicResourceID, previous, current BasicResource) {
+	hlb.listeners.OnResourceChanged(id, previous, current)
 }
 
 func (h *HasListenersBase) AddListener(listener Listener) {

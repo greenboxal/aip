@@ -3,23 +3,26 @@ package collective
 import "github.com/greenboxal/aip/pkg/ford/forddb"
 
 type ProfileID = forddb.BasicResourceID
+
 type PipelineID struct {
 	forddb.StringResourceID[*Pipeline]
 }
+
 type StageID struct {
 	forddb.StringResourceID[*Stage]
 }
-type TeamID struct{ forddb.StringResourceID[*Team] }
+
+type TeamID struct {
+	forddb.StringResourceID[*Team]
+}
+
 type AgentID struct {
 	forddb.StringResourceID[*Agent]
 }
-type TaskID struct{ forddb.StringResourceID[*Task] }
 
-var PipelineType = forddb.DefineResourceType[PipelineID, *Pipeline]("pipeline")
-var TaskType = forddb.DefineResourceType[TaskID, *Task]("task")
-var AgentType = forddb.DefineResourceType[AgentID, *Agent]("agent")
-var TeamType = forddb.DefineResourceType[TeamID, *Team]("team")
-var StageType = forddb.DefineResourceType[StageID, *Stage]("stage")
+type TaskID struct {
+	forddb.StringResourceID[*Task]
+}
 
 type PipelineSpec struct {
 	Agents []Agent `json:"agents"`
@@ -159,4 +162,12 @@ const (
 type AgentStatus struct {
 	State     AgentState `json:"state"`
 	LastError string     `json:"last_error"`
+}
+
+func init() {
+	forddb.DefineResourceType[PipelineID, *Pipeline]("pipeline")
+	forddb.DefineResourceType[TaskID, *Task]("task")
+	forddb.DefineResourceType[AgentID, *Agent]("agent")
+	forddb.DefineResourceType[TeamID, *Team]("team")
+	forddb.DefineResourceType[StageID, *Stage]("stage")
 }

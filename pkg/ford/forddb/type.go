@@ -1,9 +1,30 @@
 package forddb
 
-import "reflect"
+import (
+	"encoding/json"
+	"reflect"
+)
 
-type ResourceTypeID struct {
-	StringResourceID[BasicResourceType]
+type ResourceTypeID string
+
+func (s ResourceTypeID) BasicResourceID() BasicResourceID {
+	return s
+}
+
+func (s ResourceTypeID) String() string {
+	return string(s)
+}
+
+func (s ResourceTypeID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(s))
+}
+
+func (s *ResourceTypeID) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, (*string)(s))
+}
+
+func (s *ResourceTypeID) setValue(value string) {
+	*s = ResourceTypeID(value)
 }
 
 func (i ResourceTypeID) Name() string {
