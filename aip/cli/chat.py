@@ -15,7 +15,7 @@ from aip.llm import Agent
 def chat(index_name, namespace, model):
     print("Using model {}".format(model))
     indexer = Indexer(index_name=index_name, namespace=namespace)
-    retriever = indexer.as_retriever()
+    retriever = indexer.as_retriever(search_type="similarity", search_kwargs={"k":5})
     agent = Agent(retriever, model)
 
     readline.parse_and_bind('set editing-mode emacs')
