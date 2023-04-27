@@ -21,7 +21,12 @@ type API struct {
 	mux    *chi.Mux
 }
 
-func NewServer(lc fx.Lifecycle, logger *zap.SugaredLogger, rpc *jsonrpc.Handler) *API {
+func NewServer(
+	lc fx.Lifecycle,
+	logger *zap.SugaredLogger,
+	rpc *jsonrpc.Handler,
+	resources *ResourcesAPI,
+) *API {
 
 	api := &API{}
 
@@ -35,6 +40,11 @@ func NewServer(lc fx.Lifecycle, logger *zap.SugaredLogger, rpc *jsonrpc.Handler)
 	api.mux.Use(middleware.Heartbeat("/ping"))
 
 	api.mux.Mount("/rpc/v1", rpc)
+
+	api.mux.Route("/api/v1", func(r chi.Router) {
+		r.Use(middleware.PathRewrite("/api/v1", ""))
+		r.Mount("/", resources)
+	})
 
 	api.mux.Method(http.MethodGet, "/docs/openapi.json", rpc.OpenAPI)
 
