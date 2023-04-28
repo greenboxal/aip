@@ -1,13 +1,9 @@
 package ford
 
 import (
-	"os"
-	"path/filepath"
+	"context"
 
-	"github.com/pelletier/go-toml/v2"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
-	"sigs.k8s.io/yaml"
 
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
@@ -15,89 +11,29 @@ import (
 var Module = fx.Module(
 	"ford",
 
-	fx.Provide(NewDatabase),
 	fx.Provide(NewManager),
-	fx.Provide(NewTaskReconciler),
-	fx.Provide(NewAgentReconciler),
-	fx.Provide(NewPortReconciler),
 
-	fx.Invoke(func(
-		logger *zap.SugaredLogger,
-		db forddb.Database,
-		tr *TaskReconciler,
-		pr *PortReconciler,
-		ar *AgentReconciler,
-	) error {
-		var resources []forddb.RawResource
+	WithReconciler[*TaskReconciler](NewTaskReconciler),
+	WithReconciler[*AgentReconciler](NewAgentReconciler),
+	WithReconciler[*PortReconciler](NewPortReconciler),
 
-		err := filepath.Walk("./data", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if !info.IsDir() && isSupportedFile(path) {
-				var rawResource map[string]interface{}
-
-				data, err := os.ReadFile(path)
-
-				if err != nil {
-					logger.Warn(err)
-					return nil
-				}
-
-				switch filepath.Ext(path) {
-				case ".toml":
-					if err := toml.Unmarshal(data, &rawResource); err != nil {
-						logger.Warn(err)
-						return nil
-					}
-				case ".yaml", ".yml", ".json":
-					if err := yaml.Unmarshal(data, &rawResource); err != nil {
-						logger.Warn(err)
-						return nil
-					}
-				default:
-					return nil
-				}
-
-				resources = append(resources, rawResource)
-			}
-
-			return nil
-		})
-
-		if err != nil {
-			return err
-		}
-
-		for _, rawResource := range resources {
-			resource, err := forddb.Decode(rawResource)
-
-			if err != nil {
-				logger.Warn(err)
-				return nil
-			}
-
-			_, err = forddb.CreateOrUpdate(db, resource)
-
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}),
+	WithInMemoryDatabase(),
 )
 
-func isSupportedFile(path string) bool {
-	switch filepath.Ext(path) {
-	case ".toml", ".yaml", ".yml", ".json":
-		return true
-	}
+func WithReconciler[R Reconciler](iface any) fx.Option {
+	return fx.Options(
+		fx.Provide(iface),
 
-	return false
+		fx.Invoke(func(db forddb.Database, r R) {
+			db.AddListener(r.AsListener())
+
+			go r.Run(context.Background())
+		}),
+	)
 }
 
-func NewDatabase() forddb.Database {
-	return forddb.NewInMemory()
+func WithInMemoryDatabase() fx.Option {
+	return fx.Provide(func() forddb.Database {
+		return forddb.NewInMemory()
+	})
 }

@@ -5,10 +5,12 @@ go 1.20
 require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/libp2p/go-libp2p v0.27.1
 	github.com/libp2p/go-libp2p-kad-dht v0.21.1
 	github.com/libp2p/go-libp2p-pubsub v0.9.3
+	github.com/modern-go/reflect2 v1.0.2
 	github.com/multiformats/go-multiaddr v0.9.0
 	github.com/pelletier/go-toml/v2 v2.0.7
 	github.com/samber/lo v1.38.1
@@ -17,6 +19,7 @@ require (
 	github.com/swaggest/jsonrpc v0.2.0
 	github.com/swaggest/swgui v1.6.2
 	github.com/swaggest/usecase v1.1.3
+	github.com/zyedidia/generic v1.2.1
 	go.uber.org/fx v1.19.2
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
@@ -24,11 +27,10 @@ require (
 	golang.org/x/sync v0.1.0
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v2 v2.4.0
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
-	github.com/agext/levenshtein v1.2.1 // indirect
-	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -51,10 +53,8 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.2 // indirect
-	github.com/hashicorp/hcl/v2 v2.16.2 // indirect
 	github.com/huin/goupnp v1.1.0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
@@ -88,8 +88,6 @@ require (
 	github.com/mikioh/tcpinfo v0.0.0-20190314235526-30a79bb1804b // indirect
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
-	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
@@ -118,14 +116,11 @@ require (
 	github.com/quic-go/webtransport-go v0.5.2 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v2 v2.2.0 // indirect
-	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/swaggest/jsonschema-go v0.3.37 // indirect
 	github.com/swaggest/openapi-go v0.2.20 // indirect
 	github.com/swaggest/refl v1.1.0 // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
-	github.com/zclconf/go-cty v1.12.1 // indirect
-	github.com/zyedidia/generic v1.2.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/dig v1.16.1 // indirect
@@ -139,7 +134,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
 replace go.uber.org/fx => github.com/uber-go/fx v1.19.2

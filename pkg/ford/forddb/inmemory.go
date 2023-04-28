@@ -19,7 +19,7 @@ func NewInMemory() Database {
 	}
 
 	for _, typ := range typeSystem.resourceTypes {
-		if _, err := db.UpdateOrCreate(typ); err != nil {
+		if _, err := db.Put(typ); err != nil {
 			panic(err)
 		}
 	}
@@ -41,17 +41,17 @@ func (db *inMemoryDatabase) Get(typ ResourceTypeID, id BasicResourceID) (BasicRe
 	slot := db.getSlot(typ, id, false, false)
 
 	if slot == nil {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 
 	return slot.Get()
 }
 
-func (db *inMemoryDatabase) UpdateOrCreate(resource BasicResource) (BasicResource, error) {
+func (db *inMemoryDatabase) Put(resource BasicResource) (BasicResource, error) {
 	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 
 	return slot.Update(resource)
@@ -61,7 +61,7 @@ func (db *inMemoryDatabase) Delete(resource BasicResource) (BasicResource, error
 	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 
 	return slot.Delete()
@@ -183,7 +183,7 @@ func (s *resourceSlot) Get() (BasicResource, error) {
 	defer s.RUnlock()
 
 	if !s.hasValue {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 
 	if s.table.typ.Type().IsRuntimeOnly() {
@@ -221,7 +221,9 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 
 	current, err := s.Get()
 
-	if err != nil {
+	if err == ErrNotFound {
+		current = nil
+	} else if err != nil {
 		return nil, nil, false, err
 	}
 

@@ -10,12 +10,10 @@ import (
 )
 
 type AgentReconciler struct {
-	logger *zap.SugaredLogger
+	*ReconcilerBase[collective.AgentID, *collective.Agent]
 
 	manager *Manager
-
-	db    forddb.Database
-	cache map[collective.AgentID]*collective.Agent
+	db      forddb.Database
 }
 
 func NewAgentReconciler(
@@ -24,65 +22,26 @@ func NewAgentReconciler(
 	manager *Manager,
 ) *AgentReconciler {
 	ar := &AgentReconciler{
-		logger: logger.Named("agent-reconciler"),
 
 		db:      db,
 		manager: manager,
-
-		cache: map[collective.AgentID]*collective.Agent{},
 	}
 
-	watchCh := make(chan collective.AgentID, 128)
-
-	db.AddListener(
-		forddb.TypedListenerFunc[collective.AgentID, *collective.Agent](
-			func(id collective.AgentID, previous, current *collective.Agent) {
-				watchCh <- id
-			},
-		),
+	ar.ReconcilerBase = NewReconciler(
+		logger.Named("agent-reconciler"),
+		db,
+		ar.Reconcile,
 	)
-
-	go func() {
-		for id := range watchCh {
-			previous := ar.cache[id]
-
-			current, err := forddb.Get[*collective.Agent](db, id)
-
-			if err != nil {
-				logger.Error(err)
-				continue
-			}
-
-			if previous == nil || current == nil || current.GetVersion() > previous.GetVersion() {
-				encoded, err := forddb.Encode(current)
-
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-
-				decoded, err := forddb.Decode(encoded)
-
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-
-				_, err = ar.Reconcile(context.Background(), previous, decoded.(*collective.Agent))
-
-				if err != nil {
-					logger.Error(err)
-				}
-			}
-
-			ar.cache[id] = current
-		}
-	}()
 
 	return ar
 }
 
-func (tr *AgentReconciler) Reconcile(ctx context.Context, previous, current *collective.Agent) (*collective.Agent, error) {
+func (tr *AgentReconciler) Reconcile(
+	ctx context.Context,
+	id collective.AgentID,
+	previous *collective.Agent,
+	current *collective.Agent,
+) (*collective.Agent, error) {
 	if current == nil && previous != nil {
 		tr.logger.Infow("deleting agent", "id", previous.ID)
 
@@ -109,7 +68,7 @@ func (tr *AgentReconciler) Reconcile(ctx context.Context, previous, current *col
 				current.Status.State = collective.AgentStateFailed
 				current.Status.LastError = err.Error()
 
-				return forddb.CreateOrUpdate(tr.db, current)
+				return forddb.Put(tr.db, current)
 			}
 
 			current.Status.State = collective.AgentStateScheduled
@@ -118,5 +77,5 @@ func (tr *AgentReconciler) Reconcile(ctx context.Context, previous, current *col
 		}
 	}
 
-	return forddb.CreateOrUpdate(tr.db, current)
+	return forddb.Put(tr.db, current)
 }

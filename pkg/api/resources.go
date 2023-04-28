@@ -117,7 +117,7 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 		return
 	}
 
-	result, err := forddb.CreateOrUpdate(a.db, resource)
+	result, err := forddb.Put(a.db, resource)
 
 	if err == forddb.ErrVersionMismatch {
 		writer.WriteHeader(http.StatusConflict)

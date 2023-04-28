@@ -15,6 +15,7 @@ import (
 	"github.com/greenboxal/aip/pkg/collective/comms"
 	"github.com/greenboxal/aip/pkg/daemon"
 	"github.com/greenboxal/aip/pkg/ford"
+	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/network/p2p"
 )
 
@@ -28,7 +29,11 @@ func main() {
 		ford.Module,
 		daemon.Module,
 
-		fx.Invoke(func(d *daemon.Daemon, _api *api.API) error {
+		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *api.API) error {
+			if err := forddb.ImportPath(db, "./data"); err != nil {
+				return err
+			}
+		
 			return d.Run()
 		}),
 	)

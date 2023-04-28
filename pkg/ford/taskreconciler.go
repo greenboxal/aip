@@ -10,10 +10,9 @@ import (
 )
 
 type TaskReconciler struct {
-	logger *zap.SugaredLogger
+	*ReconcilerBase[collective.TaskID, *collective.Task]
 
-	db    forddb.Database
-	cache map[collective.TaskID]*collective.Task
+	db forddb.Database
 }
 
 func NewTaskReconciler(
@@ -21,64 +20,24 @@ func NewTaskReconciler(
 	db forddb.Database,
 ) *TaskReconciler {
 	tr := &TaskReconciler{
-		logger: logger.Named("task-reconciler"),
-
 		db: db,
-
-		cache: map[collective.TaskID]*collective.Task{},
 	}
 
-	watchCh := make(chan collective.TaskID, 128)
-
-	db.AddListener(
-		forddb.TypedListenerFunc[collective.TaskID, *collective.Task](
-			func(id collective.TaskID, previous, current *collective.Task) {
-				watchCh <- id
-			},
-		),
+	tr.ReconcilerBase = NewReconciler(
+		logger.Named("task-reconciler"),
+		db,
+		tr.Reconcile,
 	)
-
-	go func() {
-		for id := range watchCh {
-			previous := tr.cache[id]
-
-			current, err := forddb.Get[*collective.Task](db, id)
-
-			if err != nil {
-				logger.Error(err)
-				continue
-			}
-
-			if previous == nil || current == nil || current.GetVersion() > previous.GetVersion() {
-				encoded, err := forddb.Encode(current)
-
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-
-				decoded, err := forddb.Decode(encoded)
-
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-
-				_, err = tr.Reconcile(context.Background(), previous, decoded.(*collective.Task))
-
-				if err != nil {
-					logger.Error(err)
-				}
-			}
-
-			tr.cache[id] = current
-		}
-	}()
 
 	return tr
 }
 
-func (tr *TaskReconciler) Reconcile(ctx context.Context, previous, current *collective.Task) (*collective.Task, error) {
+func (tr *TaskReconciler) Reconcile(
+	ctx context.Context,
+	id collective.TaskID,
+	previous *collective.Task,
+	current *collective.Task,
+) (*collective.Task, error) {
 	if current == nil && previous != nil {
 		tr.logger.Info("task deleted", "task_id", current.ID)
 
@@ -121,7 +80,7 @@ func (tr *TaskReconciler) Reconcile(ctx context.Context, previous, current *coll
 		}
 	}
 
-	return forddb.CreateOrUpdate(tr.db, current)
+	return forddb.Put(tr.db, current)
 }
 
 func (tr *TaskReconciler) ReconcileStage(
@@ -154,7 +113,7 @@ func (tr *TaskReconciler) ReconcileStage(
 			Status: collective.AgentStatus{},
 		}
 
-		agent, err := forddb.CreateOrUpdate(tr.db, agent)
+		agent, err := forddb.Put(tr.db, agent)
 
 		if err != nil {
 			return err

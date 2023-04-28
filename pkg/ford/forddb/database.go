@@ -1,7 +1,6 @@
 package forddb
 
 import (
-	"errors"
 	"reflect"
 )
 
@@ -10,21 +9,19 @@ type Database interface {
 
 	List(typ ResourceTypeID) ([]BasicResource, error)
 	Get(typ ResourceTypeID, id BasicResourceID) (BasicResource, error)
-	UpdateOrCreate(resource BasicResource) (BasicResource, error)
+	Put(resource BasicResource) (BasicResource, error)
 	Delete(resource BasicResource) (BasicResource, error)
 }
 
-var ErrVersionMismatch = errors.New("version mismatch")
-
-func CreateOrUpdate[T BasicResource](db Database, id T) (def T, _ error) {
-	resource, err := db.UpdateOrCreate(id)
+func Put[T BasicResource](db Database, id T) (def T, _ error) {
+	resource, err := db.Put(id)
 
 	if err != nil {
 		return def, err
 	}
 
 	if resource == nil {
-		return def, nil
+		return def, ErrNotFound
 	}
 
 	return resource.(T), nil
@@ -39,7 +36,7 @@ func Get[T BasicResource](db Database, id ResourceID[T]) (def T, _ error) {
 	}
 
 	if resource == nil {
-		return def, nil
+		return def, ErrNotFound
 	}
 
 	return resource.(T), nil
