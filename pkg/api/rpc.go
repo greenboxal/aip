@@ -9,6 +9,9 @@ import (
 	"go.uber.org/fx"
 )
 
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
+var contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
+
 func NewRpcServer(
 	supapi *SupervisorAPI,
 	comms *CommunicationAPI,
@@ -38,9 +41,6 @@ func ProvideRpcService[T any](name string, iface interface{}) fx.Option {
 		}),
 	)
 }
-
-var errorType = reflect.TypeOf((*error)(nil)).Elem()
-var contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
 
 func mustRegister(srv *jsonrpc.Handler, name string, target any) {
 	value := reflect.ValueOf(target)

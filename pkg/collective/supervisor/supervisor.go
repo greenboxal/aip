@@ -3,53 +3,64 @@ package supervisor
 import (
 	"context"
 
+	"github.com/jbenet/goprocess"
+	goprocessctx "github.com/jbenet/goprocess/context"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/greenboxal/aip/pkg/collective/comms/transports"
+	"github.com/greenboxal/aip/pkg/collective"
 )
 
-type Config struct {
-	ID string
-
-	Program string
-	Args    []string
-}
-
 type Supervisor struct {
-	ctx    context.Context
-	cancel context.CancelFunc
-
-	Config *Config
-
+	Config  *Config
 	Process *Process
-	Port    transports.Port
 }
 
-func NewSupervisor(ctx context.Context, config *Config, port transports.Port) (*Supervisor, error) {
-	ctx, cancel := context.WithCancel(ctx)
+func NewSupervisor(logger *zap.SugaredLogger, config *Config) (*Supervisor, error) {
+	sup := &Supervisor{
+		Config: config,
+	}
 
-	proc, err := NewProcess(ctx, config.Program, config.Args...)
+	//program := "/usr/bin/env"
+
+	//args := []string{
+	//	"bash",
+	//	"-c",
+	//	`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip ipc "$@"`,
+	//	"--",
+	//}
+
+	program := "/Users/jonathanlima/IdeaProjects/aip/venv/bin/python"
+	args := []string{
+		"-m",
+		"aip",
+		"ipc",
+	}
+
+	args = append(args, config.Args...)
+
+	proc, err := NewProcess(logger, func(m collective.Message) {
+		if err := config.Port.Send(context.Background(), m); err != nil {
+			logger.Error(err)
+		}
+	}, program, args...)
 
 	if err != nil {
-		cancel()
 		return nil, err
 	}
 
-	return &Supervisor{
-		ctx:    ctx,
-		cancel: cancel,
+	sup.Process = proc
 
-		Config:  config,
-		Process: proc,
-		Port:    port,
-	}, nil
+	return sup, nil
 }
 
-func (s *Supervisor) Run() error {
-	wg, gctx := errgroup.WithContext(s.ctx)
+func (s *Supervisor) Run(proc goprocess.Process) error {
+	ctx := goprocessctx.OnClosingContext(proc)
+
+	wg, gctx := errgroup.WithContext(ctx)
 
 	wg.Go(func() error {
-		return s.Process.Run()
+		return s.Process.Run(gctx)
 	})
 
 	wg.Go(func() error {
@@ -58,15 +69,12 @@ func (s *Supervisor) Run() error {
 			case <-gctx.Done():
 				return gctx.Err()
 
-			case msg := <-s.Port.Incoming():
+			case msg := <-s.Config.Port.Incoming():
 				if msg.From == s.Config.ID {
 					continue
 				}
 
-				s.Process.Incoming() <- msg
-
-			case msg := <-s.Process.Outgoing():
-				if err := s.Port.Send(gctx, msg); err != nil {
+				if err := s.Process.SendAndReceive(msg); err != nil {
 					return err
 				}
 			}
@@ -77,7 +85,5 @@ func (s *Supervisor) Run() error {
 }
 
 func (s *Supervisor) Close() error {
-	s.cancel()
-
 	return s.Process.Close()
 }

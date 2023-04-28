@@ -1,4 +1,4 @@
-package ford
+package reconcilers
 
 import (
 	"context"
@@ -7,12 +7,14 @@ import (
 
 	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/reconciliation"
 )
 
 type TaskReconciler struct {
-	*ReconcilerBase[collective.TaskID, *collective.Task]
+	*reconciliation.ReconcilerBase[collective.TaskID, *collective.Task]
 
-	db forddb.Database
+	logger *zap.SugaredLogger
+	db     forddb.Database
 }
 
 func NewTaskReconciler(
@@ -20,11 +22,12 @@ func NewTaskReconciler(
 	db forddb.Database,
 ) *TaskReconciler {
 	tr := &TaskReconciler{
-		db: db,
+		logger: logger.Named("task-reconciler"),
+		db:     db,
 	}
 
-	tr.ReconcilerBase = NewReconciler(
-		logger.Named("task-reconciler"),
+	tr.ReconcilerBase = reconciliation.NewReconciler(
+		tr.logger,
 		db,
 		tr.Reconcile,
 	)

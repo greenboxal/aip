@@ -1,4 +1,4 @@
-package ford
+package reconcilers
 
 import (
 	"context"
@@ -6,29 +6,33 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/greenboxal/aip/pkg/collective"
+	"github.com/greenboxal/aip/pkg/ford/agent"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/reconciliation"
 )
 
 type AgentReconciler struct {
-	*ReconcilerBase[collective.AgentID, *collective.Agent]
+	*reconciliation.ReconcilerBase[collective.AgentID, *collective.Agent]
 
-	manager *Manager
+	logger  *zap.SugaredLogger
+	manager *agent.Manager
 	db      forddb.Database
 }
 
 func NewAgentReconciler(
 	logger *zap.SugaredLogger,
 	db forddb.Database,
-	manager *Manager,
+	manager *agent.Manager,
 ) *AgentReconciler {
 	ar := &AgentReconciler{
+		logger: logger.Named("agent-reconciler"),
 
 		db:      db,
 		manager: manager,
 	}
 
-	ar.ReconcilerBase = NewReconciler(
-		logger.Named("agent-reconciler"),
+	ar.ReconcilerBase = reconciliation.NewReconciler(
+		ar.logger,
 		db,
 		ar.Reconcile,
 	)

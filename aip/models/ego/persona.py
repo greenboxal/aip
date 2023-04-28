@@ -57,7 +57,7 @@ class Persona:
             max_token_limit=200,
             memory_key="chat_history",
             input_key="input",
-            ai_prefix=self.profile.name,
+            ai_prefix=self.profile.metadata.name,
         )
 
         self.memory = CombinedMemory(
@@ -114,7 +114,7 @@ class Persona:
             llm=self.chat_llm,
             agent=AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
             memory=self.memory,
-            ai_prefix=self.profile.name,
+            ai_prefix=self.profile.metadata.name,
             verbose=self.verbose,
         )
 
@@ -137,13 +137,13 @@ class Persona:
     def _update(self):
         self.reflect("You", "!")
 
-        for aptitude in self.profile.aptitudes:
+        for aptitude in self.profile.spec.aptitudes:
             self._self_reflect(aptitude)
 
-        for goal in self.profile.goals:
+        for goal in self.profile.spec.goals:
             self._self_reflect(goal)
 
-        for desire in self.profile.desires:
+        for desire in self.profile.spec.desires:
             self._self_reflect(desire)
 
         self.state.description = self.reflect("You", "Who are you?")
@@ -151,14 +151,14 @@ class Persona:
         self._self_reflect(self.state)
 
     def _build_monologue_prompt(self):
-        aptitudes = "\n".join([f"* {aptitude.description}" for aptitude in (self.profile.aptitudes or [])])
+        aptitudes = "\n".join([f"* {aptitude.description}" for aptitude in (self.profile.spec.aptitudes or [])])
 
         return PromptTemplate(
             input_variables=["context", "chat_history", "input"],
             template=f"""
-            Your name is {self.profile.name}. Do not generate text in name of someone else.
+            Your name is {self.profile.metadata.name}. Do not generate text in name of someone else.
             
-            {self.profile.directive}
+            {self.profile.spec.directive}
             
             Your aptitudes are:
             {aptitudes}

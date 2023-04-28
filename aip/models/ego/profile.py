@@ -18,22 +18,27 @@ class Goal(BaseModel):
     description: str
     self_reflection: str
 
-class Profile(BaseModel):
+class Metadata(BaseModel):
+    id: str
     name: str
-    directive: str
 
-    executive_model: str
+class ProfileSpec(BaseModel):
+    directive: str
 
     aptitudes: List[Aptitude]
     desires: List[Desire]
     goals: List[Goal]
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.aptitudes = []
         self.desires = []
         self.goals = []
 
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
+
+class Profile(BaseModel):
+    metadata: Metadata
+    spec: ProfileSpec
 
 class MindState(BaseModel):
     profile: Profile

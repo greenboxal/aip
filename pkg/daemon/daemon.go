@@ -38,23 +38,16 @@ func (d *Daemon) StartSupervised(name string, extraArgs ...string) error {
 	}
 
 	args := []string{
-		"bash",
-		"-c",
-		`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip chat "$@"`,
-		"--",
-		"--raw",
 		"-i", name,
 	}
 
 	args = append(args, extraArgs...)
 
-	cfg := supervisor.Config{
-		ID:      name,
-		Program: "/usr/bin/env",
-		Args:    args,
-	}
-
-	_, err = d.manager.Spawn(&cfg, port)
+	_, err = d.manager.Spawn(
+		supervisor.WithID(name),
+		supervisor.WithArgs(args...),
+		supervisor.WithPort(port),
+	)
 
 	if err != nil {
 		return err

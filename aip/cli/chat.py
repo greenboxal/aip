@@ -47,18 +47,15 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
     else:
         profile = {}
 
-    if ai_identity is not None:
-        profile["name"] = ai_identity
-    elif "name" in profile:
-        if "name" not in profile or profile["name"] == "":
-            profile["name"] = "AI Assistant"
-
-    ai_identity = profile["name"]
-
-    if "directive" not in profile:
-        profile["directive"] = _default_chat_directive
-
     profile = Profile(data=profile)
+
+    if ai_identity is not None:
+        profile.name = ai_identity
+    elif profile.name == "":
+        profile.name = "AI Assistant"
+
+    if profile.spec.directive == "":
+        profile["directive"] = _default_chat_directive
 
     indexer = Index(index_name=index_name, namespace=namespace)
     retriever = indexer.as_retriever()
@@ -71,7 +68,7 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
 
         reply = {
             "id": str(time.time_ns()),
-            "from": profile.name,
+            "from": profile.metadata.name,
             "thread_id": None,
             "reply_to_id": None,
             "channel": None,

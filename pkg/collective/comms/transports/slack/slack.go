@@ -50,65 +50,7 @@ func NewTransport(lc fx.Lifecycle) *Transport {
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			_, _, err := t.rtm.ConnectRTMContext(ctx)
-
-			if err != nil {
-				return err
-			}
-
-			go func() {
-				t.rtm.ManageConnection()
-			}()
-
-			go func() {
-				for ev := range t.rtm.IncomingEvents {
-					switch evt := ev.Data.(type) {
-					case *slack.ConnectingEvent:
-						fmt.Println("Connecting to Slack with Socket Mode...")
-					case *slack.ConnectionErrorEvent:
-						fmt.Println("Connection failed. Retrying later...")
-					case *slack.ConnectedEvent:
-						fmt.Println("Connected to Slack with Socket Mode.")
-
-					case *slack.MessageEvent:
-						slackMsg := (*slack.Message)(evt)
-
-						msg := collective.Message{
-							ID:       slackMsg.Timestamp,
-							ThreadID: slackMsg.ThreadTimestamp,
-							Channel:  t.resolveChannel(slackMsg),
-							From:     t.resolveUser(slackMsg),
-							Text:     evt.Text,
-						}
-
-						if slackMsg.Metadata.EventType == "aip_say" {
-							if slackMsg.Metadata.EventPayload != nil {
-								msg.ReplyToID = slackMsg.Metadata.EventPayload["reply_to_id"].(string)
-								msg.ThreadID = slackMsg.Metadata.EventPayload["thread_id"].(string)
-								msg.ID = slackMsg.Metadata.EventPayload["id"].(string)
-								msg.From = slackMsg.Metadata.EventPayload["from"].(string)
-							}
-
-							groups := messageHeaderRegex.FindStringSubmatch(slackMsg.Text)
-
-							if groups != nil {
-								msg.ThreadID = groups[1]
-								msg.ReplyToID = groups[2]
-								msg.Text = groups[3]
-							}
-
-							if err != nil {
-								fmt.Println(err)
-								continue
-							}
-						}
-
-						t.incoming <- msg
-					}
-				}
-			}()
-
-			return nil
+			return t.Start(ctx)
 		},
 
 		OnStop: func(ctx context.Context) error {
@@ -198,4 +140,61 @@ func (t *Transport) resolveUser(evt *slack.Message) string {
 	t.userNameCache[evt.User] = u.Name
 
 	return u.Name
+}
+
+func (t *Transport) Start(ctx context.Context) error {
+	go func() {
+		_, _, err := t.rtm.ConnectRTMContext(ctx)
+
+		if err != nil {
+			panic(err)
+		}
+
+		t.rtm.ManageConnection()
+	}()
+
+	go func() {
+		for ev := range t.rtm.IncomingEvents {
+			switch evt := ev.Data.(type) {
+			case *slack.ConnectingEvent:
+				fmt.Println("Connecting to Slack with Socket Mode...")
+			case *slack.ConnectionErrorEvent:
+				fmt.Println("Connection failed. Retrying later...")
+			case *slack.ConnectedEvent:
+				fmt.Println("Connected to Slack with Socket Mode.")
+
+			case *slack.MessageEvent:
+				slackMsg := (*slack.Message)(evt)
+
+				msg := collective.Message{
+					ID:       slackMsg.Timestamp,
+					ThreadID: slackMsg.ThreadTimestamp,
+					Channel:  t.resolveChannel(slackMsg),
+					From:     t.resolveUser(slackMsg),
+					Text:     evt.Text,
+				}
+
+				if slackMsg.Metadata.EventType == "aip_say" {
+					if slackMsg.Metadata.EventPayload != nil {
+						msg.ReplyToID = slackMsg.Metadata.EventPayload["reply_to_id"].(string)
+						msg.ThreadID = slackMsg.Metadata.EventPayload["thread_id"].(string)
+						msg.ID = slackMsg.Metadata.EventPayload["id"].(string)
+						msg.From = slackMsg.Metadata.EventPayload["from"].(string)
+					}
+
+					groups := messageHeaderRegex.FindStringSubmatch(slackMsg.Text)
+
+					if groups != nil {
+						msg.ThreadID = groups[1]
+						msg.ReplyToID = groups[2]
+						msg.Text = groups[3]
+					}
+				}
+
+				t.incoming <- msg
+			}
+		}
+	}()
+
+	return nil
 }

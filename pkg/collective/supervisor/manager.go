@@ -2,13 +2,11 @@ package supervisor
 
 import (
 	"context"
-	"errors"
 	"sync"
 
+	"github.com/jbenet/goprocess"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-
-	"github.com/greenboxal/aip/pkg/collective/comms/transports"
 )
 
 type Manager struct {
@@ -43,49 +41,6 @@ func NewManager(lc fx.Lifecycle, logger *zap.SugaredLogger) *Manager {
 	return m
 }
 
-var ErrSupervisorAlreadyExists = errors.New("supervisor already exists")
-
-func (m *Manager) Spawn(config *Config, port transports.Port) (*Supervisor, error) {
-	m.m.Lock()
-	defer m.m.Unlock()
-
-	if _, ok := m.children[config.ID]; ok {
-		return nil, ErrSupervisorAlreadyExists
-	}
-
-	sup, err := NewSupervisor(m.ctx, config, port)
-
-	if err != nil {
-		return nil, err
-	}
-
-	m.children[config.ID] = sup
-
-	go func() {
-		defer func() {
-			if e := recover(); e != nil {
-				_ = sup.Close()
-
-				m.logger.Errorw("supervisor panic", "id", config.ID, "error", e)
-			}
-		}()
-
-		m.logger.Infow("supervisor started", "id", config.ID)
-
-		if err := sup.Run(); err != nil {
-			m.logger.Errorw("supervisor panic", "id", config.ID, "error", err)
-		}
-	}()
-
-	return sup, nil
-}
-
-func (m *Manager) Close() error {
-	m.cancel()
-
-	return nil
-}
-
 func (m *Manager) Child(child string) *Supervisor {
 	m.m.RLock()
 	defer m.m.RUnlock()
@@ -104,4 +59,51 @@ func (m *Manager) Children() []*Supervisor {
 	}
 
 	return result
+}
+
+func (m *Manager) Spawn(options ...SupervisorOption) (*Supervisor, error) {
+	config := NewConfig(options...)
+
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
+	m.m.Lock()
+	defer m.m.Unlock()
+
+	if _, ok := m.children[config.ID]; ok {
+		return nil, ErrSupervisorAlreadyExists
+	}
+
+	sup, err := NewSupervisor(m.logger.Named("sup-child-"+config.ID), config)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m.children[config.ID] = sup
+
+	goprocess.Go(func(proc goprocess.Process) {
+		defer func() {
+			if e := recover(); e != nil {
+				_ = sup.Close()
+
+				m.logger.Errorw("supervisor panic", "id", config.ID, "error", e)
+			}
+		}()
+
+		m.logger.Infow("supervisor started", "id", config.ID)
+
+		if err := sup.Run(proc); err != nil {
+			m.logger.Errorw("supervisor panic", "id", config.ID, "error", err)
+		}
+	})
+
+	return sup, nil
+}
+
+func (m *Manager) Close() error {
+	m.cancel()
+
+	return nil
 }

@@ -1,4 +1,4 @@
-package ford
+package agent
 
 import (
 	"context"
@@ -39,23 +39,16 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective.Agent) error 
 	}
 
 	args := []string{
-		"bash",
-		"-c",
-		`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip chat "$@"`,
-		"--",
-		"--raw",
 		"-i", task.Name,
 	}
 
 	args = append(args, task.Spec.ExtraArgs...)
 
-	cfg := supervisor.Config{
-		ID:      task.Name,
-		Program: "/usr/bin/env",
-		Args:    args,
-	}
-
-	_, err = m.supervisor.Spawn(&cfg, port)
+	_, err = m.supervisor.Spawn(
+		supervisor.WithID(task.Name),
+		supervisor.WithArgs(args...),
+		supervisor.WithPort(port),
+	)
 
 	if err != nil {
 		return err

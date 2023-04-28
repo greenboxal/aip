@@ -1,4 +1,4 @@
-package ford
+package reconcilers
 
 import (
 	"context"
@@ -7,12 +7,14 @@ import (
 
 	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/reconciliation"
 )
 
 type PortReconciler struct {
-	*ReconcilerBase[collective.PortID, *collective.Port]
+	*reconciliation.ReconcilerBase[collective.PortID, *collective.Port]
 
-	db forddb.Database
+	logger *zap.SugaredLogger
+	db     forddb.Database
 }
 
 func NewPortReconciler(
@@ -20,11 +22,13 @@ func NewPortReconciler(
 	db forddb.Database,
 ) *PortReconciler {
 	pr := &PortReconciler{
+		logger: logger.Named("port-reconciler"),
+
 		db: db,
 	}
 
-	pr.ReconcilerBase = NewReconciler(
-		logger.Named("port-reconciler"),
+	pr.ReconcilerBase = reconciliation.NewReconciler(
+		pr.logger,
 		db,
 		pr.Reconcile,
 	)

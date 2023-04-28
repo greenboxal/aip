@@ -3,70 +3,105 @@ package supervisor
 import (
 	"bufio"
 	"context"
-	"fmt"
-	"io"
+	"encoding/json"
 	"os"
 	"os/exec"
 
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/greenboxal/aip/pkg/collective"
 )
 
 type Process struct {
-	ctx    context.Context
-	cancel context.CancelFunc
+	logger *zap.SugaredLogger
 
-	incomingCh chan collective.Message
-	outgoingCh chan collective.Message
+	program string
+	args    []string
 
-	cmd *exec.Cmd
+	stdinWriter  *os.File
+	stdinReader  *os.File
+	stdoutWriter *os.File
+	stdoutReader *os.File
 
-	stdoutPipe io.ReadCloser
-	stdinPipe  io.WriteCloser
+	handler func(m collective.Message)
 }
 
-func NewProcess(ctx context.Context, program string, args ...string) (*Process, error) {
-	ctx, cancel := context.WithCancel(ctx)
-
-	cmd := exec.CommandContext(ctx, program, args...)
-
-	cmd.Stderr = os.Stderr
-
-	stdinPipe, err := cmd.StdinPipe()
+func NewProcess(
+	logger *zap.SugaredLogger,
+	handler func(m collective.Message),
+	program string,
+	args ...string,
+) (*Process, error) {
+	stdinWriter, stdinReader, err := os.Pipe()
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	stdoutPipe, err := cmd.StdoutPipe()
+	stdoutWriter, stdoutReader, err := os.Pipe()
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &Process{
-		ctx:    ctx,
-		cancel: cancel,
+		logger:  logger,
+		handler: handler,
+		program: program,
+		args:    args,
 
-		cmd:        cmd,
-		stdinPipe:  stdinPipe,
-		stdoutPipe: stdoutPipe,
-
-		incomingCh: make(chan collective.Message),
-		outgoingCh: make(chan collective.Message),
+		stdinWriter:  stdinWriter,
+		stdinReader:  stdinReader,
+		stdoutWriter: stdoutWriter,
+		stdoutReader: stdoutReader,
 	}, nil
 }
 
-func (s *Process) Run() error {
-	wg, gctx := errgroup.WithContext(s.ctx)
+func (p *Process) SendAndReceive(msg collective.Message) error {
+	data, err := json.Marshal(msg)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = p.stdinWriter.Write([]byte(string(data) + "\n"))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Process) Run(ctx context.Context) error {
+	var err error
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	wg, gctx := errgroup.WithContext(ctx)
 
 	wg.Go(func() error {
-		return s.cmd.Run()
+		var env []string
+
+		env = append(env, os.Environ()...)
+		env = append(env, "AIP_TRANSPORT=ipc")
+		env = append(env, "AIP_IPC_BASE_FD=3")
+
+		cmd := exec.CommandContext(gctx, p.program, p.args...)
+
+		cmd.Env = env
+		cmd.Stdin = nil
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.ExtraFiles = []*os.File{p.stdinReader, p.stdoutWriter}
+
+		return cmd.Run()
 	})
 
 	wg.Go(func() error {
-		reader := bufio.NewReader(s.stdoutPipe)
+		reader := bufio.NewReader(p.stdoutReader)
 
 		for {
 			select {
@@ -81,55 +116,24 @@ func (s *Process) Run() error {
 				return err
 			}
 
-			msg, err := DecodeMessage(line)
+			var msg collective.Message
 
-			if err != nil {
-				fmt.Printf("Invalid message from stdout: %s\n", err)
-				continue
+			if err := json.Unmarshal(line, &msg); err != nil {
+				return err
 			}
 
-			s.outgoingCh <- msg
+			p.handler(msg)
 		}
 	})
 
-	wg.Go(func() error {
-		for {
-			select {
-			case <-gctx.Done():
-				return gctx.Err()
-
-			case msg := <-s.incomingCh:
-				data, err := EncodeMessage(msg)
-
-				if err != nil {
-					panic(err)
-				}
-
-				_, err = s.stdinPipe.Write([]byte(string(data) + "\n"))
-
-				if err != nil {
-					return err
-				}
-			}
-		}
-	})
-
-	return wg.Wait()
+	return err
 }
 
-func (s *Process) Close() error {
-	s.cancel()
-
-	_ = s.stdinPipe.Close()
-	_ = s.stdoutPipe.Close()
+func (p *Process) Close() error {
+	p.stdoutWriter.Close()
+	p.stdoutReader.Close()
+	p.stdinReader.Close()
+	p.stdinWriter.Close()
 
 	return nil
-}
-
-func (s *Process) Incoming() chan<- collective.Message {
-	return s.incomingCh
-}
-
-func (s *Process) Outgoing() <-chan collective.Message {
-	return s.outgoingCh
 }

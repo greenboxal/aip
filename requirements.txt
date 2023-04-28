@@ -16,3 +16,7 @@ wikipedia
 wolframalpha
 arxiv
 jsonrpyc
+jsonrpcserver
+jsonrpcclient
+json-rpc
+aiofiles
