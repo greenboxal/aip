@@ -1,6 +1,10 @@
 package collective
 
-import "github.com/greenboxal/aip/pkg/ford/forddb"
+import (
+	"encoding/json"
+
+	"github.com/greenboxal/aip/pkg/ford/forddb"
+)
 
 type ProfileID struct {
 	forddb.StringResourceID[*Profile]
@@ -8,4 +12,6 @@ type ProfileID struct {
 
 type Profile struct {
 	forddb.ResourceMetadata[ProfileID, *Profile] `json:"metadata"`
+
+	Spec json.RawMessage `json:"spec"`
 }

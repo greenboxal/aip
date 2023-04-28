@@ -21,20 +21,13 @@ func NewSupervisor(logger *zap.SugaredLogger, config *Config) (*Supervisor, erro
 		Config: config,
 	}
 
-	//program := "/usr/bin/env"
+	program := "/usr/bin/env"
 
-	//args := []string{
-	//	"bash",
-	//	"-c",
-	//	`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip ipc "$@"`,
-	//	"--",
-	//}
-
-	program := "/Users/jonathanlima/IdeaProjects/aip/venv/bin/python"
 	args := []string{
-		"-m",
-		"aip",
-		"ipc",
+		"bash",
+		"-c",
+		`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip ipc "$@"`,
+		"--",
 	}
 
 	args = append(args, config.Args...)
@@ -74,7 +67,7 @@ func (s *Supervisor) Run(proc goprocess.Process) error {
 					continue
 				}
 
-				if err := s.Process.SendAndReceive(msg); err != nil {
+				if err := s.Process.Send(msg); err != nil {
 					return err
 				}
 			}

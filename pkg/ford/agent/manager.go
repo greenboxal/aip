@@ -2,6 +2,9 @@ package agent
 
 import (
 	"context"
+	"os"
+
+	"go.uber.org/zap"
 
 	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/collective/comms"
@@ -10,13 +13,21 @@ import (
 )
 
 type Manager struct {
+	logger     *zap.SugaredLogger
 	db         forddb.Database
 	routing    *comms.Routing
 	supervisor *supervisor.Manager
 }
 
-func NewManager(db forddb.Database, routing *comms.Routing, sup *supervisor.Manager) *Manager {
+func NewManager(
+	logger *zap.SugaredLogger,
+	db forddb.Database,
+	routing *comms.Routing,
+	sup *supervisor.Manager,
+) *Manager {
 	return &Manager{
+		logger: logger.Named("agent-manager"),
+
 		db:         db,
 		routing:    routing,
 		supervisor: sup,
@@ -38,11 +49,30 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective.Agent) error 
 		return err
 	}
 
+	profile, err := forddb.Get[*collective.Profile](m.db, task.Spec.ProfileID)
+
+	if err != nil {
+		return err
+	}
+
+	tmpProfile, err := os.CreateTemp(os.TempDir(), "aip-profile-")
+
+	if err != nil {
+		return err
+	}
+
+	if err := forddb.SerializeTo(tmpProfile, forddb.Json, profile); err != nil {
+		return err
+	}
+
 	args := []string{
 		"-i", task.Name,
+		"-p", tmpProfile.Name(),
 	}
 
 	args = append(args, task.Spec.ExtraArgs...)
+
+	m.logger.Infow("args", "args", args)
 
 	_, err = m.supervisor.Spawn(
 		supervisor.WithID(task.Name),

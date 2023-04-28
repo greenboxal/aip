@@ -4,5 +4,5 @@ metadata:
   name: "Agent 2"
 spec:
   given_name: "Agent 2"
-  profile_id: "./data/profiles/test-persona-2.toml"
+  profile_id: "Emily-Johnson"
   port_id: "agent-2"

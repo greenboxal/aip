@@ -20,7 +20,8 @@ from aip.models.ego import Persona, Profile
 @click.option("--verbose", is_flag=True, default=False, help="Enable verbose logging")
 def ipc(index_name, namespace, ai_identity, profile, verbose):
     if profile is not None:
-        profile = toml.load(profile)
+        with open(profile, "r") as f:
+            profile = json.load(f)
     else:
         profile = {}
 
@@ -67,16 +68,13 @@ def ipc(index_name, namespace, ai_identity, profile, verbose):
     ipc_in_fd = ipc_base_fd
     ipc_out_fd = ipc_base_fd + 1
 
-    with os.fdopen(ipc_in_fd, "r") as ipc_in:
-        with os.fdopen(ipc_out_fd, "w") as ipc_out:
+    with os.fdopen(ipc_in_fd, "rb") as ipc_in:
+        with os.fdopen(ipc_out_fd, "wb") as ipc_out:
             def handle(line=None):
                 if line is None:
                     return
 
                 request = line.strip()
-
-                with open("/tmp/dbglog", "a") as f:
-                    print("REQUEST: %s\n" % request, file=f)
 
                 if request == "":
                     return
@@ -84,7 +82,7 @@ def ipc(index_name, namespace, ai_identity, profile, verbose):
                 request = json.loads(request)
                 result = route_message(request)
 
-                ipc_out.write(json.dumps(result) + "\n")
+                ipc_out.write(bytes(json.dumps(result) + "\n", 'utf-8'))
                 ipc_out.flush()
 
             for line in ipc_in:

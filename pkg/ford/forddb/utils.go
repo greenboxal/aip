@@ -18,7 +18,7 @@ func ImportPath(db Database, path string) error {
 		}
 
 		if !info.IsDir() && isSupportedFile(path) {
-			var rawResource map[string]interface{}
+			var rawResource RawResource
 
 			data, err := os.ReadFile(path)
 
