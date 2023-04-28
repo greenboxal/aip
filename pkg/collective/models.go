@@ -172,6 +172,7 @@ type AgentSpec struct {
 
 	ProfileID ProfileID `json:"profile_id"`
 	PortID    string    `json:"port_id"`
+	ExtraArgs []string  `json:"extra_args"`
 }
 
 type AgentState string
