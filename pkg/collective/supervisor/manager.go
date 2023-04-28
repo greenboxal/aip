@@ -8,7 +8,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"github.com/greenboxal/aip/pkg/collective"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports"
 )
 
 type Manager struct {
@@ -45,7 +45,7 @@ func NewManager(lc fx.Lifecycle, logger *zap.SugaredLogger) *Manager {
 
 var ErrSupervisorAlreadyExists = errors.New("supervisor already exists")
 
-func (m *Manager) Spawn(config *Config, port collective.Port) (*Supervisor, error) {
+func (m *Manager) Spawn(config *Config, port transports.Port) (*Supervisor, error) {
 	m.m.Lock()
 	defer m.m.Unlock()
 

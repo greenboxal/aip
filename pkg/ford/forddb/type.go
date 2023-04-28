@@ -60,8 +60,8 @@ func LookupTypeByName(name string) BasicResourceType {
 
 func DefineResourceType[ID ResourceID[T], T Resource[ID]](name string) ResourceType[ID, T] {
 	t := &resourceType[ID, T]{
-		idType:       reflect.TypeOf((*ID)(nil)).Elem(),
-		resourceType: reflect.TypeOf((*T)(nil)).Elem(),
+		idType:       derefType[ID](),
+		resourceType: derefType[T](),
 	}
 
 	t.ResourceMetadata.ID = typeType.MakeId(name).(ResourceTypeID)
@@ -111,4 +111,14 @@ func (r *resourceType[ID, T]) IDType() reflect.Type {
 
 func (r *resourceType[ID, T]) ResourceType() reflect.Type {
 	return r.resourceType
+}
+
+func derefType[T any]() reflect.Type {
+	t := reflect.TypeOf((*T)(nil)).Elem()
+
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t
 }

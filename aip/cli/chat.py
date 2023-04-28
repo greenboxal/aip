@@ -49,9 +49,11 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
 
     if ai_identity is not None:
         profile["name"] = ai_identity
+    elif "name" in profile:
+        if "name" not in profile or profile["name"] == "":
+            profile["name"] = "AI Assistant"
 
-    if "name" not in profile:
-        profile["name"] = "AI Assistant"
+    ai_identity = profile["name"]
 
     if "directive" not in profile:
         profile["directive"] = _default_chat_directive
@@ -65,6 +67,8 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
     readline.parse_and_bind('set editing-mode emacs')
 
     while True:
+        role = "Human"
+
         reply = {
             "id": str(time.time_ns()),
             "from": profile.name,
@@ -87,15 +91,11 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
             if reply["thread_id"] is None or reply["thread_id"] == "":
                 reply["thread_id"] = msg["id"]
 
-            line = "#{channel}%{thread} @{user}: {msg}".format(
-                channel=reply["channel"],
-                thread=reply["thread_id"],
-                user=msg["from"],
-                msg=msg["text"],
-            )
+            role = msg["from"]
+            line = msg["text"]
 
         try:
-            result = agent.run(line)
+            result = agent.reflect(role, line)
         except Exception as e:
             result = "ERROR: %s" % e
 

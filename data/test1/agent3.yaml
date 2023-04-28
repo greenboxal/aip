@@ -1,0 +1,8 @@
+kind: agent
+metadata:
+  id: "agent-3"
+  name: "Agent 3"
+spec:
+  given_name: "Agent 3"
+  profile_id: "./data/profiles/test-persona-3.toml"
+  port_id: "agent-3"

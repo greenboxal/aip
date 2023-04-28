@@ -46,7 +46,7 @@ func (t *Transport) Incoming() <-chan collective.Message {
 	return nil
 }
 
-func (t *Transport) AddPort(name string) (collective.Port, error) {
+func (t *Transport) AddPort(name string) (transports.Port, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 

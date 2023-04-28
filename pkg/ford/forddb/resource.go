@@ -7,6 +7,7 @@ import (
 )
 
 type BasicResourceID interface {
+	BasicResourceID() BasicResourceID
 	String() string
 	MarshalJSON() ([]byte, error)
 }
@@ -85,7 +86,13 @@ func (r *ResourceMetadata[ID, T]) GetID() ID {
 }
 
 func (r *ResourceMetadata[ID, T]) GetType() ResourceTypeID {
-	return typeSystem.LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem()).ID()
+	t := typeSystem.LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
+
+	if t == nil {
+		panic("resource type not found")
+	}
+
+	return t.GetID()
 }
 
 func (r *BasicResourceMetadata) GetVersion() int {

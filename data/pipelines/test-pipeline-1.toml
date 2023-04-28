@@ -1,21 +1,24 @@
-[pipeline]
+kind = "pipeline"
+
+[metadata]
+id = "test-pipeline-1"
 name = "test-pipeline-1"
 
-[[teams]]
+[[spec.teams]]
 name = "ai-eng-team-1"
 manager = "test-persona-3"
 members = ["test-persona-1", "test-persona-2", "test-persona-3"]
 
-[[teams]]
+[[spec.teams]]
 name = "ai-qa-team-1"
 manager = "test-persona-3"
 members = ["test-persona-1", "test-persona-2", "test-persona-3"]
 
-[[stages]]
+[[spec.stages]]
 name = "build"
 assigned_team = "ai-eng-team-1"
 
-[[stages]]
+[[spec.stages]]
 name = "check"
 assigned_team = "ai-qa-team-1"
 depends_on = ["build"]

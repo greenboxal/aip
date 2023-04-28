@@ -38,9 +38,17 @@ func (s *resourceTypeSystem) LookupByID(id ResourceTypeID) BasicResourceType {
 }
 
 func (s *resourceTypeSystem) LookupByIDType(typ reflect.Type) BasicResourceType {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+
 	return s.idTypeMap[typ]
 }
 
 func (s *resourceTypeSystem) LookupByResourceType(typ reflect.Type) BasicResourceType {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+
 	return s.resourceTypeMap[typ]
 }

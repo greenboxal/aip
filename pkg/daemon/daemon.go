@@ -40,7 +40,7 @@ func (d *Daemon) StartSupervised(name string, extraArgs ...string) error {
 	args := []string{
 		"bash",
 		"-c",
-		`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip chat $*`,
+		`set -eu; if [ -f .env ]; then source .env; fi; exec python -m aip chat "$@"`,
 		"--",
 		"--raw",
 		"-i", name,

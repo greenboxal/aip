@@ -1,7 +1,6 @@
 package forddb
 
 import (
-	"encoding/json"
 	"reflect"
 	"sync"
 	"time"
@@ -175,9 +174,8 @@ type resourceSlot struct {
 
 	hasValue bool
 
-	version    int
-	serialized []byte
-	value      BasicResource
+	encoded RawResource
+	value   BasicResource
 }
 
 func (s *resourceSlot) Get() (BasicResource, error) {
@@ -192,9 +190,9 @@ func (s *resourceSlot) Get() (BasicResource, error) {
 		return s.value, nil
 	}
 
-	instance := reflect.New(s.table.typ.Type().ResourceType()).Interface()
+	instance, err := Decode(s.encoded)
 
-	if err := json.Unmarshal(s.serialized, instance); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -221,10 +219,6 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 	s.RLock()
 	defer s.RUnlock()
 
-	if s.hasValue && s.version != resource.GetVersion() {
-		return nil, nil, false, ErrVersionMismatch
-	}
-
 	current, err := s.Get()
 
 	if err != nil {
@@ -232,8 +226,14 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 	}
 
 	if current != nil {
-		if reflect.DeepEqual(current, resource) {
-			return current, resource, false, nil
+		if current.GetVersion() != resource.GetVersion() {
+			return nil, nil, false, ErrVersionMismatch
+		}
+
+		if current != nil {
+			if reflect.DeepEqual(current, resource) {
+				return current, resource, false, nil
+			}
 		}
 	}
 
@@ -249,31 +249,46 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 	if s.table.typ.Type().IsRuntimeOnly() {
 		s.value = resource
 	} else {
-		data, err := json.Marshal(resource)
+		encoded, err := Encode(resource)
 
 		if err != nil {
 			return nil, nil, false, err
 		}
 
-		s.serialized = data
+		s.encoded = encoded
 	}
 
-	s.version = resource.GetVersion()
 	s.hasValue = true
 
 	return current, resource, true, nil
 }
 
 func (s *resourceSlot) Delete() (BasicResource, error) {
-	value, err := s.Get()
+	previous, ok, err := s.doDelete()
 
 	if err != nil {
 		return nil, err
 	}
 
-	s.serialized = nil
+	if ok {
+		FireListeners(&s.HasListenersBase, s.id, previous, nil)
+		FireListeners(&s.table.HasListenersBase, s.id, previous, nil)
+		FireListeners(&s.table.db.HasListenersBase, s.id, previous, nil)
+	}
+
+	return previous, nil
+}
+
+func (s *resourceSlot) doDelete() (BasicResource, bool, error) {
+	value, err := s.Get()
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	s.encoded = nil
 	s.value = nil
 	s.hasValue = false
 
-	return value, nil
+	return value, true, nil
 }

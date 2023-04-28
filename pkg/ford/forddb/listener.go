@@ -31,7 +31,17 @@ func (t TypedListenerFunc[ID, T]) OnResourceChanged(id BasicResourceID, previous
 		return
 	}
 
-	t(id.(ID), previous.(T), current.(T))
+	var previousT, currentT T
+
+	if previous != nil {
+		previousT = previous.(T)
+	}
+
+	if current != nil {
+		currentT = current.(T)
+	}
+
+	t(id.(ID), previousT, currentT)
 }
 
 type ListenerSet struct {

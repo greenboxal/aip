@@ -2,7 +2,9 @@ package collective
 
 import "github.com/greenboxal/aip/pkg/ford/forddb"
 
-type ProfileID = forddb.BasicResourceID
+type ProfileID struct {
+	forddb.StringResourceID[*Profile]
+}
 
 type PipelineID struct {
 	forddb.StringResourceID[*Pipeline]
@@ -22,6 +24,10 @@ type AgentID struct {
 
 type TaskID struct {
 	forddb.StringResourceID[*Task]
+}
+
+type PortID struct {
+	forddb.StringResourceID[*Port]
 }
 
 type PipelineSpec struct {
@@ -49,7 +55,6 @@ func (p *Pipeline) GetStage(id StageID) *Stage {
 type Team struct {
 	forddb.ResourceMetadata[TeamID, *Team] `json:"metadata"`
 
-	Name    string   `json:"name"`
 	Manager string   `json:"manager"`
 	Members []string `json:"members"`
 }
@@ -57,7 +62,6 @@ type Team struct {
 type Stage struct {
 	forddb.ResourceMetadata[StageID, *Stage] `json:"metadata"`
 
-	Name         string    `json:"name"`
 	AssignedTeam string    `json:"assigned_team"`
 	DependsOn    []StageID `json:"depends_on"`
 }
@@ -79,6 +83,7 @@ type TaskSpec struct {
 type TaskState string
 
 const (
+	TaskStateCreated    TaskState = "created"
 	TaskStatePending    TaskState = "pending"
 	TaskStateScheduled  TaskState = "scheduled"
 	TaskStateInProgress TaskState = "in_progress"
@@ -134,6 +139,27 @@ type TaskPhaseStatus struct {
 	StageID StageID        `json:"stage_id"`
 }
 
+type Port struct {
+	forddb.ResourceMetadata[PortID, *Port] `json:"metadata"`
+
+	Spec   PortSpec   `json:"spec"`
+	Status PortStatus `json:"status"`
+}
+
+type PortSpec struct {
+}
+
+type PortState string
+
+const (
+	PortCreated PortState = "CREATED"
+	PortReady   PortState = "READY"
+)
+
+type PortStatus struct {
+	State PortState `json:"state"`
+}
+
 type Agent struct {
 	forddb.ResourceMetadata[AgentID, *Agent] `json:"metadata"`
 
@@ -164,10 +190,16 @@ type AgentStatus struct {
 	LastError string     `json:"last_error"`
 }
 
+type Profile struct {
+	forddb.ResourceMetadata[ProfileID, *Profile] `json:"metadata"`
+}
+
 func init() {
 	forddb.DefineResourceType[PipelineID, *Pipeline]("pipeline")
 	forddb.DefineResourceType[TaskID, *Task]("task")
 	forddb.DefineResourceType[AgentID, *Agent]("agent")
 	forddb.DefineResourceType[TeamID, *Team]("team")
 	forddb.DefineResourceType[StageID, *Stage]("stage")
+	forddb.DefineResourceType[PortID, *Port]("port")
+	forddb.DefineResourceType[ProfileID, *Profile]("profile")
 }

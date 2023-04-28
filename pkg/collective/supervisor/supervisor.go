@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/greenboxal/aip/pkg/collective"
+	"github.com/greenboxal/aip/pkg/collective/comms/transports"
 )
 
 type Config struct {
@@ -22,10 +22,10 @@ type Supervisor struct {
 	Config *Config
 
 	Process *Process
-	Port    collective.Port
+	Port    transports.Port
 }
 
-func NewSupervisor(ctx context.Context, config *Config, port collective.Port) (*Supervisor, error) {
+func NewSupervisor(ctx context.Context, config *Config, port transports.Port) (*Supervisor, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	proc, err := NewProcess(ctx, config.Program, config.Args...)

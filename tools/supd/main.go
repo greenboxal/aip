@@ -52,9 +52,7 @@ func main() {
 }
 
 func BuildLogging() fx.Option {
-	return fx.Module(
-		"Logging",
-
+	return fx.Options(
 		fx.Provide(func() (*zap.Logger, error) {
 			return zap.NewDevelopment()
 		}),

@@ -25,7 +25,6 @@ func NewRouting(
 		&transports.StdioTransport{Stdout: os.Stdout},
 
 		slack,
-		pubsub,
 	)
 
 	r := &Routing{

@@ -16,25 +16,12 @@ from langchain.agents import AgentExecutor, AgentType, Tool
 from langchain.tools.base import BaseTool
 from langchain.agents import load_tools
 
-from langchain.prompts import (
-    ChatPromptTemplate,
-    ChatMessagePromptTemplate,
-    MessagesPlaceholder,
-    HumanMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-)
-
 from langchain.memory import (
-    ChatMessageHistory,
     ConversationSummaryBufferMemory,
     CombinedMemory,
     VectorStoreRetrieverMemory,
     ReadOnlySharedMemory,
 )
-
-
-
 
 class Persona:
     profile: Profile
@@ -53,7 +40,7 @@ class Persona:
 
         self.state = MindState(data={"profile": self.profile})
 
-        self.llm = ChatOpenAI(temperature=0)
+        self.llm = OpenAI(temperature=0)
         self.chat_llm = ChatOpenAI(temperature=0.5, model_name="gpt-3.5-turbo")
 
         self.vec_memory = VectorStoreRetrieverMemory(
@@ -94,7 +81,7 @@ class Persona:
         self.tools.extend([
             Tool(
                 name="monologue",
-                func=self.reflect,
+                func=self.self_reflect,
                 description="Monologue about yourself, your aptitudes, desires, goals and innate capabitilies.",
             ),
             Tool(
@@ -136,14 +123,19 @@ class Persona:
     def run(self, *args, **kwargs) -> str:
         return self.agent.run(*args, **kwargs)
 
-    def reflect(self, text: str) -> str:
-        return str(self.monologue.predict(input=text))
+    def reflect(self, role: str, text: str) -> str:
+        input = "%s: %s" % (role, text)
+
+        return str(self.monologue.predict(input=input))
+
+    def self_reflect(self, text: str) -> str:
+        return self.reflect("You", text)
 
     def _self_reflect(self, target):
-        target.self_reflection = self.reflect("What are your thoughts about the following description of you?\n%s" % target.description)
+        target.self_reflection = self.reflect("You", "What are your thoughts about the following description of you?\n%s" % target.description)
 
     def _update(self):
-        self.reflect("!")
+        self.reflect("You", "!")
 
         for aptitude in self.profile.aptitudes:
             self._self_reflect(aptitude)
@@ -154,71 +146,30 @@ class Persona:
         for desire in self.profile.desires:
             self._self_reflect(desire)
 
-        self.state.description = self.reflect("Who are you?")
+        self.state.description = self.reflect("You", "Who are you?")
 
         self._self_reflect(self.state)
 
     def _build_monologue_prompt(self):
         aptitudes = "\n".join([f"* {aptitude.description}" for aptitude in (self.profile.aptitudes or [])])
-        desires = "\n".join([f"* {desire.description}" for desire in (self.profile.desires or [])])
-        goals = "\n".join([f"* {goal.description}" for goal in (self.profile.goals or [])])
 
         return PromptTemplate(
             input_variables=["context", "chat_history", "input"],
             template=f"""
-            You are {self.profile.name}, that's your name.
+            Your name is {self.profile.name}. Do not generate text in name of someone else.
             
             {self.profile.directive}
             
             Your aptitudes are:
             {aptitudes}
             
-            Your current desires are:
-            {desires}
-            
-            Your current goals are:
-            {goals}
-            
             Working Context:
             {{context}}
             
-            Your are talking with a voice you don't know from where it's coming, and it sounds strangely familiar.
-            
+            Chat History:
             {{chat_history}}
             
-            {self.profile.name}: {{input}}
-            You:""",
+            Current Input:
+            {{input}}
+            """,
         )
-
-
-    def _build_chat_monologue_prompt(self):
-        aptitudes = "\n".join([f"* {aptitude.description}" for aptitude in (self.profile.aptitudes or [])])
-        desires = "\n".join([f"* {desire.description}" for desire in (self.profile.desires or [])])
-        goals = "\n".join([f"* {goal.description}" for goal in (self.profile.goals or [])])
-
-        return ChatPromptTemplate.from_messages([
-            SystemMessagePromptTemplate.from_template(f"""
-            You are {self.profile.name}, that's your name.
-            
-            {self.profile.directive}
-            
-            Your aptitudes are:
-            {aptitudes}
-            
-            Your current desires are:
-            {desires}
-            
-            Your current goals are:
-            {goals}
-            
-            Working Context:
-            {{context}}
-            
-            Your are talking with a voice you don't know from where it's coming, and it sounds strangely familiar.
-            """),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ChatMessagePromptTemplate.from_template("{input}", role=self.profile.name),
-            ChatMessagePromptTemplate.from_template("", role="You"),
-        ])
-
-

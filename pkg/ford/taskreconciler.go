@@ -12,7 +12,8 @@ import (
 type TaskReconciler struct {
 	logger *zap.SugaredLogger
 
-	db forddb.Database
+	db    forddb.Database
+	cache map[collective.TaskID]*collective.Task
 }
 
 func NewTaskReconciler(
@@ -23,27 +24,68 @@ func NewTaskReconciler(
 		logger: logger.Named("task-reconciler"),
 
 		db: db,
+
+		cache: map[collective.TaskID]*collective.Task{},
 	}
+
+	watchCh := make(chan collective.TaskID, 128)
 
 	db.AddListener(
 		forddb.TypedListenerFunc[collective.TaskID, *collective.Task](
 			func(id collective.TaskID, previous, current *collective.Task) {
-				_, err := tr.Reconcile(context.Background(), previous, current)
-
-				if err != nil {
-					tr.logger.Error(err)
-				}
+				watchCh <- id
 			},
 		),
 	)
+
+	go func() {
+		for id := range watchCh {
+			previous := tr.cache[id]
+
+			current, err := forddb.Get[*collective.Task](db, id)
+
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+
+			if previous == nil || current == nil || current.GetVersion() > previous.GetVersion() {
+				encoded, err := forddb.Encode(current)
+
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+
+				decoded, err := forddb.Decode(encoded)
+
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+
+				_, err = tr.Reconcile(context.Background(), previous, decoded.(*collective.Task))
+
+				if err != nil {
+					logger.Error(err)
+				}
+			}
+
+			tr.cache[id] = current
+		}
+	}()
 
 	return tr
 }
 
 func (tr *TaskReconciler) Reconcile(ctx context.Context, previous, current *collective.Task) (*collective.Task, error) {
 	if current == nil && previous != nil {
+		tr.logger.Info("task deleted", "task_id", current.ID)
+
 		return nil, nil
 	}
+
+	tr.logger.Info("entering reconciliation loop", "task_id", current.ID)
 
 	pipeline, err := forddb.Get[*collective.Pipeline](tr.db, current.Spec.PipelineID)
 
@@ -51,18 +93,32 @@ func (tr *TaskReconciler) Reconcile(ctx context.Context, previous, current *coll
 		return nil, err
 	}
 
-	for _, stage := range pipeline.Spec.Stages {
-		err = tr.ReconcileStage(ctx, current, pipeline, stage)
-
-		if err != nil {
-			return nil, err
-		}
+	if current.Status.State == "" {
+		current.Status.State = collective.TaskStateCreated
 	}
 
-	mainTaskStatus := current.Status.GetTaskStatus(current.Spec.OutputStageID)
+	if previous != nil || previous.Status.State != current.Status.State {
+		switch current.Status.State {
+		case collective.TaskStateCreated:
+			current.Status.State = collective.TaskStatePending
 
-	if mainTaskStatus != nil && mainTaskStatus.State == collective.TaskPhaseStateCompleted {
-		current.Status.State = collective.TaskStateCompleted
+		case collective.TaskStatePending:
+			fallthrough
+		case collective.TaskStateInProgress:
+			for _, stage := range pipeline.Spec.Stages {
+				err = tr.ReconcileStage(ctx, current, pipeline, stage)
+
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			mainTaskStatus := current.Status.GetTaskStatus(current.Spec.OutputStageID)
+
+			if mainTaskStatus != nil && mainTaskStatus.State == collective.TaskPhaseStateCompleted {
+				current.Status.State = collective.TaskStateCompleted
+			}
+		}
 	}
 
 	return forddb.CreateOrUpdate(tr.db, current)
@@ -93,8 +149,20 @@ func (tr *TaskReconciler) ReconcileStage(
 		status.State = collective.TaskPhaseStatePending
 
 	case collective.TaskPhaseStatePending:
+		agent := &collective.Agent{
+			Spec:   collective.AgentSpec{},
+			Status: collective.AgentStatus{},
+		}
+
+		agent, err := forddb.CreateOrUpdate(tr.db, agent)
+
+		if err != nil {
+			return err
+		}
+
 		status.State = collective.TaskPhaseStateScheduled
 
+	case collective.TaskPhaseStateScheduled:
 	}
 
 	return nil

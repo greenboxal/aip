@@ -50,7 +50,7 @@ func (p *Port) Close() error {
 }
 
 func (p *Port) routeMessage(ctx context.Context, msg collective.Message) {
-	if p.isMessageVisible(msg) {
+	if !p.isMessageVisible(msg) {
 		return
 	}
 
