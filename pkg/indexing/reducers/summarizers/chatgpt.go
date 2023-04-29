@@ -1,48 +1,43 @@
-package reducers
+package summarizers
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/greenboxal/aip/pkg/indexing"
 )
 
-type Summarizer interface {
-	Summarize(
-		ctx context.Context,
-		segment *indexing.MemorySegment,
-		contextHint string,
-		maxTokens int,
-	) (indexing.MemoryData, error)
-}
-
 type ChatGptSummarizer struct {
 	Client *openai.Client
-	Model  string
+
+	Model string
+}
+
+func (gs *ChatGptSummarizer) MaxTokens() int {
+	return 4096 - 100
 }
 
 func (gs *ChatGptSummarizer) Summarize(
 	ctx context.Context,
-	segment *indexing.MemorySegment,
-	contextHint string,
-	maxTokens int,
+	document string,
+	options ...SummarizeOption,
 ) (indexing.MemoryData, error) {
-	documents := make([]string, len(segment.Memories))
-
-	for i := range segment.Memories {
-		documents[i] = string(segment.Memories[i].Data.Data)
+	opts := SummarizeOptions{
+		Temperature: 0.0,
+		MaxTokens:   256,
 	}
 
-	joinedDocuments := strings.Join(documents, "\n\n")
+	for _, opt := range options {
+		opt(&opts)
+	}
 
 	result, err := gs.Client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model:       gs.Model,
-		Temperature: 0.70,
-		MaxTokens:   maxTokens,
+		Temperature: opts.Temperature,
+		MaxTokens:   opts.MaxTokens,
 
 		Messages: []openai.ChatCompletionMessage{
 			{
@@ -53,8 +48,8 @@ func (gs *ChatGptSummarizer) Summarize(
 				Role: "user",
 				Content: fmt.Sprintf(
 					"Please summarize the document excerpts below optimizing the signal to noise ratio with regards to the following context: %s\nDocuments:%s",
-					contextHint,
-					joinedDocuments,
+					opts.ContextHint,
+					document,
 				),
 			},
 			{
@@ -74,5 +69,5 @@ func (gs *ChatGptSummarizer) Summarize(
 
 	choice := result.Choices[0]
 
-	return indexing.NewMemoryData([]byte(choice.Message.Content)), nil
+	return indexing.NewMemoryData(choice.Message.Content), nil
 }

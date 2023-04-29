@@ -15,8 +15,9 @@ type Session struct {
 	context indexing.IndexContext
 	options indexing.SessionOptions
 
-	logMutex sync.RWMutex
-	log      []indexing.Memory
+	commitMutex sync.RWMutex
+	logMutex    sync.RWMutex
+	log         []indexing.Memory
 }
 
 func NewSession(ctx context.Context, index *Index, options indexing.SessionOptions) (*Session, error) {
@@ -46,6 +47,9 @@ func (s *Session) Options() indexing.SessionOptions {
 }
 
 func (s *Session) Branch(ctx context.Context, clock, height int64) (indexing.Session, error) {
+	s.commitMutex.RLock()
+	defer s.commitMutex.RUnlock()
+
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 
@@ -113,6 +117,9 @@ func (s *Session) UpdateMemoryData(data indexing.MemoryData) error {
 }
 
 func (s *Session) Discard() error {
+	s.commitMutex.Lock()
+	defer s.commitMutex.Unlock()
+
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 
@@ -130,15 +137,33 @@ func (s *Session) Discard() error {
 }
 
 func (s *Session) Merge() error {
-	s.logMutex.Lock()
-	defer s.logMutex.Unlock()
+	s.commitMutex.Lock()
+	defer s.commitMutex.Unlock()
 
-	head := s.current.Fork(1, -1)
+	doMerge := func() (*indexing.MemorySegment, indexing.Memory) {
+		s.logMutex.Lock()
+		defer s.logMutex.Unlock()
 
-	s.appendToLog(head)
+		if len(s.log) == 0 {
+			return nil, indexing.Memory{}
+		}
 
-	targets := s.cloneLog()
-	segment := indexing.NewMemorySegment(targets...)
+		head := s.current.Fork(1, -1)
+
+		s.appendToLog(head)
+
+		targets := s.cloneLog()
+
+		s.discardLog()
+
+		return indexing.NewMemorySegment(targets...), head
+	}
+
+	segment, head := doMerge()
+
+	if segment == nil {
+		return nil
+	}
 
 	rctx := &indexing.ReducerContext{
 		Context: s.context.Context(),
@@ -152,11 +177,12 @@ func (s *Session) Merge() error {
 		return err
 	}
 
+	s.logMutex.Lock()
+	defer s.logMutex.Unlock()
+
 	if err := s.context.AppendSegment(reduced); err != nil {
 		return err
 	}
-
-	s.discardLog()
 
 	mergeTargetPtr := s.appendToLog(head)
 

@@ -9,7 +9,8 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/greenboxal/aip/pkg/indexing"
-	"github.com/greenboxal/aip/pkg/indexing/reducers"
+	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
+	"github.com/greenboxal/aip/pkg/utils"
 )
 
 type Storage struct {
@@ -60,7 +61,7 @@ func (s *Storage) AppendSegment(ctx context.Context, segment *indexing.MemorySeg
 	clocks := make([]int64, 0, len(segment.Memories))
 
 	for _, memory := range segment.Memories {
-		chunks, err := reducers.SplitTextIntoChunks(string(memory.Data.Data), 512, 64)
+		chunks, err := chunkers.SplitTextIntoChunks(string(memory.Data.Text), 512, 64)
 
 		if err != nil {
 			return err
@@ -70,15 +71,15 @@ func (s *Storage) AppendSegment(ctx context.Context, segment *indexing.MemorySeg
 		lastIndex := firstIndex + len(chunks)
 		chunkIndex = lastIndex
 
-		allChunks = reducers.Grow(allChunks, len(chunks))
-		segmentIds = reducers.Grow(segmentIds, len(chunks))
-		memoryIds = reducers.Grow(memoryIds, len(chunks))
-		parentIds = reducers.Grow(parentIds, len(chunks))
-		branchIds = reducers.Grow(branchIds, len(chunks))
-		rootIds = reducers.Grow(rootIds, len(chunks))
-		timestamps = reducers.Grow(timestamps, len(chunks))
-		clocks = reducers.Grow(clocks, len(chunks))
-		heights = reducers.Grow(heights, len(chunks))
+		allChunks = utils.Grow(allChunks, len(chunks))
+		segmentIds = utils.Grow(segmentIds, len(chunks))
+		memoryIds = utils.Grow(memoryIds, len(chunks))
+		parentIds = utils.Grow(parentIds, len(chunks))
+		branchIds = utils.Grow(branchIds, len(chunks))
+		rootIds = utils.Grow(rootIds, len(chunks))
+		timestamps = utils.Grow(timestamps, len(chunks))
+		clocks = utils.Grow(clocks, len(chunks))
+		heights = utils.Grow(heights, len(chunks))
 
 		for i := firstIndex; i < lastIndex; i++ {
 			allChunks[i] = chunks[i-firstIndex]

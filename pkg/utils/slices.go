@@ -1,4 +1,4 @@
-package reducers
+package utils
 
 func Grow[S ~[]E, E any](s S, n int) S {
 	if n < 0 {

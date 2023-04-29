@@ -1,35 +1,9 @@
 package indexing
 
 import (
-	"github.com/ipfs/go-cid"
-	"github.com/multiformats/go-multihash"
-
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/indexing/llm"
 )
-
-type MemoryDataID struct {
-	forddb.CidResourceID[*Memory]
-}
-
-type MemoryData struct {
-	forddb.ResourceMetadata[MemoryDataID, *MemoryData] `json:"metadata"`
-
-	Cid  cid.Cid `json:"cid"`
-	Data []byte  `json:"data"`
-}
-
-func NewMemoryData(data []byte) MemoryData {
-	h, err := multihash.Sum(data, multihash.SHA2_256, -1)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return MemoryData{
-		Cid:  cid.NewCidV1(cid.Raw, h),
-		Data: data,
-	}
-}
 
 type MemoryID struct {
 	forddb.StringResourceID[*Memory]
@@ -91,49 +65,11 @@ func (m *Memory) Fork(clock, height int64) Memory {
 	}
 }
 
-type MemorySegmentID struct {
-	forddb.StringResourceID[*Memory]
-}
-
-type MemorySegment struct {
-	forddb.ResourceMetadata[MemorySegmentID, *MemorySegment] `json:"metadata"`
-
-	Memories []Memory
-}
-
-func (ms *MemorySegment) Slice(start, end int) *MemorySegment {
-	return NewMemorySegment(ms.Memories[start:end]...)
-}
-
-func (ms *MemorySegment) PartitionEven(count int) []*MemorySegment {
-	partitionSize := len(ms.Memories) / count
-	partitions := make([]*MemorySegment, count)
-
-	for i := range partitions {
-		partitions[i] = ms.Slice(
-			min(i*partitionSize, len(ms.Memories)),
-			min((i+1)*partitionSize, len(ms.Memories)),
-		)
-	}
-
-	return partitions
-}
-
-func NewMemorySegment(memories ...Memory) *MemorySegment {
-	return &MemorySegment{
-		Memories: memories,
-	}
+func (m *Memory) CalculateTokenCount(tokenizer llm.BasicTokenizer) (int, error) {
+	return tokenizer.Count(m.Data.Text)
 }
 
 func init() {
 	forddb.DefineResourceType[MemoryID, *Memory]("memory")
 	forddb.DefineResourceType[MemorySegmentID, *MemorySegment]("memory_segment")
-}
-
-func min(i int, i2 int) int {
-	if i < i2 {
-		return i
-	}
-
-	return i2
 }

@@ -1,4 +1,4 @@
-package reducers
+package chunkers
 
 import "github.com/pkoukk/tiktoken-go"
 

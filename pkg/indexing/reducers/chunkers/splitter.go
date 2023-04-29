@@ -1,7 +1,8 @@
-package reducers
+package chunkers
 
 import (
 	"github.com/greenboxal/aip/pkg/indexing"
+	"github.com/greenboxal/aip/pkg/utils"
 )
 
 func SplitSegment(segment *indexing.MemorySegment, maxTokens int, maxOverlap int) (*indexing.MemorySegment, int, error) {
@@ -10,7 +11,7 @@ func SplitSegment(segment *indexing.MemorySegment, maxTokens int, maxOverlap int
 	memories := make([]indexing.Memory, 0, len(segment.Memories))
 
 	for _, m := range segment.Memories {
-		chunks, err := SplitTextIntoChunks(string(m.Data.Data), maxTokens, maxOverlap)
+		chunks, err := SplitTextIntoChunks(m.Data.Text, maxTokens, maxOverlap)
 
 		if err != nil {
 			return nil, totalTokens, err
@@ -19,7 +20,7 @@ func SplitSegment(segment *indexing.MemorySegment, maxTokens int, maxOverlap int
 		baseIndex := index
 		index += len(chunks)
 
-		memories = Grow(memories, len(chunks))
+		memories = utils.Grow(memories, len(chunks))
 
 		for i, chunk := range chunks {
 			pointer := indexing.Absolute(
@@ -27,7 +28,7 @@ func SplitSegment(segment *indexing.MemorySegment, maxTokens int, maxOverlap int
 				indexing.Relative(m.Clock, m.Height),
 			)
 
-			data := indexing.NewMemoryData([]byte(chunk))
+			data := indexing.NewMemoryData(chunk)
 
 			memories[baseIndex+i] = indexing.NewMemory(pointer, data)
 
