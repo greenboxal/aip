@@ -40,8 +40,7 @@ func (ictx *indexContext) ResolveMemoryRelative(options indexing.ResolveOptions)
 }
 
 func (ictx *indexContext) AppendSegment(segment *indexing.MemorySegment) error {
-	//TODO implement me
-	panic("implement me")
+	return ictx.index.storage.AppendSegment(ictx.ctx, segment)
 }
 
 func newIndexContext(ctx context.Context, index *Index) *indexContext {

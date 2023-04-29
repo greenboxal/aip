@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sashabaranov/go-openai"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -16,6 +17,7 @@ import (
 	"github.com/greenboxal/aip/pkg/daemon"
 	"github.com/greenboxal/aip/pkg/ford"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/indexing/storage/milvus"
 	"github.com/greenboxal/aip/pkg/network/p2p"
 )
 
@@ -29,11 +31,17 @@ func main() {
 		ford.Module,
 		daemon.Module,
 
+		fx.Provide(func() *openai.Client {
+			return openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+		}),
+
+		fx.Provide(milvus.NewStorage),
+
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *api.API) error {
 			if err := forddb.ImportPath(db, "./data"); err != nil {
 				return err
 			}
-		
+
 			return d.Run()
 		}),
 	)

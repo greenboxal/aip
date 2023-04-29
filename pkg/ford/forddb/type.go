@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"github.com/ipld/go-ipld-prime/schema"
 )
 
@@ -147,17 +146,17 @@ func (r *resourceType[ID, T]) ResourceType() reflect.Type {
 }
 
 func (r *resourceType[ID, T]) initializeSchema(ts *ResourceTypeSystem) {
-	idType := ts.SchemaForType(r.idType)
-	idPrototype := bindnode.Prototype((*T)(nil), idType)
+	//idType := ts.SchemaForType(r.idType)
+	//idPrototype := bindnode.Prototype((*T)(nil), idType)
 
-	r.idSchemaType = idType
-	r.idPrototype = idPrototype
+	//r.idSchemaType = idType
+	//r.idPrototype = idPrototype
 
-	schemaType := ts.SchemaForType(r.resourceType)
-	resourcePrototype := bindnode.Prototype((*T)(nil), schemaType)
+	//schemaType := ts.SchemaForType(r.resourceType)
+	//resourcePrototype := bindnode.Prototype((*T)(nil), schemaType)
 
-	r.resourceSchemaType = schemaType
-	r.resourcePrototype = resourcePrototype
+	//r.resourceSchemaType = schemaType
+	//r.resourcePrototype = resourcePrototype
 }
 
 func derefType[T any]() reflect.Type {

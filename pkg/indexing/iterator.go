@@ -5,6 +5,7 @@ type Iterator interface {
 	BranchMemoryID() MemoryID
 	ParentMemoryID() MemoryID
 	CurrentMemoryID() MemoryID
+	MemoryAddress() MemoryAbsoluteAddress
 
 	SeekRelative(offset int) error
 	SeekTo(id MemoryID) error

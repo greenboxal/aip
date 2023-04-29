@@ -20,24 +20,32 @@ type Session struct {
 }
 
 func NewSession(ctx context.Context, index *Index, options indexing.SessionOptions) (*Session, error) {
-	indexContext, err := index.CreateContext(ctx)
+	ictx, err := index.CreateContext(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Session{
+	sess := &Session{
 		index:   index,
-		context: indexContext,
+		context: ictx,
 		options: options,
-	}, nil
+	}
+
+	sess.Iterator = NewIterator(index, ictx)
+
+	sess.currentMemoryID = options.InitialMemoryID
+	sess.rootMemoryID = options.RootMemoryID
+	sess.branchMemoryID = options.BranchMemoryID
+
+	return sess, nil
 }
 
 func (s *Session) Options() indexing.SessionOptions {
 	return s.options
 }
 
-func (s *Session) Branch(ctx context.Context, clock, height uint64) (indexing.Session, error) {
+func (s *Session) Branch(ctx context.Context, clock, height int64) (indexing.Session, error) {
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 
@@ -72,21 +80,36 @@ func (s *Session) Split(ctx context.Context) (indexing.Session, error) {
 	return s.Branch(ctx, 0, 0)
 }
 
-func (s *Session) Push(data indexing.MemoryData) error {
+func (s *Session) Push(data indexing.MemoryData) (indexing.Memory, error) {
+	var head indexing.Memory
+
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 
-	head := s.current.Fork(1, 0)
-
-	head.Data = data
+	if s.current == nil {
+		head = indexing.NewMemory(s.MemoryAddress(), data)
+	} else {
+		head = s.current.Fork(1, 0)
+		head.Data = data
+	}
 
 	headPtr := s.appendToLog(head)
 
-	return s.setCurrent(headPtr)
+	if err := s.setCurrent(headPtr); err != nil {
+		return indexing.Memory{}, err
+	}
+
+	return head, nil
 }
 
 func (s *Session) UpdateMemoryData(data indexing.MemoryData) error {
-	return s.Push(data)
+	_, err := s.Push(data)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Session) Discard() error {
@@ -111,24 +134,36 @@ func (s *Session) Merge() error {
 	defer s.logMutex.Unlock()
 
 	head := s.current.Fork(1, -1)
-	headPtr := s.appendToLog(head)
+
+	s.appendToLog(head)
 
 	targets := s.cloneLog()
 	segment := indexing.NewMemorySegment(targets...)
 
-	if err := s.context.AppendSegment(segment); err != nil {
+	rctx := &indexing.ReducerContext{
+		Context: s.context.Context(),
+		Session: s,
+		Segment: segment,
+	}
+
+	reduced, err := s.index.cfg.Reducer.ReduceSegment(rctx)
+
+	if err != nil {
+		return err
+	}
+
+	if err := s.context.AppendSegment(reduced); err != nil {
 		return err
 	}
 
 	s.discardLog()
 
-	return s.setCurrent(headPtr)
+	mergeTargetPtr := s.appendToLog(head)
+
+	return s.setCurrent(mergeTargetPtr)
 }
 
 func (s *Session) appendToLog(memory indexing.Memory) *indexing.Memory {
-	s.logMutex.Lock()
-	defer s.logMutex.Unlock()
-
 	index := len(s.log)
 	s.log = append(s.log, memory)
 

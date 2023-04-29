@@ -15,9 +15,10 @@ type Session interface {
 
 	Options() SessionOptions
 
-	Branch(ctx context.Context, clock, height uint64) (Session, error)
+	Branch(ctx context.Context, clock, height int64) (Session, error)
 	Fork(ctx context.Context) (Session, error)
 	Split(ctx context.Context) (Session, error)
+	Push(data MemoryData) (Memory, error)
 
 	UpdateMemoryData(data MemoryData) error
 

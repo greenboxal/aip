@@ -5,6 +5,7 @@ import (
 )
 
 type IndexConfiguration struct {
+	Reducer Reducer
 }
 
 type Index interface {

@@ -42,7 +42,14 @@ func (q *GraphQL) initializeTypeSystem() {
 	q.typeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
 
 	ts := forddb.TypeSystem()
-	fields := graphql.Fields{}
+	fields := graphql.Fields{
+		"empty": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return "", nil
+			},
+		},
+	}
 
 	config := graphql.ObjectConfig{
 		Name:   "RootQuery",
@@ -60,6 +67,10 @@ func (q *GraphQL) initializeTypeSystem() {
 
 		name := typ.Name()
 		name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+		if len(name) > 0 {
+			continue
+		}
 
 		gqlType := q.lookupType(typ)
 
@@ -163,6 +174,11 @@ func (q *GraphQL) lookupTypeFromReflection(typ reflect.Type) (result graphql.Out
 		result = graphql.NewList(elem)
 
 	case reflect.Slice:
+		if typ.Elem().Kind() == reflect.Uint8 {
+			result = graphql.String
+			break
+		}
+
 		elem := q.lookupTypeFromReflection(typ.Elem())
 
 		result = graphql.NewList(elem)

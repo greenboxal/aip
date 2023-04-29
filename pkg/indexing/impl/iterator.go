@@ -19,8 +19,22 @@ type Iterator struct {
 	current *indexing.Memory
 }
 
+func NewIterator(index *Index, ctx indexing.IndexContext) *Iterator {
+	return &Iterator{
+		index:   index,
+		context: ctx,
+	}
+}
+
 func (s *Iterator) Index() indexing.Index {
 	return s.index
+}
+
+func (s *Iterator) MemoryAddress() indexing.MemoryAbsoluteAddress {
+	return indexing.Absolute(
+		indexing.Anchors(s.rootMemoryID, s.branchMemoryID, s.parentMemoryID),
+		indexing.Relative(s.currentClock, s.currentHeight),
+	)
 }
 
 func (s *Iterator) RootMemoryID() indexing.MemoryID {
@@ -63,7 +77,7 @@ func (s *Iterator) GetCurrentMemory() indexing.Memory {
 
 func (s *Iterator) GetCurrentMemoryData() indexing.MemoryData {
 	if s.current == nil {
-		return nil
+		return indexing.MemoryData{}
 	}
 
 	return s.current.Data
