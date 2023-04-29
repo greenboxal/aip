@@ -26,6 +26,7 @@ func NewServer(
 	logger *zap.SugaredLogger,
 	rpc *jsonrpc.Handler,
 	resources *ResourcesAPI,
+	gql *GraphQL,
 ) *API {
 
 	api := &API{}
@@ -40,6 +41,7 @@ func NewServer(
 	api.mux.Use(middleware.Heartbeat("/ping"))
 
 	api.mux.Mount("/rpc/v1", rpc)
+	api.mux.Mount("/graphql/v1", gql)
 
 	api.mux.Route("/api/v1", func(r chi.Router) {
 		r.Use(middleware.PathRewrite("/api/v1", ""))

@@ -3,11 +3,74 @@ package forddb
 import (
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/pelletier/go-toml/v2"
 	"sigs.k8s.io/yaml"
 )
+
+func TypeSystem() *ResourceTypeSystem {
+	return typeSystem
+}
+
+func IsBasicResource(t reflect.Type) bool {
+	t = derefPointer(t)
+
+	if t.Implements(basicResourceType) {
+		return true
+	}
+
+	if reflect.PtrTo(t).Implements(basicResourceType) {
+		return true
+	}
+
+	return false
+}
+
+func IsBasicResourcePointer(t reflect.Type) bool {
+	t = derefPointer(t)
+
+	if t.Implements(basicResourcePointerType) {
+		return true
+	}
+
+	if reflect.PtrTo(t).Implements(basicResourcePointerType) {
+		return true
+	}
+
+	return false
+}
+
+func IsBasicResourceSlot(t reflect.Type) bool {
+	t = derefPointer(t)
+
+	if t.Implements(basicResourceSlotType) {
+		return true
+	}
+
+	if reflect.PtrTo(t).Implements(basicResourceSlotType) {
+		return true
+	}
+
+	return false
+}
+
+func IsBasicResourceId(t reflect.Type) bool {
+	t = derefPointer(t)
+
+	if t.Implements(basicResourceIdType) {
+		return true
+	}
+
+	if reflect.PtrTo(t).Implements(basicResourceIdType) {
+		return true
+	}
+
+	return false
+}
 
 func ImportPath(db Database, path string) error {
 	var merr error
@@ -74,4 +137,14 @@ func isSupportedFile(path string) bool {
 	}
 
 	return false
+}
+
+var NormalizeTypeNameRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
+
+func normalizedTypeName(typ reflect.Type) schema.TypeName {
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	return NormalizeTypeNameRegex.ReplaceAllString(typ.Name(), "")
 }

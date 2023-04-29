@@ -1,11 +1,6 @@
 import os
-import sys
-import time
-
 import click
 import readline
-import json
-
 import toml
 
 from aip.indexing import Index
@@ -39,9 +34,8 @@ Current Interaction:
 @click.option("--namespace", default=None, help="Index namespace")
 @click.option("--ai-identity", "-i", default=None, help="AI agent name")
 @click.option("--profile", "-p", default=None, help="AI agent profile", type=click.Path(exists=True, dir_okay=False))
-@click.option("--raw", is_flag=True, default=False, help="Do not prepend input prompt chat role")
 @click.option("--verbose", is_flag=True, default=False, help="Enable verbose logging")
-def chat(index_name, namespace, ai_identity, profile, verbose, raw):
+def chat(index_name, namespace, ai_identity, profile, verbose):
     if profile is not None:
         profile = toml.load(profile)
     else:
@@ -65,41 +59,15 @@ def chat(index_name, namespace, ai_identity, profile, verbose, raw):
 
     while True:
         role = "Human"
-
-        reply = {
-            "id": str(time.time_ns()),
-            "from": profile.metadata.name,
-            "thread_id": None,
-            "reply_to_id": None,
-            "channel": None,
-        }
-
         line = input("")
 
         if 'Exit' == line.rstrip():
             break
 
-        if raw:
-            msg = json.loads(line)
-            reply["reply_to_id"] = msg["id"]
-            reply["thread_id"] = msg["thread_id"]
-            reply["channel"] = msg["channel"]
-
-            if reply["thread_id"] is None or reply["thread_id"] == "":
-                reply["thread_id"] = msg["id"]
-
-            role = msg["from"]
-            line = msg["text"]
-
         try:
             result = agent.reflect(role, line)
         except Exception as e:
             result = "ERROR: %s" % e
-
-        reply["text"] = result
-
-        if raw:
-            result = json.dumps(reply)
 
         print(result)
 

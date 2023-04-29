@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"reflect"
 
 	"github.com/mashingan/smapping"
 )
 
 type RawResource = smapping.Mapped
 
-var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
+func Clone[T BasicResource](resource T) T {
+	return CloneResource(resource).(T)
+}
 
 func CloneResource(resource BasicResource) BasicResource {
 	rawResource := smapping.MapTags(resource, "json")

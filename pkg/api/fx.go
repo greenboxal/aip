@@ -9,6 +9,7 @@ var Module = fx.Module(
 	fx.Provide(NewRpcServer),
 
 	fx.Provide(NewResourcesAPI),
+	fx.Provide(NewGraphQL),
 
 	ProvideRpcService[*SupervisorAPI]("supervisor", NewSupervisorApi),
 	ProvideRpcService[*CommunicationAPI]("comms", NewCommunicationApi),

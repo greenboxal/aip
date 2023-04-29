@@ -1,46 +1,9 @@
 package forddb
 
 import (
-	"encoding/json"
 	"reflect"
 	"time"
 )
-
-type BasicResourceID interface {
-	BasicResourceID() BasicResourceID
-	String() string
-	MarshalJSON() ([]byte, error)
-}
-
-type ResourceID[T BasicResource] interface {
-	BasicResourceID
-}
-
-type StringResourceID[T BasicResource] string
-
-func (s StringResourceID[T]) BasicResourceID() BasicResourceID {
-	return s
-}
-
-func (s StringResourceID[T]) String() string {
-	return string(s)
-}
-
-func (s StringResourceID[T]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(string(s))
-}
-
-func (s *StringResourceID[T]) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, (*string)(s))
-}
-
-func (s *StringResourceID[T]) setValue(value string) {
-	*s = StringResourceID[T](value)
-}
-
-type stringResourceID interface {
-	setValue(value string)
-}
 
 type IResourceMetadata interface {
 	GetResourceID() BasicResourceID
@@ -61,6 +24,7 @@ type Resource[ID BasicResourceID] interface {
 }
 
 type BasicResourceMetadata struct {
+	Namespace string    `json:"namespace"`
 	Name      string    `json:"name"`
 	Version   int       `json:"version"`
 	CreatedAt time.Time `json:"created_at"`

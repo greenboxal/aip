@@ -3,6 +3,9 @@ package forddb
 import (
 	"encoding/json"
 	"reflect"
+
+	"github.com/ipld/go-ipld-prime/node/bindnode"
+	"github.com/ipld/go-ipld-prime/schema"
 )
 
 type ResourceTypeID string
@@ -48,6 +51,14 @@ type BasicResourceType interface {
 
 	New() BasicResource
 	MakeId(name string) BasicResourceID
+
+	SchemaIdType() schema.Type
+	SchemaIdPrototype() schema.TypedPrototype
+
+	SchemaResourceType() schema.Type
+	SchemaResourcePrototype() schema.TypedPrototype
+
+	initializeSchema(ts *ResourceTypeSystem)
 }
 
 type ResourceType[ID ResourceID[T], T Resource[ID]] interface {
@@ -79,6 +90,28 @@ type resourceType[ID ResourceID[T], T Resource[ID]] struct {
 	resourceType reflect.Type
 
 	isRuntimeOnly bool
+
+	idSchemaType schema.Type
+	idPrototype  schema.TypedPrototype
+
+	resourceSchemaType schema.Type
+	resourcePrototype  schema.TypedPrototype
+}
+
+func (r *resourceType[ID, T]) SchemaResourceType() schema.Type {
+	return r.resourceSchemaType
+}
+
+func (r *resourceType[ID, T]) SchemaResourcePrototype() schema.TypedPrototype {
+	return r.resourcePrototype
+}
+
+func (r *resourceType[ID, T]) SchemaIdType() schema.Type {
+	return r.idSchemaType
+}
+
+func (r *resourceType[ID, T]) SchemaIdPrototype() schema.TypedPrototype {
+	return r.idPrototype
 }
 
 func (r *resourceType[ID, T]) New() BasicResource {
@@ -113,6 +146,20 @@ func (r *resourceType[ID, T]) ResourceType() reflect.Type {
 	return r.resourceType
 }
 
+func (r *resourceType[ID, T]) initializeSchema(ts *ResourceTypeSystem) {
+	idType := ts.SchemaForType(r.idType)
+	idPrototype := bindnode.Prototype((*T)(nil), idType)
+
+	r.idSchemaType = idType
+	r.idPrototype = idPrototype
+
+	schemaType := ts.SchemaForType(r.resourceType)
+	resourcePrototype := bindnode.Prototype((*T)(nil), schemaType)
+
+	r.resourceSchemaType = schemaType
+	r.resourcePrototype = resourcePrototype
+}
+
 func derefType[T any]() reflect.Type {
 	t := reflect.TypeOf((*T)(nil)).Elem()
 
@@ -121,4 +168,16 @@ func derefType[T any]() reflect.Type {
 	}
 
 	return t
+}
+
+func derefPointer(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t
+}
+
+type stringResourceID interface {
+	setValue(value string)
 }
