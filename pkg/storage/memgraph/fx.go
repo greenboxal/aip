@@ -19,7 +19,7 @@ func WithMemgraphStorage() fx.Option {
 	return fx.Options(
 		Module,
 
-		fx.Provide(func(db *Storage) forddb.Database {
+		fx.Provide(func(db *Storage) forddb.Storage {
 			return db
 		}),
 	)

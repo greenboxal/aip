@@ -3,10 +3,13 @@ package forddb
 import (
 	"encoding"
 	"encoding/json"
+	"hash/fnv"
 	"reflect"
 
 	"github.com/ipfs/go-cid"
+	"github.com/ipld/go-ipld-prime"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	"github.com/multiformats/go-multihash"
 )
 
 type BasicResourceID interface {
@@ -14,18 +17,26 @@ type BasicResourceID interface {
 	encoding.TextMarshaler
 	encoding.BinaryMarshaler
 
-	BasicResourceID() BasicResourceID
+	BasicResourceType() BasicResourceType
+
+	AsBasicResourceID() BasicResourceID
+	AsCid() cid.Cid
+	AsLink() ipld.Link
+
+	LinkPrototype() ipld.LinkPrototype
+
 	String() string
-	MarshalJSON() ([]byte, error)
+
+	Hash64() uint64
 }
 
 type ResourceID[T BasicResource] interface {
 	BasicResourceID
 }
 
-type StringResourceID[T BasicResource] string
-
 type IStringResourceID interface {
+	BasicResourceID
+
 	setValueString(value string)
 }
 
@@ -37,20 +48,34 @@ func NewStringID[ID BasicResourceID](name string) (result ID) {
 	return idVal.Elem().Interface().(ID)
 }
 
+type StringResourceID[T BasicResource] string
+
+func (s StringResourceID[T]) BasicResourceType() BasicResourceType {
+	return typeSystem.LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
+}
+
+func (s StringResourceID[T]) AsCid() cid.Cid {
+	link := s.AsLink()
+
+	return link.(cidlink.Link).Cid
+}
+
+func (s StringResourceID[T]) AsLink() ipld.Link {
+	h, err := multihash.Sum([]byte(s), multihash.SHA2_256, -1)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return s.BasicResourceType().SchemaLinkPrototype().BuildLink(h)
+}
+
 func (s StringResourceID[T]) MarshalText() (text []byte, err error) {
 	return []byte(s), nil
 }
 
 func (s StringResourceID[T]) MarshalBinary() (data []byte, err error) {
 	return []byte(s), nil
-}
-
-func (s StringResourceID[T]) BasicResourceID() BasicResourceID {
-	return s
-}
-
-func (s StringResourceID[T]) String() string {
-	return string(s)
 }
 
 func (s StringResourceID[T]) MarshalJSON() ([]byte, error) {
@@ -61,17 +86,67 @@ func (s *StringResourceID[T]) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*string)(s))
 }
 
+func (s *StringResourceID[T]) UnmarshalText(data []byte) error {
+	*(*string)(s) = string(data)
+
+	return nil
+}
+
+func (s *StringResourceID[T]) UnmarshalBinary(data []byte) error {
+	*(*string)(s) = string(data)
+
+	return nil
+}
+
+func (s StringResourceID[T]) AsBasicResourceID() BasicResourceID {
+	return s
+}
+
+func (s StringResourceID[T]) String() string {
+	return string(s)
+}
+
+func (s StringResourceID[T]) Hash64() uint64 {
+	h := fnv.New64()
+
+	_, err := h.Write([]byte(s.String()))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return h.Sum64()
+}
+
 func (s *StringResourceID[T]) setValueString(value string) {
 	*s = StringResourceID[T](value)
 }
 
-type CidResourceID[T BasicResource] cid.Cid
+func (s StringResourceID[T]) LinkPrototype() ipld.LinkPrototype {
+	return s.BasicResourceType().SchemaLinkPrototype()
+}
 
 type ICidResourceID interface {
+	BasicResourceID
+
 	setValueCid(value cid.Cid)
 }
 
-func (s CidResourceID[T]) BasicResourceID() BasicResourceID {
+type CidResourceID[T BasicResource] cid.Cid
+
+func (s CidResourceID[T]) BasicResourceType() BasicResourceType {
+	return typeSystem.LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
+}
+
+func (s CidResourceID[T]) AsCid() cid.Cid {
+	return cid.Cid(s)
+}
+
+func (s CidResourceID[T]) AsLink() ipld.Link {
+	return cidlink.Link{Cid: s.AsCid()}
+}
+
+func (s CidResourceID[T]) AsBasicResourceID() BasicResourceID {
 	return s
 }
 
@@ -117,13 +192,49 @@ func (s *CidResourceID[T]) setValueCid(value cid.Cid) {
 	*s = CidResourceID[T](value)
 }
 
-type LinkResourceID[T BasicResource] cidlink.Link
+func (s CidResourceID[T]) LinkPrototype() ipld.LinkPrototype {
+	return s.BasicResourceType().SchemaLinkPrototype()
+}
+
+func (s CidResourceID[T]) Hash64() uint64 {
+	h := fnv.New64()
+
+	_, err := h.Write(cid.Cid(s).Bytes())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return h.Sum64()
+}
 
 type ILinkResourceID interface {
+	BasicResourceID
+
 	setValueLink(value cidlink.Link)
 }
 
-func (s LinkResourceID[T]) BasicResourceID() BasicResourceID {
+type LinkResourceID[T BasicResource] cidlink.Link
+
+func (s LinkResourceID[T]) BasicResourceType() BasicResourceType {
+	return typeSystem.LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
+}
+
+func (s LinkResourceID[T]) AsCid() cid.Cid {
+	link := s.AsLink()
+
+	if l, ok := link.(cidlink.Link); ok {
+		return l.Cid
+	}
+
+	panic("unsupported")
+}
+
+func (s LinkResourceID[T]) AsLink() ipld.Link {
+	return cidlink.Link(s)
+}
+
+func (s LinkResourceID[T]) AsBasicResourceID() BasicResourceID {
 	return s
 }
 
@@ -157,4 +268,20 @@ func (s *LinkResourceID[T]) UnmarshalBinary(data []byte) error {
 
 func (s *LinkResourceID[T]) setValueLink(value cidlink.Link) {
 	*s = LinkResourceID[T](value)
+}
+
+func (s LinkResourceID[T]) LinkPrototype() ipld.LinkPrototype {
+	return s.BasicResourceType().SchemaLinkPrototype()
+}
+
+func (s LinkResourceID[T]) Hash64() uint64 {
+	h := fnv.New64()
+
+	_, err := h.Write(cidlink.Link(s).Bytes())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return h.Sum64()
 }

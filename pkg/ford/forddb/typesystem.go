@@ -38,7 +38,7 @@ func NewResourceTypeSystem() *ResourceTypeSystem {
 
 	typeType.isRuntimeOnly = true
 	typeType.ResourceMetadata.Name = "type"
-	typeType.ResourceMetadata.ID = typeType.MakeId(typeType.ResourceMetadata.Name).(ResourceTypeID)
+	typeType.ResourceMetadata.ID = typeType.CreateID(typeType.ResourceMetadata.Name).(ResourceTypeID)
 
 	rts := &ResourceTypeSystem{
 		resourceTypes:   make(map[ResourceTypeID]BasicResourceType, 32),
@@ -55,7 +55,7 @@ func NewResourceTypeSystem() *ResourceTypeSystem {
 }
 
 func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
-	rts.resourceTypes[t.ID()] = t
+	rts.resourceTypes[t.GetID()] = t
 	rts.idTypeMap[t.IDType()] = t
 	rts.resourceTypeMap[t.ResourceType()] = t
 

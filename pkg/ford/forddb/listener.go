@@ -21,7 +21,7 @@ type TypedListenerFunc[ID ResourceID[T], T Resource[ID]] func(id ID, previous, c
 
 func (t TypedListenerFunc[ID, T]) OnResourceChanged(id BasicResourceID, previous, current BasicResource) {
 	myType := reflect.TypeOf((*T)(nil)).Elem()
-	myTypeId := typeSystem.LookupByResourceType(myType).ID()
+	myTypeId := typeSystem.LookupByResourceType(myType).GetID()
 
 	if previous != nil && previous.GetType() != myTypeId {
 		return

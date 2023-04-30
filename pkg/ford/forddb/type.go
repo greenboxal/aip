@@ -1,71 +1,39 @@
 package forddb
 
 import (
-	"encoding/json"
 	"reflect"
 	"sync"
 
+	"github.com/ipfs/go-cid"
+	"github.com/ipld/go-ipld-prime"
+	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"github.com/ipld/go-ipld-prime/schema"
+	"github.com/multiformats/go-multicodec"
+	"github.com/multiformats/go-multihash"
 )
-
-type ResourceTypeID string
-
-func (s ResourceTypeID) MarshalText() (text []byte, err error) {
-	return []byte(s), nil
-}
-
-func (s ResourceTypeID) MarshalBinary() (data []byte, err error) {
-	return []byte(s), nil
-}
-
-func (s ResourceTypeID) BasicResourceID() BasicResourceID {
-	return s
-}
-
-func (s ResourceTypeID) String() string {
-	return string(s)
-}
-
-func (s ResourceTypeID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(string(s))
-}
-
-func (s *ResourceTypeID) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, (*string)(s))
-}
-
-func (s *ResourceTypeID) setValueString(value string) {
-	*s = ResourceTypeID(value)
-}
-
-func (i ResourceTypeID) Name() string {
-	return i.String()
-}
-
-func (i ResourceTypeID) Type() BasicResourceType {
-	return typeSystem.LookupByID(i)
-}
 
 type BasicResourceType interface {
 	BasicResource
 
 	GetID() ResourceTypeID
-
-	ID() ResourceTypeID
 	Name() string
 	IDType() reflect.Type
 	ResourceType() reflect.Type
 	IsRuntimeOnly() bool
 
-	New() BasicResource
-	MakeId(name string) BasicResourceID
+	CreateInstance() BasicResource
+	CreateID(name string) BasicResourceID
 
 	SchemaIdType() schema.Type
 	SchemaIdPrototype() schema.TypedPrototype
 
 	SchemaResourceType() schema.Type
 	SchemaResourcePrototype() schema.TypedPrototype
+
+	SchemaLinkPrototype() ipld.LinkPrototype
+
+	TypeSystem() *ResourceTypeSystem
 
 	initializeSchema(ts *ResourceTypeSystem, options ...bindnode.Option)
 }
@@ -108,6 +76,21 @@ type resourceType[ID ResourceID[T], T Resource[ID]] struct {
 
 	m        sync.Mutex
 	universe *ResourceTypeSystem
+}
+
+func (r *resourceType[ID, T]) SchemaLinkPrototype() ipld.LinkPrototype {
+	return cidlink.LinkPrototype{
+		Prefix: cid.Prefix{
+			Version:  1,
+			Codec:    uint64(multicodec.Raw),
+			MhType:   multihash.SHA2_256,
+			MhLength: 32,
+		},
+	}
+}
+
+func (r *resourceType[ID, T]) TypeSystem() *ResourceTypeSystem {
+	return r.universe
 }
 
 func (r *resourceType[ID, T]) SchemaResourceType() schema.Type {
@@ -170,11 +153,11 @@ func (r *resourceType[ID, T]) SchemaIdPrototype() schema.TypedPrototype {
 	return r.idPrototype
 }
 
-func (r *resourceType[ID, T]) New() BasicResource {
+func (r *resourceType[ID, T]) CreateInstance() BasicResource {
 	return reflect.New(r.resourceType).Interface().(BasicResource)
 }
 
-func (r *resourceType[ID, T]) MakeId(name string) BasicResourceID {
+func (r *resourceType[ID, T]) CreateID(name string) BasicResourceID {
 	idValue := reflect.New(r.idType)
 
 	idValue.Interface().(IStringResourceID).setValueString(name)
@@ -186,7 +169,7 @@ func (r *resourceType[ID, T]) IsRuntimeOnly() bool {
 	return r.isRuntimeOnly
 }
 
-func (r *resourceType[ID, T]) ID() ResourceTypeID {
+func (r *resourceType[ID, T]) GetID() ResourceTypeID {
 	return r.ResourceMetadata.ID
 }
 

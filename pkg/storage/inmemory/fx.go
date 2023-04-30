@@ -16,7 +16,7 @@ func WithInMemoryDatabase() fx.Option {
 	return fx.Options(
 		Module,
 
-		fx.Provide(func(db *InMemoryDatabase) forddb.Database {
+		fx.Provide(func(db *InMemoryDatabase) forddb.Storage {
 			return db
 		}),
 	)

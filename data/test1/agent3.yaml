@@ -1,8 +1,0 @@
-kind: agent
-metadata:
-  id: "agent-3"
-  name: "Agent 3"
-spec:
-  given_name: "Agent 3"
-  profile_id: "Sarah-Thompson"
-  port_id: "agent-3"

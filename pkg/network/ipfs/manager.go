@@ -260,6 +260,10 @@ func (m *Manager) DagService() format.DAGService {
 	return m.dagService
 }
 
+func (m *Manager) GraphExchange() graphsync.GraphExchange {
+	return m.graphSync
+}
+
 func (m *Manager) NamingService() namesys.NameSystem {
 	return m.ns
 }

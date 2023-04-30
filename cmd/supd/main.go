@@ -21,7 +21,6 @@ import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/network/ipfs"
 	"github.com/greenboxal/aip/pkg/network/p2p"
-	"github.com/greenboxal/aip/pkg/storage/memgraph"
 	"github.com/greenboxal/aip/pkg/storage/milvus"
 )
 
@@ -43,11 +42,12 @@ func main() {
 		}),
 
 		//badger.WithBadgerStorage(),
-		memgraph.WithMemgraphStorage(),
+		//memgraph.WithMemgraphStorage(),
+		ipfs.WithIpfsStorage(),
 		milvus.WithMilvusStorage(),
 
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.API) error {
-			if err := forddb.ImportPath(db, "./data"); err != nil {
+			if err := forddb.ImportPath(db, "./data/initrd"); err != nil {
 				return err
 			}
 

@@ -26,10 +26,12 @@ var Module = fx.Module(
 		PeerStore     peerstore.Peerstore
 		PeerRouter    routing.PeerRouting
 		ContentRouter routing.ContentRouting
+		IpfsRouter    IpfsRouting
 	}) {
 		res.Host = n.host
 		res.ContentRouter = n.dht
 		res.PeerRouter = n.dht
+		res.IpfsRouter = n.dht
 		res.PeerStore = n.host.Peerstore()
 
 		return
