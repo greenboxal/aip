@@ -22,6 +22,6 @@ type Session interface {
 
 	UpdateMemoryData(data MemoryData) error
 
-	Discard() error
+	Discard()
 	Merge() error
 }

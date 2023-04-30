@@ -116,7 +116,7 @@ func (s *Session) UpdateMemoryData(data indexing.MemoryData) error {
 	return nil
 }
 
-func (s *Session) Discard() error {
+func (s *Session) Discard() {
 	s.commitMutex.Lock()
 	defer s.commitMutex.Unlock()
 
@@ -125,7 +125,7 @@ func (s *Session) Discard() error {
 
 	s.discardLog()
 
-	return s.set(
+	err := s.set(
 		s.rootMemoryID,
 		s.branchMemoryID,
 		s.branchMemoryID,
@@ -134,6 +134,10 @@ func (s *Session) Discard() error {
 		s.currentHeight,
 		s.current,
 	)
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *Session) Merge() error {

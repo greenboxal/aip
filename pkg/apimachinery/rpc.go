@@ -1,4 +1,4 @@
-package api
+package apimachinery
 
 import (
 	"context"
@@ -6,16 +6,16 @@ import (
 
 	"github.com/swaggest/jsonrpc"
 	"github.com/swaggest/usecase"
-	"go.uber.org/fx"
 )
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
 
-func NewRpcServer(
-	supapi *SupervisorAPI,
-	comms *CommunicationAPI,
-) *jsonrpc.Handler {
+type RpcService struct {
+	*jsonrpc.Handler
+}
+
+func NewRpcService() *RpcService {
 	handler := &jsonrpc.Handler{}
 
 	apiSchema := jsonrpc.OpenAPI{}
@@ -23,23 +23,10 @@ func NewRpcServer(
 	apiSchema.Reflector().SpecEns().Info.Version = "v1.0.0"
 
 	handler.OpenAPI = &apiSchema
-	handler.Validator = &jsonrpc.JSONSchemaValidator{}
+	//handler.Validator = &jsonrpc.JSONSchemaValidator{}
 	handler.SkipResultValidation = true
 
-	mustRegister(handler, "supervisor", supapi)
-	mustRegister(handler, "comms", comms)
-
-	return handler
-}
-
-func ProvideRpcService[T any](name string, iface interface{}) fx.Option {
-	return fx.Options(
-		fx.Provide(iface),
-
-		fx.Invoke(func(handler *jsonrpc.Handler, svc T) {
-			mustRegister(handler, name, svc)
-		}),
-	)
+	return &RpcService{Handler: handler}
 }
 
 func mustRegister(srv *jsonrpc.Handler, name string, target any) {

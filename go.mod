@@ -42,8 +42,26 @@ require (
 
 require (
 	github.com/DataIntelligenceCrew/go-faiss v0.2.0 // indirect
+	github.com/RoaringBitmap/roaring v0.9.4 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bits-and-blooms/bitset v1.2.0 // indirect
+	github.com/blevesearch/bleve/v2 v2.3.7 // indirect
+	github.com/blevesearch/bleve_index_api v1.0.5 // indirect
+	github.com/blevesearch/geo v0.1.17 // indirect
+	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
+	github.com/blevesearch/gtreap v0.1.1 // indirect
+	github.com/blevesearch/mmap-go v1.0.4 // indirect
+	github.com/blevesearch/scorch_segment_api/v2 v2.1.4 // indirect
+	github.com/blevesearch/segment v0.9.1 // indirect
+	github.com/blevesearch/snowballstem v0.9.0 // indirect
+	github.com/blevesearch/upsidedown_store_api v1.0.2 // indirect
+	github.com/blevesearch/vellum v1.0.9 // indirect
+	github.com/blevesearch/zapx/v11 v11.3.7 // indirect
+	github.com/blevesearch/zapx/v12 v12.3.7 // indirect
+	github.com/blevesearch/zapx/v13 v13.3.7 // indirect
+	github.com/blevesearch/zapx/v14 v14.3.7 // indirect
+	github.com/blevesearch/zapx/v15 v15.3.9 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
@@ -69,6 +87,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/goki/gi v1.3.18 // indirect
 	github.com/goki/ki v1.1.11 // indirect
+	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -92,6 +111,7 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -134,7 +154,9 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
+	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
@@ -169,6 +191,7 @@ require (
 	github.com/swaggest/openapi-go v0.2.20 // indirect
 	github.com/swaggest/refl v1.1.0 // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
+	go.etcd.io/bbolt v1.3.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/dig v1.16.1 // indirect

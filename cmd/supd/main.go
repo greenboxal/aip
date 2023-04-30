@@ -12,7 +12,8 @@ import (
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 
-	"github.com/greenboxal/aip/pkg/api"
+	"github.com/greenboxal/aip/pkg/apimachinery"
+	"github.com/greenboxal/aip/pkg/apis"
 	"github.com/greenboxal/aip/pkg/collective/comms"
 	"github.com/greenboxal/aip/pkg/config"
 	"github.com/greenboxal/aip/pkg/daemon"
@@ -28,7 +29,8 @@ func main() {
 		BuildLogging(),
 
 		config.Module,
-		api.Module,
+		apimachinery.Module,
+		apis.Module,
 		p2p.Module,
 		comms.Module,
 		ford.Module,
@@ -39,10 +41,9 @@ func main() {
 		}),
 
 		badger.WithBadgerStorage(),
+		milvus.WithMilvusStorage(),
 
-		fx.Provide(milvus.NewStorage),
-
-		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *api.API) error {
+		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.API) error {
 			if err := forddb.ImportPath(db, "./data"); err != nil {
 				return err
 			}

@@ -1,4 +1,4 @@
-package api
+package graphql
 
 import (
 	"reflect"
@@ -41,7 +41,9 @@ func NewGraphQL(db forddb.Database) *GraphQL {
 func (q *GraphQL) initializeTypeSystem() {
 	q.typeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
 
+	// TODO: Freeze and use IPLD type system
 	ts := forddb.TypeSystem()
+
 	fields := graphql.Fields{
 		"empty": &graphql.Field{
 			Type: graphql.String,
