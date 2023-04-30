@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/greenboxal/aip/tools/ircproxy/irc"
+	"github.com/greenboxal/aip/cmd/ircproxy/irc"
 )
 
 var errorWriterErr = errors.New("errorWriter: error")

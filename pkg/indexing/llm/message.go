@@ -1,10 +1,12 @@
 package llm
 
+import "github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
+
 type Message struct {
 	Entries []MessageEntry
 }
 
-func (m *Message) CalculateTokenCount(tokenizer BasicTokenizer) (int, error) {
+func (m *Message) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
 	total := 0
 
 	for _, entry := range m.Entries {
@@ -25,12 +27,12 @@ type MessageEntry struct {
 	Content string
 }
 
-func (m *MessageEntry) CalculateTokenCount(tokenizer BasicTokenizer) (int, error) {
+func (m *MessageEntry) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
 	return tokenizer.Count(m.Content)
 }
 
 type MessageComposer struct {
-	Tokenizer BasicTokenizer
+	Tokenizer tokenizers.BasicTokenizer
 
 	Constraints
 	Statistics

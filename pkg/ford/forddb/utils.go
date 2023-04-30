@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/ipld/go-ipld-prime/schema"
@@ -139,12 +138,20 @@ func isSupportedFile(path string) bool {
 	return false
 }
 
-var NormalizeTypeNameRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
+func normalizedName(str string) string {
+	return NormalizeTypeNameRegex.ReplaceAllString(str, "")
+}
 
 func normalizedTypeName(typ reflect.Type) schema.TypeName {
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
 
-	return NormalizeTypeNameRegex.ReplaceAllString(typ.Name(), "")
+	name := typ.Name()
+
+	if name == "" {
+		name = typ.Kind().String()
+	}
+
+	return NormalizeTypeNameRegex.ReplaceAllString(name, "")
 }

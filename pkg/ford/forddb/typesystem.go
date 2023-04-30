@@ -2,37 +2,21 @@ package forddb
 
 import (
 	"reflect"
+	"regexp"
 	"sync"
 
+	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"github.com/ipld/go-ipld-prime/schema"
 )
+
+var NormalizeTypeNameRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
 var basicResourceType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
 var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
 var basicResourcePointerType = reflect.TypeOf((*BasicResourcePointer)(nil)).Elem()
 var basicResourceSlotType = reflect.TypeOf((*BasicResourceSlot)(nil)).Elem()
 
-var typeSystem = &ResourceTypeSystem{
-	resourceTypes:   make(map[ResourceTypeID]BasicResourceType, 32),
-	idTypeMap:       make(map[reflect.Type]BasicResourceType, 32),
-	resourceTypeMap: make(map[reflect.Type]BasicResourceType, 32),
-	typeSchemaCache: make(map[reflect.Type]schema.Type, 32),
-}
-
-var typeType = &resourceType[ResourceTypeID, BasicResourceType]{
-	resourceType: reflect.TypeOf((*BasicResourceType)(nil)).Elem(),
-	idType:       reflect.TypeOf((*ResourceTypeID)(nil)).Elem(),
-}
-
-func init() {
-	typeType.isRuntimeOnly = true
-	typeType.ResourceMetadata.Name = "type"
-	typeType.ResourceMetadata.ID = typeType.MakeId(typeType.ResourceMetadata.Name).(ResourceTypeID)
-
-	typeSystem.universe.Init()
-
-	typeSystem.Register(typeType)
-}
+var typeSystem = NewResourceTypeSystem()
 
 type ResourceTypeSystem struct {
 	m sync.Mutex
@@ -42,7 +26,32 @@ type ResourceTypeSystem struct {
 	resourceTypeMap map[reflect.Type]BasicResourceType
 	typeSchemaCache map[reflect.Type]schema.Type
 
-	universe schema.TypeSystem
+	universe        schema.TypeSystem
+	bindNodeOptions []bindnode.Option
+}
+
+func NewResourceTypeSystem() *ResourceTypeSystem {
+	typeType := &resourceType[ResourceTypeID, BasicResourceType]{
+		resourceType: reflect.TypeOf((*BasicResourceType)(nil)).Elem(),
+		idType:       reflect.TypeOf((*ResourceTypeID)(nil)).Elem(),
+	}
+
+	typeType.isRuntimeOnly = true
+	typeType.ResourceMetadata.Name = "type"
+	typeType.ResourceMetadata.ID = typeType.MakeId(typeType.ResourceMetadata.Name).(ResourceTypeID)
+
+	rts := &ResourceTypeSystem{
+		resourceTypes:   make(map[ResourceTypeID]BasicResourceType, 32),
+		idTypeMap:       make(map[reflect.Type]BasicResourceType, 32),
+		resourceTypeMap: make(map[reflect.Type]BasicResourceType, 32),
+		typeSchemaCache: make(map[reflect.Type]schema.Type, 32),
+	}
+
+	rts.universe.Init()
+
+	rts.Register(typeType)
+
+	return rts
 }
 
 func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
@@ -50,7 +59,24 @@ func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
 	rts.idTypeMap[t.IDType()] = t
 	rts.resourceTypeMap[t.ResourceType()] = t
 
-	t.initializeSchema(rts)
+	rts.bindNodeOptions = append(
+		rts.bindNodeOptions,
+
+		bindnode.TypedStringConverter(
+			reflect.New(t.IDType()),
+			func(s string) (interface{}, error) {
+				idVal := reflect.New(t.IDType())
+				idStr := idVal.Interface().(stringResourceID)
+				idStr.setValue(s)
+				return idVal.Elem().Interface(), nil
+			},
+			func(i interface{}) (string, error) {
+				return i.(BasicResourceID).String(), nil
+			},
+		),
+	)
+
+	t.initializeSchema(rts, rts.bindNodeOptions...)
 }
 
 func (rts *ResourceTypeSystem) LookupByID(id ResourceTypeID) BasicResourceType {
@@ -173,6 +199,10 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 		panic("unsupported type")
 	}
 
+	if result.Name() == "ResourceTypeID" {
+		result.Name()
+	}
+
 	rts.accumulate(typ, result)
 
 	return result
@@ -250,4 +280,8 @@ func (rts *ResourceTypeSystem) accumulate(typ reflect.Type, ref schema.Type) {
 	}
 
 	rts.universe.Accumulate(ref)
+}
+
+func (rts *ResourceTypeSystem) MakePrototype(typ reflect.Type, schemaType schema.Type) schema.TypedPrototype {
+	return bindnode.Prototype(reflect.New(typ).Interface(), schemaType, rts.bindNodeOptions...)
 }

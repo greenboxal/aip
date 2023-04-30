@@ -14,17 +14,20 @@ import (
 
 	"github.com/greenboxal/aip/pkg/api"
 	"github.com/greenboxal/aip/pkg/collective/comms"
+	"github.com/greenboxal/aip/pkg/config"
 	"github.com/greenboxal/aip/pkg/daemon"
 	"github.com/greenboxal/aip/pkg/ford"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
-	"github.com/greenboxal/aip/pkg/indexing/storage/milvus"
 	"github.com/greenboxal/aip/pkg/network/p2p"
+	"github.com/greenboxal/aip/pkg/storage/badger"
+	"github.com/greenboxal/aip/pkg/storage/milvus"
 )
 
 func main() {
 	app := fx.New(
 		BuildLogging(),
 
+		config.Module,
 		api.Module,
 		p2p.Module,
 		comms.Module,
@@ -34,6 +37,8 @@ func main() {
 		fx.Provide(func() *openai.Client {
 			return openai.NewClient(os.Getenv("OPENAI_API_KEY"))
 		}),
+
+		badger.WithBadgerStorage(),
 
 		fx.Provide(milvus.NewStorage),
 

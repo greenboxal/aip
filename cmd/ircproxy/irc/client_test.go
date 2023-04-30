@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/greenboxal/aip/tools/ircproxy/irc"
+	"github.com/greenboxal/aip/cmd/ircproxy/irc"
 )
 
 type TestHandler struct {

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/greenboxal/aip/tools/ircproxy/irc"
+	"github.com/greenboxal/aip/cmd/ircproxy/irc"
 )
 
 const ChannelName = "#aip-bod-room"

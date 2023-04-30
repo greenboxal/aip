@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/greenboxal/aip/tools/ircproxy/irc"
+	"github.com/greenboxal/aip/cmd/ircproxy/irc"
 )
 
 func BenchmarkParseMessage(b *testing.B) {

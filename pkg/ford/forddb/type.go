@@ -3,11 +3,21 @@ package forddb
 import (
 	"encoding/json"
 	"reflect"
+	"sync"
 
+	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"github.com/ipld/go-ipld-prime/schema"
 )
 
 type ResourceTypeID string
+
+func (s ResourceTypeID) MarshalText() (text []byte, err error) {
+	return []byte(s), nil
+}
+
+func (s ResourceTypeID) MarshalBinary() (data []byte, err error) {
+	return []byte(s), nil
+}
 
 func (s ResourceTypeID) BasicResourceID() BasicResourceID {
 	return s
@@ -57,15 +67,23 @@ type BasicResourceType interface {
 	SchemaResourceType() schema.Type
 	SchemaResourcePrototype() schema.TypedPrototype
 
-	initializeSchema(ts *ResourceTypeSystem)
+	initializeSchema(ts *ResourceTypeSystem, options ...bindnode.Option)
 }
 
 type ResourceType[ID ResourceID[T], T Resource[ID]] interface {
 	BasicResourceType
 }
 
+func NewStringID[ID BasicResourceID](name string) (result ID) {
+	t := reflect.TypeOf(result)
+	idVal := reflect.New(t)
+	idStr := idVal.Interface().(stringResourceID)
+	idStr.setValue(name)
+	return idVal.Elem().Interface().(ID)
+}
+
 func LookupTypeByName(name string) BasicResourceType {
-	return typeSystem.LookupByID(typeType.MakeId(name).(ResourceTypeID))
+	return typeSystem.LookupByID(NewStringID[ResourceTypeID](name))
 }
 
 func DefineResourceType[ID ResourceID[T], T Resource[ID]](name string) ResourceType[ID, T] {
@@ -74,7 +92,7 @@ func DefineResourceType[ID ResourceID[T], T Resource[ID]](name string) ResourceT
 		resourceType: derefType[T](),
 	}
 
-	t.ResourceMetadata.ID = typeType.MakeId(name).(ResourceTypeID)
+	t.ResourceMetadata.ID = NewStringID[ResourceTypeID](name)
 	t.ResourceMetadata.Name = name
 
 	typeSystem.Register(t)
@@ -95,21 +113,68 @@ type resourceType[ID ResourceID[T], T Resource[ID]] struct {
 
 	resourceSchemaType schema.Type
 	resourcePrototype  schema.TypedPrototype
+
+	m        sync.Mutex
+	universe *ResourceTypeSystem
 }
 
 func (r *resourceType[ID, T]) SchemaResourceType() schema.Type {
+	if r.isRuntimeOnly {
+		return nil
+	}
+
+	if r.resourceSchemaType == nil {
+		r.m.Lock()
+		defer r.m.Unlock()
+
+		if r.resourceSchemaType == nil {
+			r.resourceSchemaType = r.universe.SchemaForType(r.resourceType)
+		}
+	}
+
 	return r.resourceSchemaType
 }
 
 func (r *resourceType[ID, T]) SchemaResourcePrototype() schema.TypedPrototype {
+	if r.isRuntimeOnly {
+		return nil
+	}
+
+	if r.resourcePrototype == nil {
+		r.m.Lock()
+		defer r.m.Unlock()
+
+		if r.resourcePrototype == nil {
+			r.resourcePrototype = r.universe.MakePrototype(r.resourceType, r.resourceSchemaType)
+		}
+	}
+
 	return r.resourcePrototype
 }
 
 func (r *resourceType[ID, T]) SchemaIdType() schema.Type {
+	if r.resourceSchemaType == nil {
+		r.m.Lock()
+		defer r.m.Unlock()
+
+		if r.idSchemaType == nil {
+			r.idSchemaType = r.universe.SchemaForType(r.idType)
+		}
+	}
+
 	return r.idSchemaType
 }
 
 func (r *resourceType[ID, T]) SchemaIdPrototype() schema.TypedPrototype {
+	if r.idPrototype == nil {
+		r.m.Lock()
+		defer r.m.Unlock()
+
+		if r.idPrototype == nil {
+			r.idPrototype = r.universe.MakePrototype(r.idType, r.idSchemaType)
+		}
+	}
+
 	return r.idPrototype
 }
 
@@ -145,18 +210,11 @@ func (r *resourceType[ID, T]) ResourceType() reflect.Type {
 	return r.resourceType
 }
 
-func (r *resourceType[ID, T]) initializeSchema(ts *ResourceTypeSystem) {
-	//idType := ts.SchemaForType(r.idType)
-	//idPrototype := bindnode.Prototype((*T)(nil), idType)
+func (r *resourceType[ID, T]) initializeSchema(ts *ResourceTypeSystem, options ...bindnode.Option) {
+	r.universe = ts
 
-	//r.idSchemaType = idType
-	//r.idPrototype = idPrototype
-
-	//schemaType := ts.SchemaForType(r.resourceType)
-	//resourcePrototype := bindnode.Prototype((*T)(nil), schemaType)
-
-	//r.resourceSchemaType = schemaType
-	//r.resourcePrototype = resourcePrototype
+	r.SchemaResourceType()
+	r.SchemaIdType()
 }
 
 func derefType[T any]() reflect.Type {

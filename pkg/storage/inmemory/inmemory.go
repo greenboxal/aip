@@ -1,24 +1,27 @@
-package forddb
+package inmemory
 
 import (
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
-type inMemoryDatabase struct {
-	HasListenersBase
+type InMemoryDatabase struct {
+	forddb.HasListenersBase
 
 	m         sync.RWMutex
-	resources map[ResourceTypeID]*resourceTable
+	resources map[forddb.ResourceTypeID]*resourceTable
 }
 
-func NewInMemory() Database {
-	db := &inMemoryDatabase{
-		resources: make(map[ResourceTypeID]*resourceTable),
+func NewInMemory() *InMemoryDatabase {
+	db := &InMemoryDatabase{
+		resources: make(map[forddb.ResourceTypeID]*resourceTable),
 	}
 
-	for _, typ := range typeSystem.resourceTypes {
+	// FIXME: Shouldn't happen here
+	for _, typ := range forddb.TypeSystem().ResourceTypes() {
 		if _, err := db.Put(typ); err != nil {
 			panic(err)
 		}
@@ -27,7 +30,7 @@ func NewInMemory() Database {
 	return db
 }
 
-func (db *inMemoryDatabase) List(typ ResourceTypeID) ([]BasicResource, error) {
+func (db *InMemoryDatabase) List(typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
 	rt := db.getTable(typ, false)
 
 	if rt == nil {
@@ -37,37 +40,37 @@ func (db *inMemoryDatabase) List(typ ResourceTypeID) ([]BasicResource, error) {
 	return rt.List()
 }
 
-func (db *inMemoryDatabase) Get(typ ResourceTypeID, id BasicResourceID) (BasicResource, error) {
+func (db *InMemoryDatabase) Get(typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
 	slot := db.getSlot(typ, id, false, false)
 
 	if slot == nil {
-		return nil, ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Get()
 }
 
-func (db *inMemoryDatabase) Put(resource BasicResource) (BasicResource, error) {
+func (db *InMemoryDatabase) Put(resource forddb.BasicResource) (forddb.BasicResource, error) {
 	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
-		return nil, ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Update(resource)
 }
 
-func (db *inMemoryDatabase) Delete(resource BasicResource) (BasicResource, error) {
+func (db *InMemoryDatabase) Delete(resource forddb.BasicResource) (forddb.BasicResource, error) {
 	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
-		return nil, ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Delete()
 }
 
-func (db *inMemoryDatabase) getSlot(typ ResourceTypeID, id BasicResourceID, create, lock bool) *resourceSlot {
+func (db *InMemoryDatabase) getSlot(typ forddb.ResourceTypeID, id forddb.BasicResourceID, create, lock bool) *resourceSlot {
 	tb := db.getTable(typ, create)
 
 	if tb == nil {
@@ -83,7 +86,7 @@ func (db *inMemoryDatabase) getSlot(typ ResourceTypeID, id BasicResourceID, crea
 	return slot
 }
 
-func (db *inMemoryDatabase) getTable(typ ResourceTypeID, create bool) *resourceTable {
+func (db *InMemoryDatabase) getTable(typ forddb.ResourceTypeID, create bool) *resourceTable {
 	db.m.Lock()
 	defer db.m.Unlock()
 
@@ -99,7 +102,7 @@ func (db *inMemoryDatabase) getTable(typ ResourceTypeID, create bool) *resourceT
 		db:  db,
 		typ: typ,
 
-		resources: make(map[BasicResourceID]*resourceSlot, 32),
+		resources: make(map[forddb.BasicResourceID]*resourceSlot, 32),
 	}
 
 	db.resources[typ] = rt
@@ -108,15 +111,15 @@ func (db *inMemoryDatabase) getTable(typ ResourceTypeID, create bool) *resourceT
 }
 
 type resourceTable struct {
-	HasListenersBase
+	forddb.HasListenersBase
 
 	m         sync.RWMutex
-	db        *inMemoryDatabase
-	typ       ResourceTypeID
-	resources map[BasicResourceID]*resourceSlot
+	db        *InMemoryDatabase
+	typ       forddb.ResourceTypeID
+	resources map[forddb.BasicResourceID]*resourceSlot
 }
 
-func (rt *resourceTable) getSlot(id BasicResourceID, create bool, lock bool) *resourceSlot {
+func (rt *resourceTable) getSlot(id forddb.BasicResourceID, create bool, lock bool) *resourceSlot {
 	rt.m.Lock()
 	defer rt.m.Unlock()
 
@@ -142,11 +145,11 @@ func (rt *resourceTable) getSlot(id BasicResourceID, create bool, lock bool) *re
 	return rs
 }
 
-func (rt *resourceTable) List() ([]BasicResource, error) {
+func (rt *resourceTable) List() ([]forddb.BasicResource, error) {
 	rt.m.RLock()
 	defer rt.m.RUnlock()
 
-	resources := make([]BasicResource, 0, len(rt.resources))
+	resources := make([]forddb.BasicResource, 0, len(rt.resources))
 
 	for _, v := range rt.resources {
 		if !v.hasValue {
@@ -167,39 +170,39 @@ func (rt *resourceTable) List() ([]BasicResource, error) {
 
 type resourceSlot struct {
 	sync.RWMutex
-	HasListenersBase
+	forddb.HasListenersBase
 
 	table *resourceTable
-	id    BasicResourceID
+	id    forddb.BasicResourceID
 
 	hasValue bool
 
-	encoded RawResource
-	value   BasicResource
+	encoded forddb.RawResource
+	value   forddb.BasicResource
 }
 
-func (s *resourceSlot) Get() (BasicResource, error) {
+func (s *resourceSlot) Get() (forddb.BasicResource, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	if !s.hasValue {
-		return nil, ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	if s.table.typ.Type().IsRuntimeOnly() {
 		return s.value, nil
 	}
 
-	instance, err := Decode(s.encoded)
+	instance, err := forddb.Decode(s.encoded)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return instance.(BasicResource), nil
+	return instance.(forddb.BasicResource), nil
 }
 
-func (s *resourceSlot) Update(resource BasicResource) (BasicResource, error) {
+func (s *resourceSlot) Update(resource forddb.BasicResource) (forddb.BasicResource, error) {
 	old, current, changed, err := s.doUpdate(resource)
 
 	if err != nil {
@@ -207,21 +210,21 @@ func (s *resourceSlot) Update(resource BasicResource) (BasicResource, error) {
 	}
 
 	if changed {
-		FireListeners(&s.HasListenersBase, s.id, old, current)
-		FireListeners(&s.table.HasListenersBase, s.id, old, current)
-		FireListeners(&s.table.db.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&s.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&s.table.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&s.table.db.HasListenersBase, s.id, old, current)
 	}
 
 	return current, nil
 }
 
-func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicResource, bool, error) {
+func (s *resourceSlot) doUpdate(resource forddb.BasicResource) (forddb.BasicResource, forddb.BasicResource, bool, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	current, err := s.Get()
 
-	if err == ErrNotFound {
+	if err == forddb.ErrNotFound {
 		current = nil
 	} else if err != nil {
 		return nil, nil, false, err
@@ -229,7 +232,7 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 
 	if current != nil {
 		if current.GetVersion() != resource.GetVersion() {
-			return nil, nil, false, ErrVersionMismatch
+			return nil, nil, false, forddb.ErrVersionMismatch
 		}
 
 		if current != nil {
@@ -251,7 +254,7 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 	if s.table.typ.Type().IsRuntimeOnly() {
 		s.value = resource
 	} else {
-		encoded, err := Encode(resource)
+		encoded, err := forddb.Encode(resource)
 
 		if err != nil {
 			return nil, nil, false, err
@@ -265,7 +268,7 @@ func (s *resourceSlot) doUpdate(resource BasicResource) (BasicResource, BasicRes
 	return current, resource, true, nil
 }
 
-func (s *resourceSlot) Delete() (BasicResource, error) {
+func (s *resourceSlot) Delete() (forddb.BasicResource, error) {
 	previous, ok, err := s.doDelete()
 
 	if err != nil {
@@ -273,15 +276,15 @@ func (s *resourceSlot) Delete() (BasicResource, error) {
 	}
 
 	if ok {
-		FireListeners(&s.HasListenersBase, s.id, previous, nil)
-		FireListeners(&s.table.HasListenersBase, s.id, previous, nil)
-		FireListeners(&s.table.db.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&s.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&s.table.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&s.table.db.HasListenersBase, s.id, previous, nil)
 	}
 
 	return previous, nil
 }
 
-func (s *resourceSlot) doDelete() (BasicResource, bool, error) {
+func (s *resourceSlot) doDelete() (forddb.BasicResource, bool, error) {
 	value, err := s.Get()
 
 	if err != nil {

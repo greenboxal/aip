@@ -20,3 +20,4 @@ jsonrpcserver
 jsonrpcclient
 json-rpc
 aiofiles
+pymilvus

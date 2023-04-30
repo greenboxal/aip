@@ -11,8 +11,8 @@ import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/indexing"
 	"github.com/greenboxal/aip/pkg/indexing/impl"
-	"github.com/greenboxal/aip/pkg/indexing/llm"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/summarizers"
+	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
 )
 
 func TestMilvusStorage(t *testing.T) {
@@ -58,7 +58,7 @@ func TestMilvusStorageWithIndex(t *testing.T) {
 
 	require.Nil(t, err)
 
-	tokenizer, err := llm.TikTokenForModel(openai.GPT3Dot5Turbo)
+	tokenizer, err := tokenizers.TikTokenForModel(openai.GPT3Dot5Turbo)
 
 	require.Nil(t, err)
 

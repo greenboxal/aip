@@ -146,6 +146,26 @@ var Json = Codec{
 	CodecEncoder: CodecEncodeFunc(func(resource RawResource) ([]byte, error) {
 		return json.Marshal(resource)
 	}),
+
+	CodecDecoder: CodecDecodeFunc(func(data []byte) (RawResource, error) {
+		var resource RawResource
+
+		if err := json.Unmarshal(data, &resource); err != nil {
+			return nil, err
+		}
+
+		return resource, nil
+	}),
+}
+
+func Serialize(codec Codec, resource BasicResource) ([]byte, error) {
+	rawResource, err := Encode(resource)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return codec.Encode(rawResource)
 }
 
 func SerializeTo(writer io.Writer, codec Codec, resource BasicResource) error {
@@ -160,6 +180,16 @@ func SerializeTo(writer io.Writer, codec Codec, resource BasicResource) error {
 
 func DeserializeFrom(reader io.Reader, codec Codec) (BasicResource, error) {
 	rawResource, err := codec.DecodeFrom(reader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return Decode(rawResource)
+}
+
+func Deserialize(data []byte, codec Codec) (BasicResource, error) {
+	rawResource, err := codec.Decode(data)
 
 	if err != nil {
 		return nil, err

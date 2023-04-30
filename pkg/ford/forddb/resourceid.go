@@ -1,12 +1,17 @@
 package forddb
 
 import (
+	"encoding"
 	"encoding/json"
 
 	"github.com/ipfs/go-cid"
 )
 
 type BasicResourceID interface {
+	json.Marshaler
+	encoding.TextMarshaler
+	encoding.BinaryMarshaler
+
 	BasicResourceID() BasicResourceID
 	String() string
 	MarshalJSON() ([]byte, error)
@@ -17,6 +22,14 @@ type ResourceID[T BasicResource] interface {
 }
 
 type StringResourceID[T BasicResource] string
+
+func (s StringResourceID[T]) MarshalText() (text []byte, err error) {
+	return []byte(s), nil
+}
+
+func (s StringResourceID[T]) MarshalBinary() (data []byte, err error) {
+	return []byte(s), nil
+}
 
 func (s StringResourceID[T]) BasicResourceID() BasicResourceID {
 	return s

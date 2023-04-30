@@ -2,7 +2,7 @@ package indexing
 
 import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"
-	"github.com/greenboxal/aip/pkg/indexing/llm"
+	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
 	"github.com/greenboxal/aip/pkg/utils"
 )
 
@@ -39,7 +39,7 @@ func (ms *MemorySegment) PartitionEven(count int) []*MemorySegment {
 	return partitions
 }
 
-func (ms *MemorySegment) CalculateTokenCount(tokenizer llm.BasicTokenizer) (int, error) {
+func (ms *MemorySegment) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
 	total := 0
 
 	for _, m := range ms.Memories {

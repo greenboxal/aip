@@ -2,13 +2,13 @@ package summarizers
 
 import (
 	"github.com/greenboxal/aip/pkg/indexing"
-	"github.com/greenboxal/aip/pkg/indexing/llm"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
+	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
 )
 
 type MipMapSummarizer struct {
 	Summarizer Summarizer
-	Tokenizer  llm.BasicTokenizer
+	Tokenizer  tokenizers.BasicTokenizer
 
 	MinTokens int
 	MaxTokens int

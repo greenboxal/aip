@@ -7,12 +7,13 @@ import (
 	"github.com/greenboxal/aip/pkg/indexing/llm"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/summarizers"
+	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
 )
 
 type SummaryDiffusionReducer struct {
 	Summarizer summarizers.Summarizer
 	Embedder   llm.Embedder
-	Tokenizer  llm.BasicTokenizer
+	Tokenizer  tokenizers.BasicTokenizer
 
 	MinTokens int
 	MaxTokens int

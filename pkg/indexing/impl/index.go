@@ -4,16 +4,15 @@ import (
 	"context"
 
 	"github.com/greenboxal/aip/pkg/indexing"
-	"github.com/greenboxal/aip/pkg/indexing/storage"
 )
 
 type Index struct {
 	cfg indexing.IndexConfiguration
 
-	storage storage.Storage
+	storage indexing.Storage
 }
 
-func NewIndex(storage storage.Storage, cfg indexing.IndexConfiguration) *Index {
+func NewIndex(storage indexing.Storage, cfg indexing.IndexConfiguration) *Index {
 	return &Index{
 		cfg: cfg,
 

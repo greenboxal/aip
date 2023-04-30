@@ -1,7 +1,7 @@
 import os
 
 import pinecone
-from langchain.vectorstores import Pinecone
+from langchain.vectorstores import Milvus
 from langchain.embeddings.openai import OpenAIEmbeddings
 
 class Index:
@@ -26,10 +26,16 @@ class Index:
 
     def get_vector_store(self):
         if self.vs is None:
-            self.vs = Pinecone.from_existing_index(
-                embedding=self.embeddings,
-                index_name=self.index_name,
-                namespace=self.namespace,
+            self.vs = Milvus(
+                collection_name="memories",
+                connection_args={
+                    "host": os.environ["MILVUS_HOST"],
+                    "port": os.environ["MILVUS_PORT"],
+                    "user": os.environ["MILVUS_USERNAME"],
+                    "password": os.environ["MILVUS_PASSWORD"],
+                    "secure": True,
+                },
+                embedding_function=self.embeddings,
             )
 
         return self.vs
@@ -38,11 +44,17 @@ class Index:
         return self.get_vector_store().as_retriever(**kwargs)
 
     def import_documents(self, documents):
-        Pinecone.from_documents(
+        Milvus.from_documents(
+            collection_name="memories",
+            connection_args={
+                "host": os.environ["MILVUS_HOST"],
+                "port": os.environ["MILVUS_PORT"],
+                "user": os.environ["MILVUS_USER"],
+                "password": os.environ["MILVUS_PASSWORD"],
+                "secure": True,
+            },
+            embedding_function=self.embeddings,
             documents=documents,
-            embedding=self.embeddings,
-            index_name=self.index_name,
-            namespace=self.namespace,
         )
 
     def truncate(self):

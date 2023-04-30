@@ -2,7 +2,7 @@ package indexing
 
 import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"
-	"github.com/greenboxal/aip/pkg/indexing/llm"
+	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
 )
 
 type MemoryID struct {
@@ -65,7 +65,7 @@ func (m *Memory) Fork(clock, height int64) Memory {
 	}
 }
 
-func (m *Memory) CalculateTokenCount(tokenizer llm.BasicTokenizer) (int, error) {
+func (m *Memory) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
 	return tokenizer.Count(m.Data.Text)
 }
 
