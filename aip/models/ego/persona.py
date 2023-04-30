@@ -6,6 +6,7 @@ from langchain.llms import BaseLLM
 from langchain.utilities import PythonREPL
 from langchain.vectorstores.base import VectorStoreRetriever
 
+from aip.bridge.memory import BridgeMemory
 from aip.models.ego.profile import Profile, MindState
 from langchain.memory.chat_memory import BaseMemory
 from langchain.chains import ConversationChain
@@ -50,6 +51,10 @@ class Persona:
             return_docs=True,
         )
 
+        self.bridge_memory = BridgeMemory(
+            memory_key="context",
+        )
+
         self.readonly_vec_memory = ReadOnlySharedMemory(memory=self.vec_memory)
 
         self.short_term_memory = ConversationSummaryBufferMemory(
@@ -63,7 +68,8 @@ class Persona:
         self.memory = CombinedMemory(
             memories=[
                 self.short_term_memory,
-                self.readonly_vec_memory
+                #self.readonly_vec_memory
+                self.bridge_memory,
             ],
         )
 

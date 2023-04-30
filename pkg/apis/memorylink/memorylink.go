@@ -60,7 +60,7 @@ func (ml *MemoryLink) OneShotGetMemory(ctx context.Context, req *OneShotGetMemor
 }
 
 type OneShotPutMemoryRequest struct {
-	PreviousMemory indexing.Memory     `json:"previous_memory"`
+	PreviousMemory *indexing.Memory    `json:"previous_memory"`
 	NewMemory      indexing.MemoryData `json:"new_memory"`
 }
 
@@ -69,6 +69,12 @@ type OneShotPutMemoryResponse struct {
 }
 
 func (ml *MemoryLink) OneShotPutMemory(ctx context.Context, req *OneShotPutMemoryRequest) (*OneShotPutMemoryResponse, error) {
+	var previousMemoryId *indexing.MemoryID
+
+	if req.PreviousMemory != nil {
+		previousMemoryId = &req.PreviousMemory.ID
+	}
+
 	tx, err := ml.index.OpenSession(ctx, indexing.SessionOptions{
 		ReadOnly:        true,
 		InitialMemoryID: req.PreviousMemory.ID,
@@ -80,8 +86,10 @@ func (ml *MemoryLink) OneShotPutMemory(ctx context.Context, req *OneShotPutMemor
 
 	defer tx.Discard()
 
-	if err := tx.SeekTo(req.PreviousMemory.ID); err != nil {
-		return nil, err
+	if previousMemoryId != nil {
+		if err := tx.SeekTo(req.PreviousMemory.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	newMemory, err := tx.Push(req.NewMemory)

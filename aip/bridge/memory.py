@@ -1,42 +1,13 @@
 from langchain.schema import BaseMemory
 from pydantic import BaseModel
 from typing import List, Dict, Any
-
-class Bridge:
-    def open_index_session(self, index: str, namespace: str) -> "BridgeIndexSession":
-        pass
-
-class BridgeIndexSession:
-    bridge: Bridge
-
-    index: str
-    namespace: str
-
-    root_memory_id: str
-    branch_memory_id: str
-    parent_memory_id: str
-    current_memory_id: str
-
-    current_clock: int
-    current_height: int
-
-    def get_memory_data(self) -> Dict[str, any]:
-        pass
-
-    def update_memory_data(self, data: Dict[str, any]):
-        pass
-
-    def discard(self):
-        pass
-
-    def merge(self):
-        pass
+import requests
 
 class BridgeMemory(BaseMemory, BaseModel):
-    bridge: Bridge
-    session: BridgeIndexSession
-    auto_commit: bool = False
     memory_key: str = "memory"
+    endpoint: str = "http://localhost:30100/v1/rpc"
+
+    _current_memory: any
 
     def clear(self):
         pass
@@ -46,15 +17,42 @@ class BridgeMemory(BaseMemory, BaseModel):
         return [self.memory_key]
 
     def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, str]:
-        context = self.session.get_memory_data()
+        memory_id = None
 
-        return {self.memory_key: context}
+        if self._current_memory is not None:
+            memory_id = self._current_memory.metadata.id
 
-    def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
-        self.session.update_memory_data({
-            "inputs": inputs,
-            "outputs": outputs,
+        result = self._send_request("memlink.OneShotGetMemory", {
+            "memory_id": memory_id,
         })
 
-        if self.auto_commit:
-            self.session.merge()
+        self._current_memory = result.memory
+
+        return {self.memory_key: self._current_memory.data.text}
+
+    def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
+        filtered_inputs = {k: v for k, v in inputs.items() if k != self.memory_key}
+
+        texts = [
+            f"{k}: {v}"
+            for k, v in list(filtered_inputs.items()) + list(outputs.items())
+        ]
+
+        page_content = "\n".join(texts)
+
+        self._current_memory = self._send_request("memlink.OneShotPutMemory", {
+            "old_memory": self._current_memory,
+            "new_memory": {
+                "text": page_content,
+            }
+        })
+
+    def _send_request(self, method, request):
+        payload = {
+            "method": method,
+            "params": [request],
+            "jsonrpc": "2.0",
+            "id": 0,
+        }
+
+        return requests.post(self.endpoint, json=payload).json()
