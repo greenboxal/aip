@@ -1,4 +1,4 @@
-package indexing
+package collective
 
 import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"
@@ -54,6 +54,10 @@ func (m *Memory) GetMemoryAddress() MemoryAbsoluteAddress {
 	)
 }
 
+func (m *Memory) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
+	return tokenizer.Count(m.Data.Text)
+}
+
 func (m *Memory) Fork(clock, height int64) Memory {
 	return Memory{
 		RootMemoryID:   m.RootMemoryID,
@@ -63,13 +67,4 @@ func (m *Memory) Fork(clock, height int64) Memory {
 		Height:         m.Height + uint64(height),
 		Data:           m.Data,
 	}
-}
-
-func (m *Memory) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
-	return tokenizer.Count(m.Data.Text)
-}
-
-func init() {
-	forddb.DefineResourceType[MemoryID, *Memory]("memory")
-	forddb.DefineResourceType[MemorySegmentID, *MemorySegment]("memory_segment")
 }

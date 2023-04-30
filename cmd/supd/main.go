@@ -19,8 +19,9 @@ import (
 	"github.com/greenboxal/aip/pkg/daemon"
 	"github.com/greenboxal/aip/pkg/ford"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/network/ipfs"
 	"github.com/greenboxal/aip/pkg/network/p2p"
-	"github.com/greenboxal/aip/pkg/storage/badger"
+	"github.com/greenboxal/aip/pkg/storage/memgraph"
 	"github.com/greenboxal/aip/pkg/storage/milvus"
 )
 
@@ -32,6 +33,7 @@ func main() {
 		apimachinery.Module,
 		apis.Module,
 		p2p.Module,
+		ipfs.Module,
 		comms.Module,
 		ford.Module,
 		daemon.Module,
@@ -40,7 +42,8 @@ func main() {
 			return openai.NewClient(os.Getenv("OPENAI_API_KEY"))
 		}),
 
-		badger.WithBadgerStorage(),
+		//badger.WithBadgerStorage(),
+		memgraph.WithMemgraphStorage(),
 		milvus.WithMilvusStorage(),
 
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.API) error {

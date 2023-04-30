@@ -1,8 +1,10 @@
 package forddb
 
+import "context"
+
 type Storage interface {
-	List(typ ResourceTypeID) ([]BasicResource, error)
-	Get(typ ResourceTypeID, id BasicResourceID) (BasicResource, error)
-	Put(resource BasicResource) (BasicResource, error)
-	Delete(resource BasicResource) (BasicResource, error)
+	List(ctx context.Context, typ ResourceTypeID) ([]BasicResource, error)
+	Get(ctx context.Context, typ ResourceTypeID, id BasicResourceID) (BasicResource, error)
+	Put(ctx context.Context, resource BasicResource) (BasicResource, error)
+	Delete(ctx context.Context, resource BasicResource) (BasicResource, error)
 }

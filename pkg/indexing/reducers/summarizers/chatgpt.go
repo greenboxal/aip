@@ -7,7 +7,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
-	"github.com/greenboxal/aip/pkg/indexing"
+	"github.com/greenboxal/aip/pkg/collective"
 )
 
 type ChatGptSummarizer struct {
@@ -24,7 +24,7 @@ func (gs *ChatGptSummarizer) Summarize(
 	ctx context.Context,
 	document string,
 	options ...SummarizeOption,
-) (indexing.MemoryData, error) {
+) (collective.MemoryData, error) {
 	opts := SummarizeOptions{
 		Temperature: 0.0,
 		MaxTokens:   256,
@@ -60,14 +60,14 @@ func (gs *ChatGptSummarizer) Summarize(
 	})
 
 	if err != nil {
-		return indexing.MemoryData{}, err
+		return collective.MemoryData{}, err
 	}
 
 	if len(result.Choices) == 0 {
-		return indexing.MemoryData{}, errors.New("no choices")
+		return collective.MemoryData{}, errors.New("no choices")
 	}
 
 	choice := result.Choices[0]
 
-	return indexing.NewMemoryData(choice.Message.Content), nil
+	return collective.NewMemoryData(choice.Message.Content), nil
 }

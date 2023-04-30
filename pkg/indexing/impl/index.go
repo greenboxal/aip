@@ -9,10 +9,10 @@ import (
 type Index struct {
 	cfg indexing.IndexConfiguration
 
-	storage indexing.Storage
+	storage indexing.MemoryStorage
 }
 
-func NewIndex(storage indexing.Storage, cfg indexing.IndexConfiguration) *Index {
+func NewIndex(storage indexing.MemoryStorage, cfg indexing.IndexConfiguration) *Index {
 	return &Index{
 		cfg: cfg,
 

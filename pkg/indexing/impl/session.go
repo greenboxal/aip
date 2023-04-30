@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/indexing"
 )
@@ -17,7 +18,7 @@ type Session struct {
 
 	commitMutex sync.RWMutex
 	logMutex    sync.RWMutex
-	log         []indexing.Memory
+	log         []collective.Memory
 }
 
 func NewSession(ctx context.Context, index *Index, options indexing.SessionOptions) (*Session, error) {
@@ -84,14 +85,14 @@ func (s *Session) Split(ctx context.Context) (indexing.Session, error) {
 	return s.Branch(ctx, 0, 0)
 }
 
-func (s *Session) Push(data indexing.MemoryData) (indexing.Memory, error) {
-	var head indexing.Memory
+func (s *Session) Push(data collective.MemoryData) (collective.Memory, error) {
+	var head collective.Memory
 
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 
 	if s.current == nil {
-		head = indexing.NewMemory(s.MemoryAddress(), data)
+		head = collective.NewMemory(s.MemoryAddress(), data)
 	} else {
 		head = s.current.Fork(1, 0)
 		head.Data = data
@@ -100,13 +101,13 @@ func (s *Session) Push(data indexing.MemoryData) (indexing.Memory, error) {
 	headPtr := s.appendToLog(head)
 
 	if err := s.setCurrent(headPtr); err != nil {
-		return indexing.Memory{}, err
+		return collective.Memory{}, err
 	}
 
 	return head, nil
 }
 
-func (s *Session) UpdateMemoryData(data indexing.MemoryData) error {
+func (s *Session) UpdateMemoryData(data collective.MemoryData) error {
 	_, err := s.Push(data)
 
 	if err != nil {
@@ -144,12 +145,12 @@ func (s *Session) Merge() error {
 	s.commitMutex.Lock()
 	defer s.commitMutex.Unlock()
 
-	doMerge := func() (*indexing.MemorySegment, indexing.Memory) {
+	doMerge := func() (*collective.MemorySegment, collective.Memory) {
 		s.logMutex.Lock()
 		defer s.logMutex.Unlock()
 
 		if len(s.log) == 0 {
-			return nil, indexing.Memory{}
+			return nil, collective.Memory{}
 		}
 
 		head := s.current.Fork(1, -1)
@@ -160,7 +161,7 @@ func (s *Session) Merge() error {
 
 		s.discardLog()
 
-		return indexing.NewMemorySegment(targets...), head
+		return collective.NewMemorySegment(targets...), head
 	}
 
 	segment, head := doMerge()
@@ -193,7 +194,7 @@ func (s *Session) Merge() error {
 	return s.setCurrent(mergeTargetPtr)
 }
 
-func (s *Session) appendToLog(memory indexing.Memory) *indexing.Memory {
+func (s *Session) appendToLog(memory collective.Memory) *collective.Memory {
 	index := len(s.log)
 	s.log = append(s.log, memory)
 
@@ -204,6 +205,6 @@ func (s *Session) discardLog() {
 	s.log = s.log[0:0]
 }
 
-func (s *Session) cloneLog() []indexing.Memory {
-	return append([]indexing.Memory(nil), s.log...)
+func (s *Session) cloneLog() []collective.Memory {
+	return append([]collective.Memory(nil), s.log...)
 }

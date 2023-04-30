@@ -8,7 +8,7 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"github.com/sashabaranov/go-openai"
 
-	"github.com/greenboxal/aip/pkg/indexing"
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
 	"github.com/greenboxal/aip/pkg/utils"
 )
@@ -18,6 +18,16 @@ type Storage struct {
 	oai *openai.Client
 
 	collection string
+}
+
+func (s *Storage) GetSegment(ctx context.Context, id collective.MemorySegmentID) (*collective.MemorySegment, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) GetMemory(ctx context.Context, id collective.MemoryID) (*collective.Memory, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewStorage(oai *openai.Client) (*Storage, error) {
@@ -47,7 +57,7 @@ func NewStorage(oai *openai.Client) (*Storage, error) {
 	return s, nil
 }
 
-func (s *Storage) AppendSegment(ctx context.Context, segment *indexing.MemorySegment) error {
+func (s *Storage) AppendSegment(ctx context.Context, segment *collective.MemorySegment) error {
 	chunkIndex := 0
 
 	allChunks := make([]string, 0, len(segment.Memories))

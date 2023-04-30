@@ -3,6 +3,7 @@ package reducers
 import (
 	"errors"
 
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/indexing"
 	"github.com/greenboxal/aip/pkg/indexing/llm"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
@@ -24,7 +25,7 @@ type SummaryDiffusionReducer struct {
 	MaxDepth       int
 }
 
-func (s *SummaryDiffusionReducer) ReduceSegment(ctx *indexing.ReducerContext) (*indexing.MemorySegment, error) {
+func (s *SummaryDiffusionReducer) ReduceSegment(ctx *indexing.ReducerContext) (*collective.MemorySegment, error) {
 	sctx := &summaryDiffusionReducerContext{
 		ReducerContext: ctx,
 		reducer:        s,
@@ -38,12 +39,12 @@ type summaryDiffusionReducerContext struct {
 
 	reducer *SummaryDiffusionReducer
 
-	currentSegment           *indexing.MemorySegment
+	currentSegment           *collective.MemorySegment
 	currentSegmentTokenCount int
 	currentDepth             int
 }
 
-func (ctx *summaryDiffusionReducerContext) setCurrentSegment(ms *indexing.MemorySegment) error {
+func (ctx *summaryDiffusionReducerContext) setCurrentSegment(ms *collective.MemorySegment) error {
 	count, err := ms.CalculateTokenCount(ctx.reducer.Tokenizer)
 
 	if err != nil {
@@ -66,7 +67,7 @@ func (ctx *summaryDiffusionReducerContext) reduceRound() error {
 	return errors.New("not implemented")
 }
 
-func (ctx *summaryDiffusionReducerContext) Reduce() (*indexing.MemorySegment, error) {
+func (ctx *summaryDiffusionReducerContext) Reduce() (*collective.MemorySegment, error) {
 	var sessionStack []indexing.Session
 
 	if err := ctx.setCurrentSegment(ctx.Segment); err != nil {
@@ -100,7 +101,7 @@ func (ctx *summaryDiffusionReducerContext) Reduce() (*indexing.MemorySegment, er
 
 		factor := totalTokens / s.MaxTotalTokens * overlapFactor
 		segments := split.PartitionEven(factor)
-		memories := make([]indexing.Memory, len(segments))
+		memories := make([]collective.Memory, len(segments))
 
 		for i, _ := range segments {
 			summary, err := s.Summarizer.Summarize(
@@ -114,10 +115,10 @@ func (ctx *summaryDiffusionReducerContext) Reduce() (*indexing.MemorySegment, er
 				return nil, err
 			}
 
-			memories[i] = indexing.NewMemory(ctx.Session.MemoryAddress(), summary)
+			memories[i] = collective.NewMemory(ctx.Session.MemoryAddress(), summary)
 		}
 
-		currentRoot = indexing.NewMemorySegment(memories...)
+		currentRoot = collective.NewMemorySegment(memories...)
 		currentSession, err = currentSession.Fork(ctx.Context)
 		sessionStack = append(sessionStack, currentSession)
 

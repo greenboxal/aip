@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/indexing"
@@ -29,11 +30,11 @@ func NewMemoryLink(
 }
 
 type OneShotGetMemoryRequest struct {
-	MemoryId indexing.MemoryID `json:"memory_id"`
+	MemoryId collective.MemoryID `json:"memory_id"`
 }
 
 type OneShotGetMemoryResponse struct {
-	Memory indexing.Memory `json:"memory"`
+	Memory collective.Memory `json:"memory"`
 }
 
 func (ml *MemoryLink) OneShotGetMemory(ctx context.Context, req *OneShotGetMemoryRequest) (*OneShotGetMemoryResponse, error) {
@@ -60,16 +61,16 @@ func (ml *MemoryLink) OneShotGetMemory(ctx context.Context, req *OneShotGetMemor
 }
 
 type OneShotPutMemoryRequest struct {
-	PreviousMemory *indexing.Memory    `json:"previous_memory"`
-	NewMemory      indexing.MemoryData `json:"new_memory"`
+	PreviousMemory *collective.Memory    `json:"previous_memory"`
+	NewMemory      collective.MemoryData `json:"new_memory"`
 }
 
 type OneShotPutMemoryResponse struct {
-	NewMemory indexing.Memory `json:"new_memory"`
+	NewMemory collective.Memory `json:"new_memory"`
 }
 
 func (ml *MemoryLink) OneShotPutMemory(ctx context.Context, req *OneShotPutMemoryRequest) (*OneShotPutMemoryResponse, error) {
-	var previousMemoryId *indexing.MemoryID
+	var previousMemoryId *collective.MemoryID
 
 	if req.PreviousMemory != nil {
 		previousMemoryId = &req.PreviousMemory.ID

@@ -2,16 +2,18 @@ package indexing
 
 import (
 	"context"
+
+	"github.com/greenboxal/aip/pkg/collective"
 )
 
 type ReducerContext struct {
 	Context context.Context
 	Session Session
-	Segment *MemorySegment
+	Segment *collective.MemorySegment
 
 	Hint string
 }
 
 type Reducer interface {
-	ReduceSegment(ctx *ReducerContext) (*MemorySegment, error)
+	ReduceSegment(ctx *ReducerContext) (*collective.MemorySegment, error)
 }

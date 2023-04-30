@@ -97,7 +97,7 @@ func (q *GraphQL) initializeTypeSystem() {
 
 				id := typ.MakeId(idQuery)
 
-				return q.db.Get(typ.ID(), id)
+				return q.db.Get(p.Context, typ.ID(), id)
 			},
 		}
 
@@ -105,7 +105,7 @@ func (q *GraphQL) initializeTypeSystem() {
 			Type: graphql.NewList(gqlType),
 
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return q.db.List(typ.ID())
+				return q.db.List(p.Context, typ.ID())
 			},
 		}
 	}

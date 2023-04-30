@@ -51,7 +51,7 @@ func NewStorage(
 	}
 }
 
-func (s *Storage) List(typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
+func (s *Storage) List(ctx context.Context, typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
 	var result []forddb.BasicResource
 
 	tx := s.db.NewTransaction(false)
@@ -84,7 +84,7 @@ func (s *Storage) List(typ forddb.ResourceTypeID) ([]forddb.BasicResource, error
 	return result, nil
 }
 
-func (s *Storage) Get(typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+func (s *Storage) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
 	tx := s.db.NewTransaction(false)
 	defer tx.Discard()
 
@@ -117,7 +117,7 @@ func (s *Storage) Get(typ forddb.ResourceTypeID, id forddb.BasicResourceID) (for
 	return resource, nil
 }
 
-func (s *Storage) Put(resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (s *Storage) Put(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
 	res, existing, err := s.doPut(resource)
 
 	if err != nil {
@@ -183,7 +183,7 @@ func (s *Storage) doPut(resource forddb.BasicResource) (forddb.BasicResource, fo
 	return resource, existing, nil
 }
 
-func (s *Storage) Delete(resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (s *Storage) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
 	res, err := s.doDelete(resource)
 
 	if err != nil {

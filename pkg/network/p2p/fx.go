@@ -13,7 +13,7 @@ import (
 )
 
 var Module = fx.Module(
-	"p2p",
+	"network/p2p",
 
 	fx.Provide(NewConnMgr),
 	fx.Provide(NewNetwork),

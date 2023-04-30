@@ -1,6 +1,7 @@
 package summarizers
 
 import (
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/indexing"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
@@ -20,12 +21,12 @@ type mipMapSummarizerContext struct {
 
 	MipMapSummarizer
 
-	currentSegment           *indexing.MemorySegment
+	currentSegment           *collective.MemorySegment
 	currentSegmentTokenCount int
 	currentDepth             int
 }
 
-func (ctx *mipMapSummarizerContext) setCurrentSegment(ms *indexing.MemorySegment) error {
+func (ctx *mipMapSummarizerContext) setCurrentSegment(ms *collective.MemorySegment) error {
 	count, err := ms.CalculateTokenCount(ctx.Tokenizer)
 
 	if err != nil {
@@ -67,7 +68,7 @@ func (ctx *mipMapSummarizerContext) reduceRound() error {
 		targetTokenCount = ctx.MaxTokens
 	}
 
-	memories := make([]indexing.Memory, len(targetSegment.Memories))
+	memories := make([]collective.Memory, len(targetSegment.Memories))
 
 	for i, m := range targetSegment.Memories {
 		result, err := ctx.Summarizer.Summarize(
@@ -90,12 +91,12 @@ func (ctx *mipMapSummarizerContext) reduceRound() error {
 		memories[i] = reduced
 	}
 
-	newSegment := indexing.NewMemorySegment(memories...)
+	newSegment := collective.NewMemorySegment(memories...)
 
 	return ctx.setCurrentSegment(newSegment)
 }
 
-func (ctx *mipMapSummarizerContext) Reduce() (*indexing.MemorySegment, error) {
+func (ctx *mipMapSummarizerContext) Reduce() (*collective.MemorySegment, error) {
 	if err := ctx.setCurrentSegment(ctx.Segment); err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (ctx *mipMapSummarizerContext) Reduce() (*indexing.MemorySegment, error) {
 	return ctx.currentSegment, nil
 }
 
-func (m *MipMapSummarizer) ReduceSegment(ctx *indexing.ReducerContext) (*indexing.MemorySegment, error) {
+func (m *MipMapSummarizer) ReduceSegment(ctx *indexing.ReducerContext) (*collective.MemorySegment, error) {
 	sctx := &mipMapSummarizerContext{
 		ReducerContext:   ctx,
 		MipMapSummarizer: *m,

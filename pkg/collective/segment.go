@@ -1,4 +1,4 @@
-package indexing
+package collective
 
 import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"

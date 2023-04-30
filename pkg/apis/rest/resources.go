@@ -31,6 +31,7 @@ func NewResourcesAPI(db forddb.Database) *ResourcesAPI {
 }
 
 func (a *ResourcesAPI) ListResource(writer http.ResponseWriter, request *http.Request) {
+	ctx := request.Context()
 	resourceTypeName := chi.URLParam(request, "resource")
 	resourceType := forddb.LookupTypeByName(resourceTypeName)
 
@@ -39,7 +40,7 @@ func (a *ResourcesAPI) ListResource(writer http.ResponseWriter, request *http.Re
 		return
 	}
 
-	resources, err := a.db.List(resourceType.ID())
+	resources, err := a.db.List(ctx, resourceType.ID())
 
 	if err != nil {
 		panic(err)
@@ -56,6 +57,7 @@ func (a *ResourcesAPI) ListResource(writer http.ResponseWriter, request *http.Re
 }
 
 func (a *ResourcesAPI) GetResource(writer http.ResponseWriter, request *http.Request) {
+	ctx := request.Context()
 	resourceTypeName := chi.URLParam(request, "resource")
 	resourceIdName := chi.URLParam(request, "id")
 
@@ -67,7 +69,7 @@ func (a *ResourcesAPI) GetResource(writer http.ResponseWriter, request *http.Req
 	}
 
 	resourceId := resourceType.MakeId(resourceIdName)
-	resource, err := a.db.Get(resourceType.ID(), resourceId)
+	resource, err := a.db.Get(ctx, resourceType.ID(), resourceId)
 
 	if err != nil {
 		panic(err)
@@ -137,6 +139,7 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 }
 
 func (a *ResourcesAPI) DeleteResource(writer http.ResponseWriter, request *http.Request) {
+	ctx := request.Context()
 	resourceTypeName := chi.URLParam(request, "resource")
 	resourceIdName := chi.URLParam(request, "id")
 
@@ -148,7 +151,7 @@ func (a *ResourcesAPI) DeleteResource(writer http.ResponseWriter, request *http.
 	}
 
 	resourceId := resourceType.MakeId(resourceIdName)
-	resource, err := a.db.Get(resourceType.ID(), resourceId)
+	resource, err := a.db.Get(ctx, resourceType.ID(), resourceId)
 
 	if err != nil {
 		panic(err)
@@ -159,7 +162,7 @@ func (a *ResourcesAPI) DeleteResource(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	resource, err = a.db.Delete(resource)
+	resource, err = a.db.Delete(ctx, resource)
 
 	if err != nil {
 		panic(err)

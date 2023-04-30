@@ -19,7 +19,7 @@ type Manager struct {
 
 func NewManager(
 	logger *zap.SugaredLogger,
-	storage indexing.Storage,
+	storage indexing.MemoryStorage,
 ) (*Manager, error) {
 	m := &Manager{
 		logger: logger.Named("ford"),

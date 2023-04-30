@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/knadh/koanf/parsers/dotenv"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -32,6 +33,7 @@ func NewConfigManager() (*ConfigManager, error) {
 		{Provider: file.Provider("aip.yaml"), Parser: yaml.Parser()},
 		{Provider: file.Provider("aip.toml"), Parser: toml.Parser()},
 		{Provider: file.Provider("aip.json"), Parser: json.Parser()},
+		{Provider: file.Provider(".env"), Parser: dotenv.Parser()},
 
 		{Provider: env.Provider("AIP_", "_", func(s string) string {
 			return strings.ToLower(strings.TrimPrefix(s, "AIP_"))

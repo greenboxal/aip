@@ -24,6 +24,14 @@ import (
 	"go.uber.org/zap"
 )
 
+type IpfsRouting interface {
+	routing.ContentRouting
+	routing.PeerRouting
+	routing.ValueStore
+
+	Bootstrap(context.Context) error
+}
+
 type Network struct {
 	logger *zap.SugaredLogger
 

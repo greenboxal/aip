@@ -1,15 +1,17 @@
 package indexing
 
+import "github.com/greenboxal/aip/pkg/collective"
+
 type Iterator interface {
-	RootMemoryID() MemoryID
-	BranchMemoryID() MemoryID
-	ParentMemoryID() MemoryID
-	CurrentMemoryID() MemoryID
-	MemoryAddress() MemoryAbsoluteAddress
+	RootMemoryID() collective.MemoryID
+	BranchMemoryID() collective.MemoryID
+	ParentMemoryID() collective.MemoryID
+	CurrentMemoryID() collective.MemoryID
+	MemoryAddress() collective.MemoryAbsoluteAddress
 
 	SeekRelative(offset int) error
-	SeekTo(id MemoryID) error
+	SeekTo(id collective.MemoryID) error
 
-	GetCurrentMemory() Memory
-	GetCurrentMemoryData() MemoryData
+	GetCurrentMemory() collective.Memory
+	GetCurrentMemoryData() collective.MemoryData
 }

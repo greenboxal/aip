@@ -22,7 +22,8 @@ func NewResourceManager(cm *ConfigManager) *ResourceManager {
 	}
 }
 
-func (rm *ResourceManager) GetDataDirectory(subPath string) string {
+func (rm *ResourceManager) GetDataDirectory(subPaths ...string) string {
+	subPath := path.Join(subPaths...)
 	p := path.Join(rm.dataDirectory, subPath)
 
 	if err := os.MkdirAll(p, 0750); err != nil {
@@ -32,7 +33,8 @@ func (rm *ResourceManager) GetDataDirectory(subPath string) string {
 	return p
 }
 
-func (rm *ResourceManager) GetPrivateDirectory(subPath string) string {
+func (rm *ResourceManager) GetPrivateDirectory(subPaths ...string) string {
+	subPath := path.Join(subPaths...)
 	p := path.Join(rm.privateDirectory, subPath)
 
 	if err := os.MkdirAll(p, 0700); err != nil {

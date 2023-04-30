@@ -8,6 +8,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/require"
 
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/indexing"
 	"github.com/greenboxal/aip/pkg/indexing/impl"
@@ -24,22 +25,22 @@ func TestMilvusStorage(t *testing.T) {
 
 	require.Nil(t, err)
 
-	err = milvus.AppendSegment(ctx, &indexing.MemorySegment{
-		ResourceMetadata: forddb.ResourceMetadata[indexing.MemorySegmentID, *indexing.MemorySegment]{
-			ID: indexing.MemorySegmentID{"head"},
+	err = milvus.AppendSegment(ctx, &collective.MemorySegment{
+		ResourceMetadata: forddb.ResourceMetadata[collective.MemorySegmentID, *collective.MemorySegment]{
+			ID: collective.MemorySegmentID{"head"},
 		},
 
-		Memories: []indexing.Memory{
+		Memories: []collective.Memory{
 			{
-				ResourceMetadata: forddb.ResourceMetadata[indexing.MemoryID, *indexing.Memory]{
-					ID: indexing.MemoryID{"head"},
+				ResourceMetadata: forddb.ResourceMetadata[collective.MemoryID, *collective.Memory]{
+					ID: collective.MemoryID{"head"},
 				},
 
-				RootMemoryID:   indexing.MemoryID{"root"},
-				BranchMemoryID: indexing.MemoryID{"branch"},
-				ParentMemoryID: indexing.MemoryID{"parent"},
+				RootMemoryID:   collective.MemoryID{"root"},
+				BranchMemoryID: collective.MemoryID{"branch"},
+				ParentMemoryID: collective.MemoryID{"parent"},
 
-				Data: indexing.MemoryData{
+				Data: collective.MemoryData{
 					Text: "Hello, world!",
 				},
 			},
@@ -78,15 +79,15 @@ func TestMilvusStorageWithIndex(t *testing.T) {
 	})
 
 	sess, err := index.OpenSession(ctx, indexing.SessionOptions{
-		RootMemoryID:    indexing.MemoryID{"root"},
-		BranchMemoryID:  indexing.MemoryID{"branch"},
-		InitialMemoryID: indexing.MemoryID{"initial"},
+		RootMemoryID:    collective.MemoryID{"root"},
+		BranchMemoryID:  collective.MemoryID{"branch"},
+		InitialMemoryID: collective.MemoryID{"initial"},
 	})
 
 	require.Nil(t, err)
 
 	for _, data := range testData {
-		err = sess.UpdateMemoryData(indexing.NewMemoryDataFromBytes([]byte(data)))
+		err = sess.UpdateMemoryData(collective.NewMemoryDataFromBytes([]byte(data)))
 
 		require.Nil(t, err)
 	}

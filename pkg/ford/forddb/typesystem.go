@@ -66,8 +66,8 @@ func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
 			reflect.New(t.IDType()),
 			func(s string) (interface{}, error) {
 				idVal := reflect.New(t.IDType())
-				idStr := idVal.Interface().(stringResourceID)
-				idStr.setValue(s)
+				idStr := idVal.Interface().(IStringResourceID)
+				idStr.setValueString(s)
 				return idVal.Elem().Interface(), nil
 			},
 			func(i interface{}) (string, error) {

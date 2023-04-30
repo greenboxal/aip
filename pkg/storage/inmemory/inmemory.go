@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
@@ -22,7 +23,7 @@ func NewInMemory() *InMemoryDatabase {
 
 	// FIXME: Shouldn't happen here
 	for _, typ := range forddb.TypeSystem().ResourceTypes() {
-		if _, err := db.Put(typ); err != nil {
+		if _, err := db.Put(context.Background(), typ); err != nil {
 			panic(err)
 		}
 	}
@@ -30,7 +31,7 @@ func NewInMemory() *InMemoryDatabase {
 	return db
 }
 
-func (db *InMemoryDatabase) List(typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
+func (db *InMemoryDatabase) List(ctx context.Context, typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
 	rt := db.getTable(typ, false)
 
 	if rt == nil {
@@ -40,7 +41,7 @@ func (db *InMemoryDatabase) List(typ forddb.ResourceTypeID) ([]forddb.BasicResou
 	return rt.List()
 }
 
-func (db *InMemoryDatabase) Get(typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+func (db *InMemoryDatabase) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
 	slot := db.getSlot(typ, id, false, false)
 
 	if slot == nil {
@@ -50,7 +51,7 @@ func (db *InMemoryDatabase) Get(typ forddb.ResourceTypeID, id forddb.BasicResour
 	return slot.Get()
 }
 
-func (db *InMemoryDatabase) Put(resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (db *InMemoryDatabase) Put(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
 	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {
@@ -60,7 +61,7 @@ func (db *InMemoryDatabase) Put(resource forddb.BasicResource) (forddb.BasicReso
 	return slot.Update(resource)
 }
 
-func (db *InMemoryDatabase) Delete(resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (db *InMemoryDatabase) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
 	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
 
 	if slot == nil {

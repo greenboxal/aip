@@ -1,14 +1,14 @@
 package chunkers
 
 import (
-	"github.com/greenboxal/aip/pkg/indexing"
+	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/utils"
 )
 
-func SplitSegment(segment *indexing.MemorySegment, maxTokens int, maxOverlap int) (*indexing.MemorySegment, int, error) {
+func SplitSegment(segment *collective.MemorySegment, maxTokens int, maxOverlap int) (*collective.MemorySegment, int, error) {
 	index := 0
 	totalTokens := 0
-	memories := make([]indexing.Memory, 0, len(segment.Memories))
+	memories := make([]collective.Memory, 0, len(segment.Memories))
 
 	for _, m := range segment.Memories {
 		chunks, err := SplitTextIntoChunks(m.Data.Text, maxTokens, maxOverlap)
@@ -23,18 +23,18 @@ func SplitSegment(segment *indexing.MemorySegment, maxTokens int, maxOverlap int
 		memories = utils.Grow(memories, len(chunks))
 
 		for i, chunk := range chunks {
-			pointer := indexing.Absolute(
-				indexing.Anchors(m.RootMemoryID, m.BranchMemoryID, m.ParentMemoryID),
-				indexing.Relative(m.Clock, m.Height),
+			pointer := collective.Absolute(
+				collective.Anchors(m.RootMemoryID, m.BranchMemoryID, m.ParentMemoryID),
+				collective.Relative(m.Clock, m.Height),
 			)
 
-			data := indexing.NewMemoryData(chunk)
+			data := collective.NewMemoryData(chunk)
 
-			memories[baseIndex+i] = indexing.NewMemory(pointer, data)
+			memories[baseIndex+i] = collective.NewMemory(pointer, data)
 
 			totalTokens += len(chunk)
 		}
 	}
 
-	return indexing.NewMemorySegment(memories...), totalTokens, nil
+	return collective.NewMemorySegment(memories...), totalTokens, nil
 }

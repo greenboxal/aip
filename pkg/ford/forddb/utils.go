@@ -1,6 +1,7 @@
 package forddb
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -111,7 +112,7 @@ func ImportPath(db Database, path string) error {
 				return nil
 			}
 
-			_, err = db.Put(resource)
+			_, err = db.Put(context.TODO(), resource)
 
 			if err != nil {
 				merr = multierror.Append(merr, err)

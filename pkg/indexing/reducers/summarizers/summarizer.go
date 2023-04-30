@@ -3,7 +3,7 @@ package summarizers
 import (
 	"context"
 
-	"github.com/greenboxal/aip/pkg/indexing"
+	"github.com/greenboxal/aip/pkg/collective"
 )
 
 type SummarizeOption func(options *SummarizeOptions)
@@ -40,5 +40,5 @@ type Summarizer interface {
 		ctx context.Context,
 		document string,
 		options ...SummarizeOption,
-	) (indexing.MemoryData, error)
+	) (collective.MemoryData, error)
 }

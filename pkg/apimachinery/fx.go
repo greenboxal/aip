@@ -30,8 +30,6 @@ var Module = fx.Module(
 				for _, m := range mounts {
 					m.Bind(server)
 				}
-
-				server.Freeze()
 			},
 			fx.ParamTags(``, `group:"rpc-service-bindings"`),
 		),

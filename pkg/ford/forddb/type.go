@@ -35,7 +35,7 @@ func (s *ResourceTypeID) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*string)(s))
 }
 
-func (s *ResourceTypeID) setValue(value string) {
+func (s *ResourceTypeID) setValueString(value string) {
 	*s = ResourceTypeID(value)
 }
 
@@ -72,14 +72,6 @@ type BasicResourceType interface {
 
 type ResourceType[ID ResourceID[T], T Resource[ID]] interface {
 	BasicResourceType
-}
-
-func NewStringID[ID BasicResourceID](name string) (result ID) {
-	t := reflect.TypeOf(result)
-	idVal := reflect.New(t)
-	idStr := idVal.Interface().(stringResourceID)
-	idStr.setValue(name)
-	return idVal.Elem().Interface().(ID)
 }
 
 func LookupTypeByName(name string) BasicResourceType {
@@ -185,7 +177,7 @@ func (r *resourceType[ID, T]) New() BasicResource {
 func (r *resourceType[ID, T]) MakeId(name string) BasicResourceID {
 	idValue := reflect.New(r.idType)
 
-	idValue.Interface().(stringResourceID).setValue(name)
+	idValue.Interface().(IStringResourceID).setValueString(name)
 
 	return idValue.Elem().Interface().(BasicResourceID)
 }
@@ -233,8 +225,4 @@ func derefPointer(t reflect.Type) reflect.Type {
 	}
 
 	return t
-}
-
-type stringResourceID interface {
-	setValue(value string)
 }

@@ -16,7 +16,7 @@ func WithMilvusStorage() fx.Option {
 	return fx.Options(
 		Module,
 
-		fx.Provide(func(s *Storage) indexing.Storage {
+		fx.Provide(func(s *Storage) indexing.MemoryStorage {
 			return s
 		}),
 	)

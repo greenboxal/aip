@@ -1,13 +1,17 @@
 package indexing
 
-import "context"
+import (
+	"context"
+
+	"github.com/greenboxal/aip/pkg/collective"
+)
 
 type SessionOptions struct {
 	Namespace       string
 	ReadOnly        bool
-	RootMemoryID    MemoryID
-	BranchMemoryID  MemoryID
-	InitialMemoryID MemoryID
+	RootMemoryID    collective.MemoryID
+	BranchMemoryID  collective.MemoryID
+	InitialMemoryID collective.MemoryID
 }
 
 type Session interface {
@@ -18,9 +22,9 @@ type Session interface {
 	Branch(ctx context.Context, clock, height int64) (Session, error)
 	Fork(ctx context.Context) (Session, error)
 	Split(ctx context.Context) (Session, error)
-	Push(data MemoryData) (Memory, error)
+	Push(data collective.MemoryData) (collective.Memory, error)
 
-	UpdateMemoryData(data MemoryData) error
+	UpdateMemoryData(data collective.MemoryData) error
 
 	Discard()
 	Merge() error

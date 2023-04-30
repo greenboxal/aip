@@ -17,9 +17,6 @@ type RpcService struct {
 	*jsonrpc.Handler
 }
 
-func (s *RpcService) Freeze() {
-}
-
 func NewRpcService() *RpcService {
 	handler := &jsonrpc.Handler{}
 
