@@ -1,24 +1,8 @@
 package apimachinery
 
 import (
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/fx"
 )
-
-type MountOption func(opts *MountOptions)
-
-func WithStripPrefix() MountOption {
-	return func(opts *MountOptions) {
-		opts.StripPrefix = true
-	}
-}
-
-type MountOptions struct {
-	StripPrefix bool
-}
 
 var Module = fx.Module(
 	"apimachinery",
@@ -28,47 +12,58 @@ var Module = fx.Module(
 
 	ProvideHttpService[*RpcService](NewRpcService, "/v1/rpc"),
 	ProvideHttpService[*Docs](NewDocs, "/v1/docs"),
+
+	fx.Invoke(
+		fx.Annotate(
+			func(mux *RootMux, mounts []HttpServiceMount) {
+				for _, m := range mounts {
+					m.Install(mux)
+				}
+			},
+			fx.ParamTags(``, `group:"http-service-mounts"`),
+		),
+	),
+
+	fx.Invoke(
+		fx.Annotate(
+			func(server *RpcService, mounts []RpcServiceBinding) {
+				for _, m := range mounts {
+					m.Bind(server)
+				}
+
+				server.Freeze()
+			},
+			fx.ParamTags(``, `group:"rpc-service-bindings"`),
+		),
+	),
 )
 
-func NewMountOptions(opts ...MountOption) *MountOptions {
-	options := &MountOptions{}
-
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	return options
+type rpcServiceBinding[T any] struct {
+	Name    string
+	Handler T
 }
 
-func MountHttpService[T http.Handler](path string, options ...MountOption) fx.Option {
-	opts := NewMountOptions(options...)
+func (r *rpcServiceBinding[T]) Bind(server *RpcService) {
+	mustRegister(server.Handler, r.Name, r.Handler)
+}
 
-	return fx.Invoke(func(mux *RootMux, handler T) {
-		if opts.StripPrefix {
-			mux.Route(path, func(r chi.Router) {
-				r.Use(middleware.PathRewrite(path, ""))
-				r.Mount("/", handler)
-			})
-		} else {
-			mux.Mount(path, handler)
+type RpcServiceBinding interface {
+	Bind(server *RpcService)
+}
+
+func BindRpcService[T any](name string) fx.Option {
+	return fx.Provide(fx.Annotate(func(handler T) *rpcServiceBinding[T] {
+		return &rpcServiceBinding[T]{
+			Name:    name,
+			Handler: handler,
 		}
-	})
-}
-
-func ProvideHttpService[T http.Handler](constructor any, path string) fx.Option {
-	return fx.Options(
-		fx.Provide(constructor),
-
-		MountHttpService[T](path),
-	)
+	}, fx.As((*RpcServiceBinding)(nil)), fx.ResultTags(`group:"rpc-service-bindings"`)))
 }
 
 func ProvideRpcService[T any](constructor any, name string) fx.Option {
 	return fx.Options(
 		fx.Provide(constructor),
 
-		fx.Invoke(func(handler *RpcService, svc T) {
-			mustRegister(handler.Handler, name, svc)
-		}),
+		BindRpcService[T](name),
 	)
 }

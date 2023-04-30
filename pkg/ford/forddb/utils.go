@@ -138,11 +138,11 @@ func isSupportedFile(path string) bool {
 	return false
 }
 
-func normalizedName(str string) string {
+func NormalizeName(str string) string {
 	return NormalizeTypeNameRegex.ReplaceAllString(str, "")
 }
 
-func normalizedTypeName(typ reflect.Type) schema.TypeName {
+func NormalizedTypeName(typ reflect.Type) schema.TypeName {
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}

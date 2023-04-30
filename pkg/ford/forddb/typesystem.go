@@ -158,7 +158,7 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 	case reflect.Uint32:
 		fallthrough
 	case reflect.Uint64:
-		name := normalizedTypeName(typ)
+		name := NormalizedTypeName(typ)
 
 		if name == "" {
 			name = typ.Kind().String()
@@ -169,7 +169,7 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 	case reflect.Float32:
 		fallthrough
 	case reflect.Float64:
-		name := normalizedTypeName(typ)
+		name := NormalizedTypeName(typ)
 
 		if name == "" {
 			name = typ.Kind().String()
@@ -178,7 +178,7 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 		result = schema.SpawnFloat(name)
 
 	case reflect.Bool:
-		name := normalizedTypeName(typ)
+		name := NormalizedTypeName(typ)
 
 		if name == "" {
 			name = typ.Kind().String()
@@ -187,7 +187,7 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 		result = schema.SpawnBool(name)
 
 	case reflect.String:
-		name := normalizedTypeName(typ)
+		name := NormalizedTypeName(typ)
 
 		if name == "" {
 			name = typ.Kind().String()
@@ -211,7 +211,7 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 func (rts *ResourceTypeSystem) schemaForStruct(typ reflect.Type) schema.Type {
 	var fields []schema.StructField
 	var repr schema.StructRepresentation
-	name := normalizedTypeName(typ)
+	name := NormalizedTypeName(typ)
 
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
@@ -249,7 +249,7 @@ func (rts *ResourceTypeSystem) schemaForStruct(typ reflect.Type) schema.Type {
 
 			fields = append(fields, f)
 		} else {
-			fieldTypeName := normalizedTypeName(field.Type)
+			fieldTypeName := NormalizedTypeName(field.Type)
 
 			f := schema.SpawnStructField(
 				field.Name,

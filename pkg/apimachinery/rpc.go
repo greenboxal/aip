@@ -6,6 +6,8 @@ import (
 
 	"github.com/swaggest/jsonrpc"
 	"github.com/swaggest/usecase"
+
+	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
@@ -15,6 +17,9 @@ type RpcService struct {
 	*jsonrpc.Handler
 }
 
+func (s *RpcService) Freeze() {
+}
+
 func NewRpcService() *RpcService {
 	handler := &jsonrpc.Handler{}
 
@@ -22,8 +27,12 @@ func NewRpcService() *RpcService {
 	apiSchema.Reflector().SpecEns().Info.Title = "supd"
 	apiSchema.Reflector().SpecEns().Info.Version = "v1.0.0"
 
+	apiSchema.Reflector().InterceptDefName(func(t reflect.Type, defaultDefName string) string {
+		return forddb.NormalizedTypeName(t)
+	})
+
 	handler.OpenAPI = &apiSchema
-	//handler.Validator = &jsonrpc.JSONSchemaValidator{}
+	handler.Validator = &jsonrpc.JSONSchemaValidator{}
 	handler.SkipResultValidation = true
 
 	return &RpcService{Handler: handler}

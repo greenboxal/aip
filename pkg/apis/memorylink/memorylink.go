@@ -75,10 +75,15 @@ func (ml *MemoryLink) OneShotPutMemory(ctx context.Context, req *OneShotPutMemor
 		previousMemoryId = &req.PreviousMemory.ID
 	}
 
-	tx, err := ml.index.OpenSession(ctx, indexing.SessionOptions{
-		ReadOnly:        true,
-		InitialMemoryID: req.PreviousMemory.ID,
-	})
+	opts := indexing.SessionOptions{
+		ReadOnly: false,
+	}
+
+	if previousMemoryId != nil {
+		opts.InitialMemoryID = *previousMemoryId
+	}
+
+	tx, err := ml.index.OpenSession(ctx, opts)
 
 	if err != nil {
 		return nil, err
@@ -95,6 +100,10 @@ func (ml *MemoryLink) OneShotPutMemory(ctx context.Context, req *OneShotPutMemor
 	newMemory, err := tx.Push(req.NewMemory)
 
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Merge(); err != nil {
 		return nil, err
 	}
 

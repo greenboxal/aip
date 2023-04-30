@@ -16,13 +16,13 @@ type Docs struct {
 func NewDocs(rpc *RpcService) *Docs {
 	mux := &Docs{Router: chi.NewMux()}
 
-	mux.Method(http.MethodGet, "/docs/openapi.json", rpc.OpenAPI)
+	mux.Method(http.MethodGet, "/openapi.json", rpc.OpenAPI)
 
-	mux.Mount("/docs", v3cdn.NewHandlerWithConfig(swgui.Config{
+	mux.Mount("/", v3cdn.NewHandlerWithConfig(swgui.Config{
 		Title:       "AIP SUPD",
-		SwaggerJSON: "/docs/openapi.json",
-		BasePath:    "/docs",
-		SettingsUI:  jsonrpc.SwguiSettings(nil, "/rpc/v1"),
+		SwaggerJSON: "/v1/docs/openapi.json",
+		BasePath:    "/v1/docs",
+		SettingsUI:  jsonrpc.SwguiSettings(nil, "/v1/rpc"),
 	}))
 
 	return mux
