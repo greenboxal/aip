@@ -8,7 +8,8 @@ import (
 )
 
 type logIterator struct {
-	ls *FileLogStore
+	ls      *FileLogStore
+	options forddb.LogIteratorOptions
 
 	current        *forddb.LogEntryRecord
 	currentLsn     forddb.LSN
@@ -17,9 +18,10 @@ type logIterator struct {
 	err error
 }
 
-func newLogIterator(ls *FileLogStore) *logIterator {
+func newLogIterator(ls *FileLogStore, options forddb.LogIteratorOptions) *logIterator {
 	return &logIterator{
-		ls: ls,
+		ls:      ls,
+		options: options,
 	}
 }
 

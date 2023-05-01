@@ -9,7 +9,31 @@ type LogStore interface {
 
 	Append(ctx context.Context, log LogEntry) (LogEntryRecord, error)
 
-	Iterator() LogIterator
+	Iterator(options ...LogIteratorOption) LogIterator
+
+	Close() error
+}
+
+type LogIteratorOptions struct {
+	Block bool
+}
+
+type LogIteratorOption func(opts *LogIteratorOptions)
+
+func NewLogIteratorOptions(options ...LogIteratorOption) LogIteratorOptions {
+	opts := LogIteratorOptions{}
+
+	for _, opt := range options {
+		opt(&opts)
+	}
+
+	return opts
+}
+
+func WithBlockingIterator() LogIteratorOption {
+	return func(opts *LogIteratorOptions) {
+		opts.Block = true
+	}
 }
 
 type LogIterator interface {

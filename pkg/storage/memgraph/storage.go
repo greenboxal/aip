@@ -27,6 +27,10 @@ type Storage struct {
 	store omg.Store
 }
 
+func (s *Storage) Close() error {
+	return s.conn.Close(context.TODO())
+}
+
 func NewStorage(config *StorageConfig) (*Storage, error) {
 	config.ConnectionUri = "bolt+ssc://54.152.19.198:7687"
 	config.Username = "aip"

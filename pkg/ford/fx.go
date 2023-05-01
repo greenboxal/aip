@@ -21,14 +21,16 @@ var Module = fx.Module(
 	fx.Provide(forddbimpl.NewFileLogStore),
 
 	fx.Provide(func(rsm *config.ResourceManager) (forddb.LogStore, error) {
-		path := rsm.GetDataDirectory("log")
-		fss, err := forddbimpl.NewFileLogStore(path)
+		//path := rsm.GetDataDirectory("log")
+		//fss, err := forddbimpl.NewFileLogStore(path)
 
-		if err != nil {
-			return nil, err
-		}
+		//if err != nil {
+		//	return nil, err
+		//}
 
-		return fss, nil
+		//return fss, nil
+	
+		return forddbimpl.NewMemoryLogStore(), nil
 	}),
 
 	fx.Provide(func(m *Manager) indexing.Index {

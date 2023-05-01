@@ -18,8 +18,6 @@ type StorageConfig struct {
 }
 
 type Storage struct {
-	forddb.HasListenersBase
-
 	db *badger.DB
 }
 
@@ -118,17 +116,17 @@ func (s *Storage) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.
 }
 
 func (s *Storage) Put(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
-	res, existing, err := s.doPut(resource)
+	for {
+		res, _, err := s.doPut(resource)
 
-	if err != nil {
-		return nil, err
+		if err == badger.ErrConflict {
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+
+		return res, nil
 	}
-
-	if res != nil {
-		forddb.FireListeners(&s.HasListenersBase, resource.GetResourceID(), existing, res)
-	}
-
-	return res, nil
 }
 
 func (s *Storage) doPut(resource forddb.BasicResource) (forddb.BasicResource, forddb.BasicResource, error) {
@@ -184,17 +182,17 @@ func (s *Storage) doPut(resource forddb.BasicResource) (forddb.BasicResource, fo
 }
 
 func (s *Storage) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
-	res, err := s.doDelete(resource)
+	for {
+		res, err := s.doDelete(resource)
 
-	if err != nil {
-		return nil, err
+		if err == badger.ErrConflict {
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+
+		return res, nil
 	}
-
-	if res != nil {
-		forddb.FireListeners(&s.HasListenersBase, resource.GetResourceID(), res, nil)
-	}
-
-	return res, nil
 }
 
 func (s *Storage) doDelete(resource forddb.BasicResource) (forddb.BasicResource, error) {
@@ -237,6 +235,10 @@ func (s *Storage) doDelete(resource forddb.BasicResource) (forddb.BasicResource,
 	}
 
 	return resource, nil
+}
+
+func (s *Storage) Close() error {
+	return s.db.Close()
 }
 
 type ZapEventLogger struct {

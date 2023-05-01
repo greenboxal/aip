@@ -49,6 +49,10 @@ func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
 		return res, nil
 	}
 
+	if raw == nil {
+		return nil, forddb.ErrNotFound
+	}
+
 	return forddb.Decode(raw)
 }
 
@@ -63,18 +67,18 @@ func (rs *resourceSlot) doGet(
 		defer rs.m.RUnlock()
 	}
 
-	if !rs.hasValue && wait {
-		if !rs.hasValue {
-			rs.cond.Wait()
-		}
-	}
+	rs.table.notifyGet(rs)
 
-	if !rs.hasValue {
-		return nil, nil, forddb.ErrNotFound
+	for wait && !rs.hasValue && rs.err == nil {
+		rs.cond.Wait()
 	}
 
 	if rs.err != nil {
 		return nil, nil, rs.err
+	}
+
+	if !rs.hasValue {
+		return nil, nil, forddb.ErrNotFound
 	}
 
 	if rs.table.typ.Type().IsRuntimeOnly() {
@@ -178,6 +182,7 @@ func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResou
 	}
 
 	rs.hasValue = true
+	rs.err = nil
 
 	return current, resource, true, nil
 }
@@ -242,4 +247,12 @@ func (rs *resourceSlot) getCost() int64 {
 	}
 
 	return cost
+}
+
+func (rs *resourceSlot) setError(err error) {
+	rs.m.Lock()
+	defer rs.m.Unlock()
+
+	rs.err = err
+	rs.cond.Broadcast()
 }

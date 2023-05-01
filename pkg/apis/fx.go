@@ -13,6 +13,9 @@ import (
 var Module = fx.Module(
 	"apis/v1",
 
+	apimachinery.ProvideHttpService[*apimachinery.RpcService](apimachinery.NewRpcService, "/v1/rpc"),
+	apimachinery.ProvideHttpService[*apimachinery.Docs](apimachinery.NewDocs, "/v1/docs"),
+
 	apimachinery.ProvideHttpService[*graphql.GraphQL](graphql.NewGraphQL, "/v1/graphql"),
 	apimachinery.ProvideHttpService[*rest.ResourcesAPI](rest.NewResourcesAPI, "/v1"),
 

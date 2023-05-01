@@ -19,7 +19,7 @@ type logStream struct {
 
 func NewLogStream(ls LogStore, id LogStreamID, fa, fb *os.File) (LogStream, error) {
 	l := &logStream{
-		LogIterator: ls.Iterator(),
+		LogIterator: ls.Iterator(WithBlockingIterator()),
 
 		id: id,
 		fa: fa,
@@ -101,10 +101,16 @@ func (l *logStream) readCheckpoint(f *os.File) (lsn LSN, err error) {
 	data, err = io.ReadAll(f)
 
 	if err != nil {
+		if err == io.EOF {
+			err = nil
+		}
+
 		return
 	}
 
-	err = bson.Unmarshal(data, &lsn)
+	if len(data) > 0 {
+		err = bson.Unmarshal(data, &lsn)
+	}
 
 	return
 }

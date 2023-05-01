@@ -20,6 +20,8 @@ const FileEventSegmentMagic = 0x46534547 // "FSEG"
 const FileEventSegmentHeaderSize = 64    // "FSEG"
 
 type FileLogStore struct {
+	m sync.RWMutex
+
 	logDir string
 
 	currentSegment *fileStoreSegment
@@ -72,8 +74,20 @@ func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fordd
 	return record, nil
 }
 
-func (fls *FileLogStore) Iterator() forddb.LogIterator {
-	return newLogIterator(fls)
+func (fls *FileLogStore) Iterator(options ...forddb.LogIteratorOption) forddb.LogIterator {
+	return newLogIterator(fls, forddb.NewLogIteratorOptions(options...))
+}
+
+func (fls *FileLogStore) Close() error {
+	fls.m.Lock()
+
+	if fls.currentSegment != nil {
+		if err := fls.currentSegment.Close(); err != nil {
+			return nil
+		}
+	}
+
+	return nil
 }
 
 func (fls *FileLogStore) openSegment(
@@ -116,8 +130,9 @@ type fileStoreSegment struct {
 	file     *os.File
 	readOnly bool
 
-	head forddb.LSN
-	tail forddb.LSN
+	head   forddb.LSN
+	tail   forddb.LSN
+	offset uint64
 
 	header [FileEventSegmentHeaderSize]byte
 }
@@ -222,6 +237,13 @@ func (fss *fileStoreSegment) Close() error {
 	fss.Lock()
 	defer fss.Unlock()
 
+	if !fss.readOnly {
+		// Flush header
+		if err := fss.updateHeader(fss.offset, fss.tail); err != nil {
+			return err
+		}
+	}
+
 	if err := fss.file.Close(); err != nil {
 		return err
 	}
@@ -252,6 +274,7 @@ func (fss *fileStoreSegment) updateHeader(lastOffset uint64, tail forddb.LSN) er
 	}
 
 	fss.tail = tail
+	fss.offset = lastOffset
 
 	return nil
 }

@@ -7,4 +7,5 @@ type Storage interface {
 	Get(ctx context.Context, typ ResourceTypeID, id BasicResourceID) (BasicResource, error)
 	Put(ctx context.Context, resource BasicResource) (BasicResource, error)
 	Delete(ctx context.Context, resource BasicResource) (BasicResource, error)
+	Close() error
 }

@@ -10,9 +10,6 @@ var Module = fx.Module(
 	fx.Provide(NewServer),
 	fx.Provide(NewRootMux),
 
-	ProvideHttpService[*RpcService](NewRpcService, "/v1/rpc"),
-	ProvideHttpService[*Docs](NewDocs, "/v1/docs"),
-
 	fx.Invoke(
 		fx.Annotate(
 			func(mux *RootMux, mounts []HttpServiceMount) {

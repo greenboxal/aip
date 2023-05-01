@@ -156,3 +156,7 @@ func (rt *resourceTable) GetSlot(id forddb.BasicResourceID, create bool) *resour
 
 	return rs
 }
+
+func (rt *resourceTable) notifyGet(rs *resourceSlot) {
+	rt.db.notifyGet(rs)
+}

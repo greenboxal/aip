@@ -45,6 +45,10 @@ func (s *Storage) Delete(ctx context.Context, resource forddb.BasicResource) (fo
 	panic("implement me")
 }
 
+func (s *Storage) Close() error {
+	return nil
+}
+
 func (s *Storage) syncGraphFrom(
 	ctx context.Context,
 	peerId peer.ID,

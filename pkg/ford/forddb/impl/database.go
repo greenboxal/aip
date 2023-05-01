@@ -4,6 +4,9 @@ import (
 	"context"
 	"sync"
 
+	"github.com/jbenet/goprocess"
+	goprocessctx "github.com/jbenet/goprocess/context"
+
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
@@ -15,6 +18,12 @@ type database struct {
 	storage forddb.Storage
 
 	resources map[forddb.ResourceTypeID]*resourceTable
+
+	objectIndexer        *objectIndexer
+	objectIndexerProcess goprocess.Process
+
+	objectFetcher      *objectFetcher
+	objectFetchProcess goprocess.Process
 }
 
 func NewDatabase(logStore forddb.LogStore, storage forddb.Storage) forddb.Database {
@@ -24,6 +33,24 @@ func NewDatabase(logStore forddb.LogStore, storage forddb.Storage) forddb.Databa
 
 		resources: make(map[forddb.ResourceTypeID]*resourceTable),
 	}
+
+	db.objectIndexer = newObjectIndexer(db)
+	db.objectIndexerProcess = goprocess.Go(func(proc goprocess.Process) {
+		ctx := goprocessctx.OnClosingContext(proc)
+
+		if err := db.objectIndexer.Run(ctx); err != nil {
+			panic(err)
+		}
+	})
+
+	db.objectFetcher = newObjectFetcher(db)
+	db.objectFetchProcess = goprocess.Go(func(proc goprocess.Process) {
+		ctx := goprocessctx.OnClosingContext(proc)
+
+		if err := db.objectIndexer.Run(ctx); err != nil {
+			panic(err)
+		}
+	})
 
 	// Index all resource types
 	for _, typ := range forddb.TypeSystem().ResourceTypes() {
@@ -112,4 +139,27 @@ func (db *database) GetTable(typ forddb.ResourceTypeID, create bool) *resourceTa
 	db.resources[typ] = rt
 
 	return rt
+}
+
+func (db *database) Close() error {
+	db.m.Lock()
+	defer db.m.Unlock()
+
+	if err := db.objectIndexerProcess.Close(); err != nil {
+		return err
+	}
+
+	if err := db.storage.Close(); err != nil {
+		return err
+	}
+
+	if err := db.log.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *database) notifyGet(rs *resourceSlot) {
+
 }
