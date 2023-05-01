@@ -1,6 +1,7 @@
 package forddbimpl
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
@@ -20,9 +21,10 @@ type resourceSlot struct {
 	isPinned bool
 	hasValue bool
 
-	encoded forddb.RawResource
-	value   forddb.BasicResource
-	err     error
+	lastRecord forddb.LogEntryRecord
+	encoded    forddb.RawResource
+	value      forddb.BasicResource
+	err        error
 }
 
 func newResourceSlot(table *resourceTable, id forddb.BasicResourceID) *resourceSlot {
@@ -36,64 +38,85 @@ func newResourceSlot(table *resourceTable, id forddb.BasicResourceID) *resourceS
 	return rs
 }
 
-func (s *resourceSlot) Get() (forddb.BasicResource, error) {
-	s.m.RLock()
-	defer s.m.RUnlock()
-
-	return s.doGet(true)
-}
-
-func (s *resourceSlot) doGet(wait bool) (forddb.BasicResource, error) {
-	if !s.hasValue && wait {
-		if !s.hasValue {
-			s.cond.Wait()
-		}
-	}
-
-	if !s.hasValue {
-		return nil, forddb.ErrNotFound
-	}
-
-	if s.err != nil {
-		return nil, s.err
-	}
-
-	if s.table.typ.Type().IsRuntimeOnly() {
-		return s.value, nil
-	}
-
-	instance, err := forddb.Decode(s.encoded)
+func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
+	raw, res, err := rs.doGet(ctx, true, true, false)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return instance.(forddb.BasicResource), nil
+	if res != nil {
+		return res, nil
+	}
+
+	return forddb.Decode(raw)
 }
 
-func (s *resourceSlot) Update(resource forddb.BasicResource) (forddb.BasicResource, error) {
-	old, current, changed, err := s.doUpdate(resource)
+func (rs *resourceSlot) doGet(
+	ctx context.Context,
+	lock bool,
+	wait bool,
+	decode bool,
+) (raw forddb.RawResource, res forddb.BasicResource, err error) {
+	if lock {
+		rs.m.RLock()
+		defer rs.m.RUnlock()
+	}
+
+	if !rs.hasValue && wait {
+		if !rs.hasValue {
+			rs.cond.Wait()
+		}
+	}
+
+	if !rs.hasValue {
+		return nil, nil, forddb.ErrNotFound
+	}
+
+	if rs.err != nil {
+		return nil, nil, rs.err
+	}
+
+	if rs.table.typ.Type().IsRuntimeOnly() {
+		res = rs.value
+	} else {
+		raw = rs.encoded
+
+		if decode {
+			res, err = forddb.Decode(rs.encoded)
+
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func (rs *resourceSlot) Update(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
+	old, current, changed, err := rs.doUpdate(ctx, resource)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if changed {
-		s.cond.Broadcast()
+		rs.cond.Broadcast()
 
-		forddb.FireListeners(&s.HasListenersBase, s.id, old, current)
-		forddb.FireListeners(&s.table.HasListenersBase, s.id, old, current)
-		forddb.FireListeners(&s.table.db.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&rs.HasListenersBase, rs.id, old, current)
+		forddb.FireListeners(&rs.table.HasListenersBase, rs.id, old, current)
+		forddb.FireListeners(&rs.table.db.HasListenersBase, rs.id, old, current)
 	}
 
 	return current, nil
 }
 
-func (s *resourceSlot) doUpdate(resource forddb.BasicResource) (forddb.BasicResource, forddb.BasicResource, bool, error) {
-	s.cond.L.Lock()
-	defer s.cond.L.Unlock()
+func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, forddb.BasicResource, bool, error) {
+	rs.cond.L.Lock()
+	defer rs.cond.L.Unlock()
 
-	current, err := s.doGet(false)
+	_, current, err := rs.doGet(ctx, false, false, true)
 
 	if err == forddb.ErrNotFound {
 		current = nil
@@ -118,12 +141,12 @@ func (s *resourceSlot) doUpdate(resource forddb.BasicResource) (forddb.BasicReso
 	meta.Version += 1
 	meta.UpdatedAt = time.Now()
 
-	if !s.hasValue {
+	if !rs.hasValue {
 		meta.CreatedAt = meta.UpdatedAt
 	}
 
-	if s.table.typ.Type().IsRuntimeOnly() {
-		s.value = resource
+	if rs.table.typ.Type().IsRuntimeOnly() {
+		rs.value = resource
 	} else {
 		encoded, err := forddb.Encode(resource)
 
@@ -131,51 +154,90 @@ func (s *resourceSlot) doUpdate(resource forddb.BasicResource) (forddb.BasicReso
 			return nil, nil, false, err
 		}
 
-		s.encoded = encoded
+		previous := rs.encoded
+
+		record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
+			Kind:           forddb.LogEntryKindSet,
+			Type:           rs.table.typ,
+			ID:             rs.id,
+			Version:        meta.Version,
+			CurrentCid:     nil,
+			PreviousCid:    nil,
+			Previous:       &previous,
+			Current:        &encoded,
+			CachedPrevious: current,
+			CachedCurrent:  resource,
+		})
+
+		if err != nil {
+			return nil, nil, false, err
+		}
+
+		rs.lastRecord = record
+		rs.encoded = encoded
 	}
 
-	s.hasValue = true
+	rs.hasValue = true
 
 	return current, resource, true, nil
 }
 
-func (s *resourceSlot) Delete() (forddb.BasicResource, error) {
-	previous, ok, err := s.doDelete()
+func (rs *resourceSlot) Delete(ctx context.Context) (forddb.BasicResource, error) {
+	previous, ok, err := rs.doDelete(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if ok {
-		forddb.FireListeners(&s.HasListenersBase, s.id, previous, nil)
-		forddb.FireListeners(&s.table.HasListenersBase, s.id, previous, nil)
-		forddb.FireListeners(&s.table.db.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&rs.HasListenersBase, rs.id, previous, nil)
+		forddb.FireListeners(&rs.table.HasListenersBase, rs.id, previous, nil)
+		forddb.FireListeners(&rs.table.db.HasListenersBase, rs.id, previous, nil)
 	}
 
 	return previous, nil
 }
 
-func (s *resourceSlot) doDelete() (forddb.BasicResource, bool, error) {
-	s.cond.L.Lock()
-	defer s.cond.L.Unlock()
+func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, bool, error) {
+	rs.cond.L.Lock()
+	defer rs.cond.L.Unlock()
 
-	value, err := s.doGet(false)
+	raw, value, err := rs.doGet(ctx, false, false, true)
 
 	if err != nil {
 		return nil, false, err
 	}
 
-	s.encoded = nil
-	s.value = nil
-	s.hasValue = false
+	if !rs.table.typ.Type().IsRuntimeOnly() {
+		_, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
+			Kind:           forddb.LogEntryKindDelete,
+			Type:           rs.table.typ,
+			ID:             rs.id,
+			Version:        value.GetVersion(),
+			CurrentCid:     nil,
+			PreviousCid:    nil,
+			Previous:       &raw,
+			Current:        nil,
+			CachedPrevious: value,
+			CachedCurrent:  nil,
+		})
+
+		if err != nil {
+			return nil, false, err
+		}
+	}
+
+	rs.encoded = nil
+	rs.value = nil
+	rs.hasValue = false
 
 	return value, true, nil
 }
 
-func (s *resourceSlot) getCost() int64 {
+func (rs *resourceSlot) getCost() int64 {
 	cost := int64(1)
 
-	if s.isPinned {
+	if rs.isPinned {
 		cost = -cost
 	}
 

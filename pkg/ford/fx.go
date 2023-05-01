@@ -3,7 +3,9 @@ package ford
 import (
 	"go.uber.org/fx"
 
+	"github.com/greenboxal/aip/pkg/config"
 	"github.com/greenboxal/aip/pkg/ford/agent"
+	"github.com/greenboxal/aip/pkg/ford/forddb"
 	forddbimpl "github.com/greenboxal/aip/pkg/ford/forddb/impl"
 	"github.com/greenboxal/aip/pkg/ford/reconcilers"
 	"github.com/greenboxal/aip/pkg/ford/reconciliation"
@@ -16,6 +18,18 @@ var Module = fx.Module(
 	fx.Provide(NewManager),
 	fx.Provide(agent.NewManager),
 	fx.Provide(forddbimpl.NewDatabase),
+	fx.Provide(forddbimpl.NewFileLogStore),
+
+	fx.Provide(func(rsm *config.ResourceManager) (forddb.LogStore, error) {
+		path := rsm.GetDataDirectory("log")
+		fss, err := forddbimpl.NewFileLogStore(path)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return fss, nil
+	}),
 
 	fx.Provide(func(m *Manager) indexing.Index {
 		return m.Index()

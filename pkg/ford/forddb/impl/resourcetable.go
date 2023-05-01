@@ -1,6 +1,7 @@
 package forddbimpl
 
 import (
+	"context"
 	"sync"
 
 	"github.com/dgraph-io/ristretto"
@@ -69,37 +70,57 @@ func newResourceTable(db *database, typ forddb.ResourceTypeID) (*resourceTable, 
 	return rt, nil
 }
 
-func (rt *resourceTable) List() ([]forddb.BasicResource, error) {
-	var merr error
-
+func (rt *resourceTable) ListKeys() ([]forddb.BasicResourceID, error) {
 	rt.m.RLock()
 	defer rt.m.RUnlock()
 
-	resources := make([]forddb.BasicResource, 0, rt.persistentResources.Size())
+	resources := make([]forddb.BasicResourceID, 0, rt.persistentResources.Size())
 
 	rt.persistentResources.Each(func(key forddb.BasicResourceID) {
-		v := rt.getSlot(key, false)
-
-		if v == nil {
-			return
-		}
-
-		value, err := v.doGet(false)
-
-		if err == forddb.ErrNotFound {
-			return
-		} else if err != nil {
-			merr = multierror.Append(merr, err)
-			return
-		}
-
-		resources = append(resources, value)
+		resources = append(resources, key)
 	})
 
 	return resources, nil
 }
 
-func (rt *resourceTable) getSlot(id forddb.BasicResourceID, create bool) *resourceSlot {
+func (rt *resourceTable) List(ctx context.Context) ([]forddb.BasicResource, error) {
+	var merr error
+
+	keys, err := rt.ListKeys()
+
+	if err != nil {
+		return nil, err
+	}
+
+	resources := make([]forddb.BasicResource, 0, len(keys))
+
+	for _, key := range keys {
+		v := rt.GetSlot(key, false)
+
+		if v == nil {
+			continue
+		}
+
+		if !v.hasValue {
+			continue
+		}
+
+		_, value, err := v.doGet(ctx, false, false, true)
+
+		if err == forddb.ErrNotFound {
+			continue
+		} else if err != nil {
+			merr = multierror.Append(merr, err)
+			continue
+		}
+
+		resources = append(resources, value)
+	}
+
+	return resources, nil
+}
+
+func (rt *resourceTable) GetSlot(id forddb.BasicResourceID, create bool) *resourceSlot {
 	isNew := false
 
 	defer func() {
@@ -108,8 +129,13 @@ func (rt *resourceTable) getSlot(id forddb.BasicResourceID, create bool) *resour
 		}
 	}()
 
-	rt.m.Lock()
-	defer rt.m.Unlock()
+	if create {
+		rt.m.Lock()
+		defer rt.m.Unlock()
+	} else {
+		rt.m.RLock()
+		defer rt.m.RUnlock()
+	}
 
 	existing, hasExisting := rt.cache.Get(id.String())
 

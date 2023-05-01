@@ -5,10 +5,10 @@ import (
 
 	"github.com/greenboxal/aip/pkg/collective"
 	"github.com/greenboxal/aip/pkg/indexing"
-	"github.com/greenboxal/aip/pkg/indexing/llm"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/summarizers"
 	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
+	"github.com/greenboxal/aip/pkg/llm"
 )
 
 type SummaryDiffusionReducer struct {

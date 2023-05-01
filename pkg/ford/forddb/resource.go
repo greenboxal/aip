@@ -8,7 +8,7 @@ import (
 type IResourceMetadata interface {
 	GetResourceID() BasicResourceID
 	GetType() ResourceTypeID
-	GetVersion() int
+	GetVersion() uint64
 }
 
 type BasicResource interface {
@@ -26,7 +26,7 @@ type Resource[ID BasicResourceID] interface {
 type BasicResourceMetadata struct {
 	Namespace string    `json:"namespace"`
 	Name      string    `json:"name"`
-	Version   int       `json:"version"`
+	Version   uint64    `json:"version"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -59,6 +59,6 @@ func (r *ResourceMetadata[ID, T]) GetType() ResourceTypeID {
 	return t.GetID()
 }
 
-func (r *BasicResourceMetadata) GetVersion() int {
+func (r *BasicResourceMetadata) GetVersion() uint64 {
 	return r.Version
 }
