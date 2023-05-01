@@ -13,7 +13,7 @@ import (
 type objectFetcher struct {
 	db *database
 
-	requestCh <-chan fetchResourceRequest
+	requestCh chan fetchResourceRequest
 }
 
 func newObjectFetcher(db *database) *objectFetcher {
@@ -51,7 +51,9 @@ func (of *objectFetcher) runWorker(proc goprocess.Process) {
 			if res, err := of.fetchResource(ctx, req.storage, req.slot.id); err != nil {
 				req.slot.setError(err)
 			} else {
-				_, err = req.slot.Update(ctx, res)
+				_, err = req.slot.Update(ctx, res, forddb.PutOptions{
+					OnConflict: forddb.OnConflictLatestWins,
+				})
 
 				if err != nil {
 					req.slot.setError(err)

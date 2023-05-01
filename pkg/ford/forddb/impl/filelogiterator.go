@@ -30,7 +30,7 @@ func (l *logIterator) Error() error {
 }
 
 func (l *logIterator) Entry() *forddb.LogEntry {
-	return &l.current.Entry
+	return &l.current.LogEntry
 }
 
 func (l *logIterator) Record() *forddb.LogEntryRecord {

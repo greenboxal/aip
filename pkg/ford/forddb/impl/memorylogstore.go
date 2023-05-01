@@ -21,7 +21,7 @@ func NewMemoryLogStore() *MemoryLogStore {
 	mls := &MemoryLogStore{}
 
 	mls.cond = sync.NewCond(&sync.RWMutex{})
-	mls.records = make([]forddb.LogEntryRecord, 256)
+	mls.records = make([]forddb.LogEntryRecord, 0, 256)
 
 	return mls
 }
@@ -53,11 +53,11 @@ func (mls *MemoryLogStore) Append(ctx context.Context, log forddb.LogEntry) (for
 	mls.m.Lock()
 	defer mls.m.Unlock()
 
-	mls.clock++
+	mls.clock = uint64(len(mls.records))
 
 	record := forddb.LogEntryRecord{
-		LSN:   forddb.MakeLSN(mls.clock, time.Now()),
-		Entry: log,
+		LSN:      forddb.MakeLSN(mls.clock, time.Now()),
+		LogEntry: log,
 	}
 
 	mls.records = append(mls.records, record)

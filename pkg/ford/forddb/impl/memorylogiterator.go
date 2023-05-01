@@ -80,7 +80,7 @@ func (mls *memoryLogStoreIterator) Entry() *forddb.LogEntry {
 		return nil
 	}
 
-	return &mls.current.Entry
+	return &mls.current.LogEntry
 }
 
 func (mls *memoryLogStoreIterator) Record() *forddb.LogEntryRecord {
@@ -105,18 +105,23 @@ func (mls *memoryLogStoreIterator) invalidate(ctx context.Context) error {
 		return nil
 	}
 
-	if mls.options.Block {
-		mls.ls.cond.L.Lock()
-		defer mls.ls.cond.L.Unlock()
+	head := mls.ls.RecordCount()
+
+	if mls.currentLsn.Clock == 0 {
+		mls.currentLsn.Clock = 1
+	} else if mls.currentLsn.Clock == 0xFFFFFFFFFFFFFFFF {
+		mls.currentLsn.Clock = head
 	}
 
 	index := mls.currentLsn.Clock - 1
-	head := mls.ls.RecordCount()
 
 	mls.current = nil
 
 	if index >= head {
 		if mls.options.Block {
+			mls.ls.cond.L.Lock()
+			defer mls.ls.cond.L.Unlock()
+
 			for index >= head {
 				index = head
 
@@ -135,8 +140,8 @@ func (mls *memoryLogStoreIterator) invalidate(ctx context.Context) error {
 	}
 
 	if index >= 0 && index < head {
-		mls.current = &mls.ls.records[index]
-		mls.currentLsn = mls.current.LSN
+		current := mls.ls.records[index]
+		mls.current = &current
 	}
 
 	return nil

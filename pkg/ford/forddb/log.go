@@ -66,8 +66,8 @@ type LogEntry struct {
 	CurrentCid  *cid.Cid `json:"current_cid,omitempty"`
 	PreviousCid *cid.Cid `json:"previous_cid,omitempty"`
 
-	Previous *RawResource `json:"previous,omitempty"`
-	Current  *RawResource `json:"current,omitempty"`
+	Previous RawResource `json:"previous,omitempty"`
+	Current  RawResource `json:"current,omitempty"`
 
 	// Runtime only
 	CachedPrevious BasicResource `json:"-"`
@@ -76,6 +76,5 @@ type LogEntry struct {
 
 type LogEntryRecord struct {
 	LSN
-
-	Entry LogEntry `json:"entry"`
+	LogEntry `json:"entry"`
 }

@@ -10,8 +10,6 @@ import (
 )
 
 type resourceSlot struct {
-	forddb.HasListenersBase
-
 	m    sync.RWMutex
 	cond *sync.Cond
 
@@ -98,8 +96,12 @@ func (rs *resourceSlot) doGet(
 	return
 }
 
-func (rs *resourceSlot) Update(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
-	old, current, changed, err := rs.doUpdate(ctx, resource)
+func (rs *resourceSlot) Update(
+	ctx context.Context,
+	resource forddb.BasicResource,
+	opts forddb.PutOptions,
+) (forddb.BasicResource, error) {
+	_, current, changed, err := rs.doUpdate(ctx, resource, opts)
 
 	if err != nil {
 		return nil, err
@@ -107,16 +109,16 @@ func (rs *resourceSlot) Update(ctx context.Context, resource forddb.BasicResourc
 
 	if changed {
 		rs.cond.Broadcast()
-
-		forddb.FireListeners(&rs.HasListenersBase, rs.id, old, current)
-		forddb.FireListeners(&rs.table.HasListenersBase, rs.id, old, current)
-		forddb.FireListeners(&rs.table.db.HasListenersBase, rs.id, old, current)
 	}
 
 	return current, nil
 }
 
-func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, forddb.BasicResource, bool, error) {
+func (rs *resourceSlot) doUpdate(
+	ctx context.Context,
+	resource forddb.BasicResource,
+	opts forddb.PutOptions,
+) (forddb.BasicResource, forddb.BasicResource, bool, error) {
 	rs.cond.L.Lock()
 	defer rs.cond.L.Unlock()
 
@@ -129,14 +131,23 @@ func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResou
 	}
 
 	if current != nil {
-		if current.GetVersion() != resource.GetVersion() {
-			return nil, nil, false, forddb.ErrVersionMismatch
+		if reflect.DeepEqual(current, resource) {
+			return current, resource, false, nil
 		}
 
-		if current != nil {
-			if reflect.DeepEqual(current, resource) {
-				return current, resource, false, nil
+		switch opts.OnConflict {
+		case forddb.OnConflictError:
+			return current, nil, false, forddb.ErrVersionMismatch
+		case forddb.OnConflictOptimistic:
+			if current.GetVersion() != resource.GetVersion() {
+				return current, nil, false, forddb.ErrVersionMismatch
 			}
+		case forddb.OnConflictLatestWins:
+			if current.GetVersion() >= resource.GetVersion() {
+				return current, current, false, nil
+			}
+		case forddb.OnConflictReplace:
+			// Nothing
 		}
 	}
 
@@ -158,8 +169,6 @@ func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResou
 			return nil, nil, false, err
 		}
 
-		previous := rs.encoded
-
 		record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
 			Kind:           forddb.LogEntryKindSet,
 			Type:           rs.table.typ,
@@ -167,8 +176,8 @@ func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResou
 			Version:        meta.Version,
 			CurrentCid:     nil,
 			PreviousCid:    nil,
-			Previous:       &previous,
-			Current:        &encoded,
+			Previous:       rs.encoded,
+			Current:        encoded,
 			CachedPrevious: current,
 			CachedCurrent:  resource,
 		})
@@ -188,16 +197,10 @@ func (rs *resourceSlot) doUpdate(ctx context.Context, resource forddb.BasicResou
 }
 
 func (rs *resourceSlot) Delete(ctx context.Context) (forddb.BasicResource, error) {
-	previous, ok, err := rs.doDelete(ctx)
+	previous, _, err := rs.doDelete(ctx)
 
 	if err != nil {
 		return nil, err
-	}
-
-	if ok {
-		forddb.FireListeners(&rs.HasListenersBase, rs.id, previous, nil)
-		forddb.FireListeners(&rs.table.HasListenersBase, rs.id, previous, nil)
-		forddb.FireListeners(&rs.table.db.HasListenersBase, rs.id, previous, nil)
 	}
 
 	return previous, nil
@@ -221,7 +224,7 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, boo
 			Version:        value.GetVersion(),
 			CurrentCid:     nil,
 			PreviousCid:    nil,
-			Previous:       &raw,
+			Previous:       raw,
 			Current:        nil,
 			CachedPrevious: value,
 			CachedCurrent:  nil,

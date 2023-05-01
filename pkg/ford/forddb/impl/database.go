@@ -82,14 +82,15 @@ func (db *database) Get(ctx context.Context, typ forddb.ResourceTypeID, id fordd
 	return slot.Get(ctx)
 }
 
-func (db *database) Put(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (db *database) Put(ctx context.Context, resource forddb.BasicResource, options ...forddb.PutOption) (forddb.BasicResource, error) {
+	opts := forddb.NewPutOptions(options...)
 	slot := db.GetSlot(resource.GetType(), resource.GetResourceID(), true)
 
 	if slot == nil {
 		return nil, forddb.ErrNotFound
 	}
 
-	return slot.Update(ctx, resource)
+	return slot.Update(ctx, resource, opts)
 }
 
 func (db *database) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
@@ -161,5 +162,8 @@ func (db *database) Close() error {
 }
 
 func (db *database) notifyGet(rs *resourceSlot) {
-
+	db.objectFetcher.requestCh <- fetchResourceRequest{
+		storage: db.storage,
+		slot:    rs,
+	}
 }

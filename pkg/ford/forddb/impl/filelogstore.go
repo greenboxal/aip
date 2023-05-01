@@ -65,7 +65,7 @@ func NewFileLogStore(baseDir string) (*FileLogStore, error) {
 func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (forddb.LogEntryRecord, error) {
 	var record forddb.LogEntryRecord
 
-	record.Entry = log
+	record.LogEntry = log
 
 	if err := fls.currentSegment.Append(&record); err != nil {
 		return record, nil

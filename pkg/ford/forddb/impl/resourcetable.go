@@ -12,8 +12,6 @@ import (
 )
 
 type resourceTable struct {
-	forddb.HasListenersBase
-
 	m sync.RWMutex
 
 	db  *database
