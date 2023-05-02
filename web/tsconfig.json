@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "typeRoots": [
+      "node_modules/@types",
+      "./src/horizon/types"
+    ],
+    "target": "es2016",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext",
+      "es2015.iterable"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": false,
+    "downlevelIteration": true
+  },
+  "include": [
+    "./src"
+  ]
+}
