@@ -3,7 +3,6 @@ import logo from './logo.svg';
 import './App.css';
 
 import { ChakraProvider } from '@chakra-ui/react';
-import theme from "./horizon/theme/theme";
 
 import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
 
@@ -14,28 +13,24 @@ const client = new ApolloClient({
 
 function App() {
   return (
-      <ChakraProvider theme={theme}>
-        <React.StrictMode>
-          <ApolloProvider client={client}>
-            <div className="App">
-              <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
-                <p>
-                  Edit <code>src/App.tsx</code> and save to reload.
-                </p>
-                <a
-                    className="App-link"
-                    href="https://reactjs.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                  Learn React
-                </a>
-              </header>
-            </div>
-          </ApolloProvider>
-        </React.StrictMode>
-      </ChakraProvider>
+      <ApolloProvider client={client}>
+        <div className="App">
+          <header className="App-header">
+            <img src={logo} className="App-logo" alt="logo" />
+            <p>
+              Edit <code>src/App.tsx</code> and save to reload.
+            </p>
+            <a
+                className="App-link"
+                href="https://reactjs.org"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+              Learn React
+            </a>
+          </header>
+        </div>
+      </ApolloProvider>
   );
 }
 

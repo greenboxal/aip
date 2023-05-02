@@ -11,6 +11,10 @@
       "esnext",
       "es2015.iterable"
     ],
+    "paths": {
+      "@horizon/*": ["./src/horizon/*"],
+      "@assets/*": ["./src/horizon/assets/*"]
+    },
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
