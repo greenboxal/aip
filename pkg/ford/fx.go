@@ -5,8 +5,8 @@ import (
 
 	"github.com/greenboxal/aip/pkg/config"
 	"github.com/greenboxal/aip/pkg/ford/agent"
-	"github.com/greenboxal/aip/pkg/ford/forddb"
 	forddbimpl "github.com/greenboxal/aip/pkg/ford/forddb/impl"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 	"github.com/greenboxal/aip/pkg/ford/reconcilers"
 	"github.com/greenboxal/aip/pkg/ford/reconciliation"
 	"github.com/greenboxal/aip/pkg/indexing"
@@ -20,7 +20,7 @@ var Module = fx.Module(
 	fx.Provide(forddbimpl.NewDatabase),
 	fx.Provide(forddbimpl.NewFileLogStore),
 
-	fx.Provide(func(rsm *config.ResourceManager) (forddb.LogStore, error) {
+	fx.Provide(func(rsm *config.ResourceManager) (logstore.LogStore, error) {
 		//path := rsm.GetDataDirectory("log")
 		//fss, err := forddbimpl.NewFileLogStore(path)
 
@@ -29,7 +29,7 @@ var Module = fx.Module(
 		//}
 
 		//return fss, nil
-	
+
 		return forddbimpl.NewMemoryLogStore(), nil
 	}),
 

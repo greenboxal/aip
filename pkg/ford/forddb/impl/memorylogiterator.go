@@ -3,15 +3,15 @@ package forddbimpl
 import (
 	"context"
 
-	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 type memoryLogStoreIterator struct {
 	ls      *MemoryLogStore
-	options forddb.LogIteratorOptions
+	options logstore.LogIteratorOptions
 
-	current        *forddb.LogEntryRecord
-	currentLsn     forddb.LSN
+	current        *logstore.LogEntryRecord
+	currentLsn     logstore.LSN
 	currentSegment *fileStoreSegment
 
 	err error
@@ -53,7 +53,7 @@ func (mls *memoryLogStoreIterator) Previous(ctx context.Context) bool {
 	return true
 }
 
-func (mls *memoryLogStoreIterator) SetLSN(ctx context.Context, lsn forddb.LSN) error {
+func (mls *memoryLogStoreIterator) SetLSN(ctx context.Context, lsn logstore.LSN) error {
 	mls.currentLsn = lsn
 
 	return mls.invalidate(ctx)
@@ -75,7 +75,7 @@ func (mls *memoryLogStoreIterator) Error() error {
 	return mls.err
 }
 
-func (mls *memoryLogStoreIterator) Entry() *forddb.LogEntry {
+func (mls *memoryLogStoreIterator) Entry() *logstore.LogEntry {
 	if mls.current == nil {
 		return nil
 	}
@@ -83,15 +83,15 @@ func (mls *memoryLogStoreIterator) Entry() *forddb.LogEntry {
 	return &mls.current.LogEntry
 }
 
-func (mls *memoryLogStoreIterator) Record() *forddb.LogEntryRecord {
+func (mls *memoryLogStoreIterator) Record() *logstore.LogEntryRecord {
 	return mls.current
 }
 
-func (mls *memoryLogStoreIterator) CurrentLsn() forddb.LSN {
+func (mls *memoryLogStoreIterator) CurrentLsn() logstore.LSN {
 	return mls.currentLsn
 }
 
-func (mls *memoryLogStoreIterator) Reset(lsn forddb.LSN) {
+func (mls *memoryLogStoreIterator) Reset(lsn logstore.LSN) {
 	mls.current = nil
 	mls.currentLsn = lsn
 }

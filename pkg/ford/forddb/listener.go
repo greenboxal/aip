@@ -21,7 +21,7 @@ type TypedListenerFunc[ID ResourceID[T], T Resource[ID]] func(id ID, previous, c
 
 func (t TypedListenerFunc[ID, T]) OnResourceChanged(id BasicResourceID, previous, current BasicResource) {
 	myType := reflect.TypeOf((*T)(nil)).Elem()
-	myTypeId := typeSystem.LookupByResourceType(myType).GetID()
+	myTypeId := TypeSystem().LookupByResourceType(myType).GetID()
 
 	if previous != nil && previous.GetType() != myTypeId {
 		return
@@ -42,6 +42,22 @@ func (t TypedListenerFunc[ID, T]) OnResourceChanged(id BasicResourceID, previous
 	}
 
 	t(id.(ID), previousT, currentT)
+}
+
+type HasListeners interface {
+	AddListener(listener Listener)
+	RemoveListener(listener Listener)
+}
+
+type HasListenersBase struct {
+	listeners ListenerSet
+}
+
+func (h *HasListenersBase) AddListener(listener Listener)    { h.listeners.AddListener(listener) }
+func (h *HasListenersBase) RemoveListener(listener Listener) { h.listeners.RemoveListener(listener) }
+
+func FireListeners(hlb *HasListenersBase, id BasicResourceID, previous, current BasicResource) {
+	hlb.listeners.OnResourceChanged(id, previous, current)
 }
 
 type ListenerSet struct {
@@ -82,25 +98,4 @@ func (l *ListenerSet) OnResourceChanged(id BasicResourceID, previous, current Ba
 	for _, l := range l.listeners {
 		l.OnResourceChanged(id, previous, current)
 	}
-}
-
-type HasListeners interface {
-	AddListener(listener Listener)
-	RemoveListener(listener Listener)
-}
-
-type HasListenersBase struct {
-	listeners ListenerSet
-}
-
-func FireListeners(hlb *HasListenersBase, id BasicResourceID, previous, current BasicResource) {
-	hlb.listeners.OnResourceChanged(id, previous, current)
-}
-
-func (h *HasListenersBase) AddListener(listener Listener) {
-	h.listeners.AddListener(listener)
-}
-
-func (h *HasListenersBase) RemoveListener(listener Listener) {
-	h.listeners.RemoveListener(listener)
 }

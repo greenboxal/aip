@@ -1,12 +1,10 @@
-package typesystem
-
-import "github.com/greenboxal/aip/pkg/ford/forddb"
+package forddb
 
 type BasicField interface {
 	Name() string
-	Parent() forddb.BasicType
+	Parent() BasicType
 
-	BasicType() forddb.BasicType
+	BasicType() BasicType
 
 	IsOptional() bool
 

@@ -13,7 +13,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 const FileEventSegmentMagic = 0x46534547 // "FSEG"
@@ -27,7 +27,7 @@ type FileLogStore struct {
 	currentSegment *fileStoreSegment
 }
 
-func (fls *FileLogStore) OpenStream(id forddb.LogStreamID) (forddb.LogStream, error) {
+func (fls *FileLogStore) OpenStream(id logstore.LogStreamID) (logstore.LogStream, error) {
 	faName := path.Join(fls.logDir, fmt.Sprintf("%s-1", id))
 	fbName := path.Join(fls.logDir, fmt.Sprintf("%s-2", id))
 
@@ -43,7 +43,7 @@ func (fls *FileLogStore) OpenStream(id forddb.LogStreamID) (forddb.LogStream, er
 		return nil, err
 	}
 
-	return forddb.NewLogStream(fls, id, fa, fb)
+	return logstore.NewLogStream(fls, id, fa, fb)
 }
 
 func NewFileLogStore(baseDir string) (*FileLogStore, error) {
@@ -51,7 +51,7 @@ func NewFileLogStore(baseDir string) (*FileLogStore, error) {
 		logDir: baseDir,
 	}
 
-	s, err := fls.openSegment(forddb.MakeLSN(0, time.Now()), false, false)
+	s, err := fls.openSegment(logstore.MakeLSN(0, time.Now()), false, false)
 
 	if err != nil {
 		return nil, err
@@ -62,8 +62,8 @@ func NewFileLogStore(baseDir string) (*FileLogStore, error) {
 	return fls, nil
 }
 
-func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (forddb.LogEntryRecord, error) {
-	var record forddb.LogEntryRecord
+func (fls *FileLogStore) Append(ctx context.Context, log logstore.LogEntry) (logstore.LogEntryRecord, error) {
+	var record logstore.LogEntryRecord
 
 	record.LogEntry = log
 
@@ -74,8 +74,8 @@ func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fordd
 	return record, nil
 }
 
-func (fls *FileLogStore) Iterator(options ...forddb.LogIteratorOption) forddb.LogIterator {
-	return newLogIterator(fls, forddb.NewLogIteratorOptions(options...))
+func (fls *FileLogStore) Iterator(options ...logstore.LogIteratorOption) logstore.LogIterator {
+	return newLogIterator(fls, logstore.NewLogIteratorOptions(options...))
 }
 
 func (fls *FileLogStore) Close() error {
@@ -91,7 +91,7 @@ func (fls *FileLogStore) Close() error {
 }
 
 func (fls *FileLogStore) openSegment(
-	base forddb.LSN,
+	base logstore.LSN,
 	readOnly bool,
 	createExclusive bool,
 ) (*fileStoreSegment, error) {
@@ -130,14 +130,14 @@ type fileStoreSegment struct {
 	file     *os.File
 	readOnly bool
 
-	head   forddb.LSN
-	tail   forddb.LSN
+	head   logstore.LSN
+	tail   logstore.LSN
 	offset uint64
 
 	header [FileEventSegmentHeaderSize]byte
 }
 
-func newFileStoreSegment(f *os.File, base forddb.LSN, readOnly bool) (*fileStoreSegment, error) {
+func newFileStoreSegment(f *os.File, base logstore.LSN, readOnly bool) (*fileStoreSegment, error) {
 	fss := &fileStoreSegment{
 		head:     base,
 		file:     f,
@@ -184,15 +184,15 @@ func newFileStoreSegment(f *os.File, base forddb.LSN, readOnly bool) (*fileStore
 	return fss, nil
 }
 
-func (fss *fileStoreSegment) Seek(lsn forddb.LSN) error {
+func (fss *fileStoreSegment) Seek(lsn logstore.LSN) error {
 	return nil
 }
 
-func (fss *fileStoreSegment) Read(current *forddb.LogEntryRecord) (*forddb.LogEntryRecord, error) {
+func (fss *fileStoreSegment) Read(current *logstore.LogEntryRecord) (*logstore.LogEntryRecord, error) {
 	return nil, nil
 }
 
-func (fss *fileStoreSegment) Append(record *forddb.LogEntryRecord) error {
+func (fss *fileStoreSegment) Append(record *logstore.LogEntryRecord) error {
 	if fss.readOnly {
 		return errors.New("segment is read only")
 	}
@@ -251,7 +251,7 @@ func (fss *fileStoreSegment) Close() error {
 	return nil
 }
 
-func (fss *fileStoreSegment) updateHeader(lastOffset uint64, tail forddb.LSN) error {
+func (fss *fileStoreSegment) updateHeader(lastOffset uint64, tail logstore.LSN) error {
 	if fss.readOnly {
 		return errors.New("segment is read only")
 	}

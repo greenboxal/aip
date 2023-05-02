@@ -7,12 +7,13 @@ import (
 	"github.com/ipfs/go-cid"
 
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 const objectIndexerStreamID = "forddb/objectindexer"
 
 type objectIndexer struct {
-	forddb.LogConsumer
+	logstore.LogConsumer
 
 	db *database
 }
@@ -27,9 +28,9 @@ func newObjectIndexer(db *database) *objectIndexer {
 	return oi
 }
 
-func (oi *objectIndexer) processLogRecord(ctx context.Context, record *forddb.LogEntryRecord) error {
+func (oi *objectIndexer) processLogRecord(ctx context.Context, record *logstore.LogEntryRecord) error {
 	switch record.Kind {
-	case forddb.LogEntryKindSet:
+	case logstore.LogEntryKindSet:
 		if err := oi.prefetchObject(ctx, record, record.Version > 1, true); err != nil {
 			return err
 		}
@@ -40,7 +41,7 @@ func (oi *objectIndexer) processLogRecord(ctx context.Context, record *forddb.Lo
 
 		forddb.FireListeners(&oi.db.HasListenersBase, record.ID, record.CachedPrevious, record.CachedCurrent)
 
-	case forddb.LogEntryKindDelete:
+	case logstore.LogEntryKindDelete:
 		if err := oi.prefetchObject(ctx, record, true, false); err != nil {
 			return err
 		}
@@ -57,7 +58,7 @@ func (oi *objectIndexer) processLogRecord(ctx context.Context, record *forddb.Lo
 
 func (oi *objectIndexer) prefetchObject(
 	ctx context.Context,
-	record *forddb.LogEntryRecord,
+	record *logstore.LogEntryRecord,
 	previous bool,
 	current bool,
 ) error {

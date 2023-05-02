@@ -1,9 +1,11 @@
-package forddb
+package logstore
 
 import (
 	"time"
 
 	"github.com/ipfs/go-cid"
+
+	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
 type LogEntryKind int
@@ -57,8 +59,8 @@ func MakeLSN(clock uint64, ts time.Time) LSN {
 }
 
 type LogEntry struct {
-	ID   BasicResourceID `json:"id"`
-	Type ResourceTypeID  `json:"type"`
+	ID   forddb.BasicResourceID `json:"id"`
+	Type forddb.ResourceTypeID  `json:"type"`
 
 	Kind LogEntryKind `json:"kind"`
 
@@ -67,12 +69,12 @@ type LogEntry struct {
 	CurrentCid  *cid.Cid `json:"current_cid,omitempty"`
 	PreviousCid *cid.Cid `json:"previous_cid,omitempty"`
 
-	Previous RawResource `json:"previous,omitempty"`
-	Current  RawResource `json:"current,omitempty"`
+	Previous forddb.RawResource `json:"previous,omitempty"`
+	Current  forddb.RawResource `json:"current,omitempty"`
 
 	// Runtime only
-	CachedPrevious BasicResource `json:"-"`
-	CachedCurrent  BasicResource `json:"-"`
+	CachedPrevious forddb.BasicResource `json:"-"`
+	CachedCurrent  forddb.BasicResource `json:"-"`
 }
 
 type LogEntryRecord struct {

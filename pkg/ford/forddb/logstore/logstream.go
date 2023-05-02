@@ -1,4 +1,4 @@
-package forddb
+package logstore
 
 import (
 	"io"

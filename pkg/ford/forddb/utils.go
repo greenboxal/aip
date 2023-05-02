@@ -27,7 +27,7 @@ func Put[T BasicResource](db Database, id T) (def T, _ error) {
 }
 
 func Get[T BasicResource](db Database, id ResourceID[T]) (def T, _ error) {
-	typ := typeSystem.LookupByIDType(reflect.TypeOf(id))
+	typ := TypeSystem().LookupByIDType(reflect.TypeOf(id))
 	resource, err := db.Get(context.TODO(), typ.GetID(), id)
 
 	if err != nil {
@@ -41,68 +41,8 @@ func Get[T BasicResource](db Database, id ResourceID[T]) (def T, _ error) {
 	return resource.(T), nil
 }
 
-func TypeSystem() *ResourceTypeSystem {
-	return typeSystem
-}
-
 func LookupTypeByName(name string) BasicResourceType {
-	return typeSystem.LookupByID(NewStringID[ResourceTypeID](name))
-}
-
-func IsBasicResource(t reflect.Type) bool {
-	t = derefPointer(t)
-
-	if t.Implements(basicResourceType) {
-		return true
-	}
-
-	if reflect.PtrTo(t).Implements(basicResourceType) {
-		return true
-	}
-
-	return false
-}
-
-func IsBasicResourcePointer(t reflect.Type) bool {
-	t = derefPointer(t)
-
-	if t.Implements(basicResourcePointerType) {
-		return true
-	}
-
-	if reflect.PtrTo(t).Implements(basicResourcePointerType) {
-		return true
-	}
-
-	return false
-}
-
-func IsBasicResourceSlot(t reflect.Type) bool {
-	t = derefPointer(t)
-
-	if t.Implements(basicResourceSlotType) {
-		return true
-	}
-
-	if reflect.PtrTo(t).Implements(basicResourceSlotType) {
-		return true
-	}
-
-	return false
-}
-
-func IsBasicResourceId(t reflect.Type) bool {
-	t = derefPointer(t)
-
-	if t.Implements(basicResourceIdType) {
-		return true
-	}
-
-	if reflect.PtrTo(t).Implements(basicResourceIdType) {
-		return true
-	}
-
-	return false
+	return TypeSystem().LookupByID(NewStringID[ResourceTypeID](name))
 }
 
 func ImportPath(db Database, path string) error {
@@ -185,22 +125,4 @@ func isSupportedFile(path string) bool {
 	}
 
 	return false
-}
-
-func derefType[T any]() reflect.Type {
-	t := reflect.TypeOf((*T)(nil)).Elem()
-
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	return t
-}
-
-func derefPointer(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	return t
 }

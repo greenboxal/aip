@@ -16,13 +16,15 @@ type GraphQL struct {
 
 	db forddb.Database
 
-	schema  graphql.Schema
+	schema graphql.Schema
+
 	typeMap map[reflect.Type]graphql.Output
 }
 
 func NewGraphQL(db forddb.Database) *GraphQL {
 	gql := &GraphQL{
-		db:      db,
+		db: db,
+
 		typeMap: map[reflect.Type]graphql.Output{},
 	}
 
@@ -60,54 +62,16 @@ func (q *GraphQL) initializeTypeSystem() {
 
 	resourceTypes := ts.ResourceTypes()
 
-	for i := range resourceTypes {
-		typ := resourceTypes[i]
+	for _, typ := range resourceTypes {
+		if typ.Kind() != forddb.KindResource {
+			continue
+		}
 
 		if typ.IsRuntimeOnly() {
 			continue
 		}
 
-		name := typ.Name()
-		name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
-
-		if len(name) > 0 {
-			continue
-		}
-
-		gqlType := q.lookupType(typ)
-
-		if gqlType == nil {
-			panic("no gql type for " + name)
-		}
-
-		fields[name] = &graphql.Field{
-			Type: gqlType,
-			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
-					Type: graphql.String,
-				},
-			},
-
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				idQuery, ok := p.Args["name"].(string)
-
-				if !ok {
-					return nil, nil
-				}
-
-				id := typ.CreateID(idQuery)
-
-				return q.db.Get(p.Context, typ.GetID(), id)
-			},
-		}
-
-		fields[name+"List"] = &graphql.Field{
-			Type: graphql.NewList(gqlType),
-
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return q.db.List(p.Context, typ.GetID())
-			},
-		}
+		q.compileResource(fields, typ)
 	}
 
 	rootQuery := graphql.NewObject(config)
@@ -123,8 +87,108 @@ func (q *GraphQL) initializeTypeSystem() {
 	q.schema = schema
 }
 
-func (q *GraphQL) lookupType(typ forddb.BasicResourceType) graphql.Output {
-	return q.lookupTypeFromReflection(typ.ResourceType().RuntimeType())
+func (q *GraphQL) compileResource(fields graphql.Fields, typ forddb.BasicResourceType) {
+	name := typ.Name()
+	name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+	gqlType := q.lookupType(typ)
+
+	if gqlType == nil {
+		panic("no gql type for " + name)
+	}
+
+	fields[name] = &graphql.Field{
+		Type: gqlType,
+		Args: graphql.FieldConfigArgument{
+			"id": &graphql.ArgumentConfig{
+				Type: graphql.String,
+			},
+		},
+
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			idQuery, ok := p.Args["name"].(string)
+
+			if !ok {
+				return nil, nil
+			}
+
+			id := typ.CreateID(idQuery)
+
+			return q.db.Get(p.Context, typ.GetID(), id)
+		},
+	}
+
+	fields[name+"List"] = &graphql.Field{
+		Type: graphql.NewList(gqlType),
+
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return q.db.List(p.Context, typ.GetID())
+		},
+	}
+}
+
+func (q *GraphQL) lookupType(typ forddb.BasicType) graphql.Output {
+	var result graphql.Output
+
+	if existing, ok := q.typeMap[typ.RuntimeType()]; ok {
+		return existing
+	}
+
+	switch typ.PrimitiveKind() {
+	case forddb.PrimitiveKindBoolean:
+		result = graphql.Boolean
+	case forddb.PrimitiveKindString:
+		result = graphql.String
+	case forddb.PrimitiveKindBytes:
+		result = graphql.String
+	case forddb.PrimitiveKindFloat:
+		result = graphql.Float
+	case forddb.PrimitiveKindInt:
+		result = graphql.Int
+	case forddb.PrimitiveKindUnsignedInt:
+		result = graphql.Int
+
+	case forddb.PrimitiveKindList:
+		elem := q.lookupTypeFromReflection(typ.RuntimeType().Elem())
+
+		return graphql.NewList(elem)
+
+	case forddb.PrimitiveKindStruct:
+		fields := graphql.Fields{}
+
+		for _, field := range typ.Fields() {
+			fieldType := field.BasicType()
+
+			f := &graphql.Field{
+				Name: field.Name(),
+				Type: q.lookupType(fieldType),
+			}
+
+			fields[f.Name] = f
+		}
+
+		if len(fields) == 0 {
+			result = graphql.String
+			break
+		}
+
+		name := typ.Name()
+		name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+		config := graphql.ObjectConfig{
+			Name:   name,
+			Fields: fields,
+		}
+
+		result = graphql.NewObject(config)
+
+	default:
+		panic("unknown primitive kind")
+	}
+
+	q.typeMap[typ.RuntimeType()] = result
+
+	return result
 }
 
 func (q *GraphQL) lookupTypeFromReflection(typ reflect.Type) (result graphql.Output) {
@@ -135,8 +199,6 @@ func (q *GraphQL) lookupTypeFromReflection(typ reflect.Type) (result graphql.Out
 	if existing, ok := q.typeMap[typ]; ok {
 		return existing
 	}
-
-	fields := graphql.Fields{}
 
 	switch typ.Kind() {
 	case reflect.Uint64:
@@ -186,6 +248,8 @@ func (q *GraphQL) lookupTypeFromReflection(typ reflect.Type) (result graphql.Out
 		result = graphql.NewList(elem)
 
 	case reflect.Struct:
+		fields := graphql.Fields{}
+
 		for i := 0; i < typ.NumField(); i++ {
 			field := typ.Field(i)
 

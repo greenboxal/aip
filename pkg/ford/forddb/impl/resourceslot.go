@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 type resourceSlot struct {
@@ -19,7 +20,7 @@ type resourceSlot struct {
 	isPinned bool
 	hasValue bool
 
-	lastRecord forddb.LogEntryRecord
+	lastRecord logstore.LogEntryRecord
 	encoded    forddb.RawResource
 	value      forddb.BasicResource
 	err        error
@@ -169,8 +170,8 @@ func (rs *resourceSlot) doUpdate(
 			return nil, nil, false, err
 		}
 
-		record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
-			Kind:           forddb.LogEntryKindSet,
+		record, err := rs.table.db.log.Append(ctx, logstore.LogEntry{
+			Kind:           logstore.LogEntryKindSet,
 			Type:           rs.table.typ,
 			ID:             rs.id,
 			Version:        meta.Version,
@@ -217,8 +218,8 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, boo
 	}
 
 	if !rs.table.typ.Type().IsRuntimeOnly() {
-		_, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
-			Kind:           forddb.LogEntryKindDelete,
+		_, err := rs.table.db.log.Append(ctx, logstore.LogEntry{
+			Kind:           logstore.LogEntryKindDelete,
 			Type:           rs.table.typ,
 			ID:             rs.id,
 			Version:        value.GetVersion(),

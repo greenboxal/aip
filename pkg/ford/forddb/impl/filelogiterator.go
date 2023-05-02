@@ -4,21 +4,21 @@ import (
 	"context"
 	"errors"
 
-	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 type logIterator struct {
 	ls      *FileLogStore
-	options forddb.LogIteratorOptions
+	options logstore.LogIteratorOptions
 
-	current        *forddb.LogEntryRecord
-	currentLsn     forddb.LSN
+	current        *logstore.LogEntryRecord
+	currentLsn     logstore.LSN
 	currentSegment *fileStoreSegment
 
 	err error
 }
 
-func newLogIterator(ls *FileLogStore, options forddb.LogIteratorOptions) *logIterator {
+func newLogIterator(ls *FileLogStore, options logstore.LogIteratorOptions) *logIterator {
 	return &logIterator{
 		ls:      ls,
 		options: options,
@@ -29,19 +29,19 @@ func (l *logIterator) Error() error {
 	return l.err
 }
 
-func (l *logIterator) Entry() *forddb.LogEntry {
+func (l *logIterator) Entry() *logstore.LogEntry {
 	return &l.current.LogEntry
 }
 
-func (l *logIterator) Record() *forddb.LogEntryRecord {
+func (l *logIterator) Record() *logstore.LogEntryRecord {
 	return l.current
 }
 
-func (l *logIterator) CurrentLsn() forddb.LSN {
+func (l *logIterator) CurrentLsn() logstore.LSN {
 	return l.currentLsn
 }
 
-func (l *logIterator) SetLSN(ctx context.Context, lsn forddb.LSN) error {
+func (l *logIterator) SetLSN(ctx context.Context, lsn logstore.LSN) error {
 	l.currentLsn = lsn
 
 	return l.invalidate(ctx)
@@ -87,7 +87,7 @@ func (l *logIterator) Previous(ctx context.Context) bool {
 	return true
 }
 
-func (l *logIterator) Reset(lsn forddb.LSN) {
+func (l *logIterator) Reset(lsn logstore.LSN) {
 	l.currentLsn = lsn
 	l.current = nil
 }

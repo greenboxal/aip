@@ -8,13 +8,14 @@ import (
 	goprocessctx "github.com/jbenet/goprocess/context"
 
 	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 type database struct {
 	forddb.HasListenersBase
 
 	m       sync.RWMutex
-	log     forddb.LogStore
+	log     logstore.LogStore
 	storage forddb.Storage
 
 	resources map[forddb.ResourceTypeID]*resourceTable
@@ -26,7 +27,7 @@ type database struct {
 	objectFetchProcess goprocess.Process
 }
 
-func NewDatabase(logStore forddb.LogStore, storage forddb.Storage) forddb.Database {
+func NewDatabase(logStore logstore.LogStore, storage forddb.Storage) forddb.Database {
 	db := &database{
 		log:     logStore,
 		storage: storage,

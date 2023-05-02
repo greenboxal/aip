@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/ford/forddb/logstore"
 )
 
 type MemoryLogStore struct {
@@ -14,14 +14,14 @@ type MemoryLogStore struct {
 	cond *sync.Cond
 
 	clock   uint64
-	records []forddb.LogEntryRecord
+	records []logstore.LogEntryRecord
 }
 
 func NewMemoryLogStore() *MemoryLogStore {
 	mls := &MemoryLogStore{}
 
 	mls.cond = sync.NewCond(&sync.RWMutex{})
-	mls.records = make([]forddb.LogEntryRecord, 0, 256)
+	mls.records = make([]logstore.LogEntryRecord, 0, 256)
 
 	return mls
 }
@@ -33,7 +33,7 @@ func (mls *MemoryLogStore) RecordCount() uint64 {
 	return uint64(len(mls.records))
 }
 
-func (mls *MemoryLogStore) OpenStream(id forddb.LogStreamID) (forddb.LogStream, error) {
+func (mls *MemoryLogStore) OpenStream(id logstore.LogStreamID) (logstore.LogStream, error) {
 	fa, err := os.CreateTemp("", "forddb-memorylogstore-*.log")
 
 	if err != nil {
@@ -46,17 +46,17 @@ func (mls *MemoryLogStore) OpenStream(id forddb.LogStreamID) (forddb.LogStream, 
 		return nil, err
 	}
 
-	return forddb.NewLogStream(mls, id, fa, fb)
+	return logstore.NewLogStream(mls, id, fa, fb)
 }
 
-func (mls *MemoryLogStore) Append(ctx context.Context, log forddb.LogEntry) (forddb.LogEntryRecord, error) {
+func (mls *MemoryLogStore) Append(ctx context.Context, log logstore.LogEntry) (logstore.LogEntryRecord, error) {
 	mls.m.Lock()
 	defer mls.m.Unlock()
 
 	mls.clock = uint64(len(mls.records))
 
-	record := forddb.LogEntryRecord{
-		LSN:      forddb.MakeLSN(mls.clock, time.Now()),
+	record := logstore.LogEntryRecord{
+		LSN:      logstore.MakeLSN(mls.clock, time.Now()),
 		LogEntry: log,
 	}
 
@@ -67,8 +67,8 @@ func (mls *MemoryLogStore) Append(ctx context.Context, log forddb.LogEntry) (for
 	return record, nil
 }
 
-func (mls *MemoryLogStore) Iterator(options ...forddb.LogIteratorOption) forddb.LogIterator {
-	return &memoryLogStoreIterator{ls: mls, options: forddb.NewLogIteratorOptions(options...)}
+func (mls *MemoryLogStore) Iterator(options ...logstore.LogIteratorOption) logstore.LogIterator {
+	return &memoryLogStoreIterator{ls: mls, options: logstore.NewLogIteratorOptions(options...)}
 }
 
 func (mls *MemoryLogStore) Close() error {

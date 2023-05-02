@@ -13,7 +13,7 @@ func init() {
 	forddb.DefineResourceType[TeamID, *Team]("team")
 	forddb.DefineResourceType[TaskID, *Task]("task")
 
-	forddb.DefineResourceType[MemoryID, *Memory]("memory")
 	forddb.DefineResourceType[MemoryDataID, *MemoryData]("memory_data")
+	forddb.DefineResourceType[MemoryID, *Memory]("memory")
 	forddb.DefineResourceType[MemorySegmentID, *MemorySegment]("memory_segment")
 }
