@@ -1,30 +1,31 @@
-import { useQuery, gql } from '@apollo/client';
+import { useQuery } from '@apollo/client';
+import { gql } from '../../__generated__';
 
-interface Agent {
-    id: string;
-}
-
-const GET_AGENTS = gql`
+const GET_AGENTS = gql(`
     query GetAgents {
         agentList {
-            id
+            metadata {
+                id
+            }
         }
     }
-`
+`)
 
-const ResourcesPage = () => {
+
+export const ResourcesPage = () => {
     const { loading, error, data } = useQuery(GET_AGENTS);
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p>Error : {error.message}</p>;
 
-    const resources = data.agentList.map((agent: any) => {
-
-    })
+    const resources = data.agentList.map((agent) => (
+        <div key={agent.metadata.id}>
+            <p>{JSON.stringify(agent)}</p>
+        </div>
+    ))
 
     return <div>
         <h1>Resources</h1>
+        {resources}
     </div>
 }
-
-export {}

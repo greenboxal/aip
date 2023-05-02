@@ -1,37 +1,36 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-
-import { ChakraProvider } from '@chakra-ui/react';
-
+import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
+import {AppBar, Container, IconButton, Toolbar, Typography, Box} from "@mui/material";
+import { ResourcesPage } from './pages/resources';
+
+const mdTheme = createTheme();
 
 const client = new ApolloClient({
-  uri: 'http://127.0.0.1:30100/v1/graphql',
-  cache: new InMemoryCache(),
+    uri: 'http://127.0.0.1:30100/v1/graphql',
+    cache: new InMemoryCache(),
 });
 
+
 function App() {
-  return (
-      <ApolloProvider client={client}>
-        <div className="App">
-          <header className="App-header">
-            <img src={logo} className="App-logo" alt="logo" />
-            <p>
-              Edit <code>src/App.tsx</code> and save to reload.
-            </p>
-            <a
-                className="App-link"
-                href="https://reactjs.org"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-              Learn React
-            </a>
-          </header>
-        </div>
-      </ApolloProvider>
-  );
+    return (
+        <ApolloProvider client={client}>
+            <ThemeProvider theme={mdTheme}>
+                <Box sx={{ display: 'flex' }}>
+                    <AppBar position="static">
+                        <Toolbar variant="dense">
+                            <Typography variant="h6" color="inherit" component="div">
+                                Photos
+                            </Typography>
+                        </Toolbar>
+                    </AppBar>
+                    <Container>
+                        <ResourcesPage />
+                    </Container>
+                </Box>
+            </ThemeProvider>
+        </ApolloProvider>
+    );
 }
 
 export default App;
