@@ -1,4 +1,4 @@
-package forddb
+package typesystem
 
 import (
 	"reflect"
@@ -8,24 +8,24 @@ import (
 
 	"github.com/ipld/go-ipld-prime/schema"
 
+	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/ford/forddb/nodebinder"
 	"github.com/greenboxal/aip/pkg/utils"
 )
 
-var basicResourceType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
-var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
-var basicResourcePointerType = reflect.TypeOf((*BasicResourcePointer)(nil)).Elem()
-var basicResourceSlotType = reflect.TypeOf((*BasicResourceSlot)(nil)).Elem()
-
 var typeSystem = NewResourceTypeSystem()
+
+func TypeSystem() *ResourceTypeSystem {
+	return typeSystem
+}
 
 type ResourceTypeSystem struct {
 	m sync.Mutex
 
-	resourceTypes   map[ResourceTypeID]BasicResourceType
-	idTypeMap       map[reflect.Type]BasicResourceType
-	resourceTypeMap map[reflect.Type]BasicResourceType
-	typeMap         map[reflect.Type]BasicType
+	resourceTypes   map[forddb.ResourceTypeID]forddb.BasicResourceType
+	idTypeMap       map[reflect.Type]forddb.BasicResourceType
+	resourceTypeMap map[reflect.Type]forddb.BasicResourceType
+	typeMap         map[reflect.Type]forddb.BasicType
 	typeSchemaCache map[reflect.Type]schema.Type
 
 	universe        schema.TypeSystem
@@ -33,14 +33,14 @@ type ResourceTypeSystem struct {
 }
 
 func NewResourceTypeSystem() *ResourceTypeSystem {
-	typeType := newResourceType[ResourceTypeID, BasicResourceType]("type")
-	typeType.isRuntimeOnly = true
+	typeType := NewResourceType[forddb.ResourceTypeID, forddb.BasicResourceType]("type")
+	typeType.SetRuntimeOnly()
 
 	rts := &ResourceTypeSystem{
-		resourceTypes:   make(map[ResourceTypeID]BasicResourceType, 32),
-		idTypeMap:       make(map[reflect.Type]BasicResourceType, 32),
-		typeMap:         make(map[reflect.Type]BasicType, 32),
-		resourceTypeMap: make(map[reflect.Type]BasicResourceType, 32),
+		resourceTypes:   make(map[forddb.ResourceTypeID]forddb.BasicResourceType, 32),
+		idTypeMap:       make(map[reflect.Type]forddb.BasicResourceType, 32),
+		typeMap:         make(map[reflect.Type]forddb.BasicType, 32),
+		resourceTypeMap: make(map[reflect.Type]forddb.BasicResourceType, 32),
 		typeSchemaCache: make(map[reflect.Type]schema.Type, 32),
 	}
 
@@ -65,12 +65,12 @@ func NewResourceTypeSystem() *ResourceTypeSystem {
 	return rts
 }
 
-func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
+func (rts *ResourceTypeSystem) Register(t forddb.BasicResourceType) {
 	if rts.doRegister(t, true) {
-		t.initializeSchema(rts, rts.bindNodeOptions...)
+		t.Initialize(rts, rts.bindNodeOptions...)
 	}
 }
-func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
+func (rts *ResourceTypeSystem) doRegister(t forddb.BasicType, lock bool) bool {
 	if lock {
 		rts.m.Lock()
 		defer rts.m.Unlock()
@@ -82,13 +82,13 @@ func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 
 	rts.typeMap[t.RuntimeType()] = t
 
-	if t, ok := t.(BasicResourceType); ok {
+	if t, ok := t.(forddb.BasicResourceType); ok {
 		rts.resourceTypes[t.GetID()] = t
 		rts.resourceTypeMap[t.RuntimeType()] = t
 		rts.idTypeMap[t.IDType().RuntimeType()] = t
 	}
 
-	if t.Kind() == KindId {
+	if t.Kind() == forddb.KindId {
 		rts.bindNodeOptions = append(
 			rts.bindNodeOptions,
 
@@ -96,12 +96,12 @@ func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 				reflect.New(t.RuntimeType()),
 				func(s string) (interface{}, error) {
 					idVal := reflect.New(t.RuntimeType())
-					idStr := idVal.Interface().(IStringResourceID)
-					idStr.setValueString(s)
+					idStr := idVal.Interface().(forddb.IStringResourceID)
+					idStr.SetValueString(s)
 					return idVal.Elem().Interface(), nil
 				},
 				func(i interface{}) (string, error) {
-					return i.(BasicResourceID).String(), nil
+					return i.(forddb.BasicResourceID).String(), nil
 				},
 			),
 		)
@@ -110,53 +110,64 @@ func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 	return true
 }
 
-func (rts *ResourceTypeSystem) LookupByID(id ResourceTypeID) BasicResourceType {
+func (rts *ResourceTypeSystem) LookupByID(id forddb.ResourceTypeID) forddb.BasicResourceType {
 	return rts.resourceTypes[id]
 }
 
-func (rts *ResourceTypeSystem) LookupByIDType(typ reflect.Type) BasicResourceType {
-	typ = derefPointer(typ)
+func (rts *ResourceTypeSystem) LookupByIDType(typ reflect.Type) forddb.BasicResourceType {
+	typ = DerefPointer(typ)
 
 	return rts.idTypeMap[typ]
 }
 
-func (rts *ResourceTypeSystem) LookupByResourceType(typ reflect.Type) BasicResourceType {
-	typ = derefPointer(typ)
+func (rts *ResourceTypeSystem) LookupByResourceType(typ reflect.Type) forddb.BasicResourceType {
+	typ = DerefPointer(typ)
 
 	return rts.resourceTypeMap[typ]
 }
 
-func (rts *ResourceTypeSystem) LookupByType(typ reflect.Type) (result BasicType) {
+func (rts *ResourceTypeSystem) LookupByType(typ reflect.Type) (result forddb.BasicType) {
 	isNew := false
+
+	if IsBasicResource(typ) {
+		return rts.LookupByResourceType(typ)
+	}
 
 	defer func() {
 		if isNew {
-			result.initializeSchema(rts, rts.bindNodeOptions...)
+			result.Initialize(rts, rts.bindNodeOptions...)
 		}
 	}()
 
-	typ = derefPointer(typ)
+	typ = DerefPointer(typ)
 
-	if existing := rts.resourceTypeMap[typ]; existing != nil {
+	if existing := rts.typeMap[typ]; existing != nil {
 		return existing
 	}
 
 	rts.m.Lock()
 	defer rts.m.Unlock()
 
-	if existing := rts.resourceTypeMap[typ]; existing != nil {
+	if existing := rts.typeMap[typ]; existing != nil {
 		return existing
 	}
 
 	name := utils.GetParsedTypeName(typ).NormalizedFullNameWithArguments()
 
-	kind := KindValue
+	kind := forddb.KindValue
 
 	if IsBasicResourceId(typ) {
-		kind = KindId
+		kind = forddb.KindId
 	}
 
-	result = newBasicType(kind, name, typ, false)
+	result = NewBasicType(
+		kind,
+		getTypePrimitiveKind(typ),
+		name,
+		typ,
+		false,
+	)
+
 	isNew = true
 
 	rts.doRegister(result, false)
@@ -164,8 +175,8 @@ func (rts *ResourceTypeSystem) LookupByType(typ reflect.Type) (result BasicType)
 	return
 }
 
-func (rts *ResourceTypeSystem) ResourceTypes() []BasicResourceType {
-	var result = make([]BasicResourceType, 0, len(rts.resourceTypes))
+func (rts *ResourceTypeSystem) ResourceTypes() []forddb.BasicResourceType {
+	var result = make([]forddb.BasicResourceType, 0, len(rts.resourceTypes))
 
 	for _, typ := range rts.resourceTypes {
 		result = append(result, typ)
@@ -187,7 +198,7 @@ func (rts *ResourceTypeSystem) Freeze() (*schema.TypeSystem, []error) {
 func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 	var result schema.Type
 
-	typ = derefPointer(typ)
+	typ = DerefPointer(typ)
 
 	if existing := rts.typeSchemaCache[typ]; existing != nil {
 		return existing
@@ -325,4 +336,60 @@ func (rts *ResourceTypeSystem) MakePrototype(typ reflect.Type, schemaType schema
 
 func (rts *ResourceTypeSystem) schemaForId(typ reflect.Type) schema.Type {
 	return rts.schemaForStruct(typ)
+}
+
+func getTypePrimitiveKind(typ reflect.Type) forddb.PrimitiveKind {
+	switch typ.Kind() {
+	case reflect.Array:
+		fallthrough
+	case reflect.Slice:
+		elem := typ.Elem()
+
+		if elem.Kind() == reflect.Uint8 && elem.Name() == "" {
+			return forddb.PrimitiveKindBytes
+		} else {
+			return forddb.PrimitiveKindList
+		}
+
+	case reflect.Struct:
+		return forddb.PrimitiveKindStruct
+
+	case reflect.Int:
+		fallthrough
+	case reflect.Int8:
+		fallthrough
+	case reflect.Int16:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Int64:
+		return forddb.PrimitiveKindInt
+	case reflect.Uint:
+		fallthrough
+	case reflect.Uint8:
+		fallthrough
+	case reflect.Uint16:
+		fallthrough
+	case reflect.Uint32:
+		fallthrough
+	case reflect.Uint64:
+		return forddb.PrimitiveKindUnsignedInt
+
+	case reflect.Float32:
+		fallthrough
+	case reflect.Float64:
+		return forddb.PrimitiveKindFloat
+
+	case reflect.Bool:
+		return forddb.PrimitiveKindBoolean
+
+	case reflect.Map:
+		return forddb.PrimitiveKindMap
+
+	case reflect.String:
+		return forddb.PrimitiveKindString
+
+	default:
+		panic("unsupported type")
+	}
 }
