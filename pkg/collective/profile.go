@@ -1,8 +1,6 @@
 package collective
 
 import (
-	"encoding/json"
-
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 )
 
@@ -13,5 +11,16 @@ type ProfileID struct {
 type Profile struct {
 	forddb.ResourceMetadata[ProfileID, *Profile] `json:"metadata"`
 
-	Spec json.RawMessage `json:"spec"`
+	Spec ProfileSpec `json:"spec"`
+
+	// FIXME: Move to spec
+	Aptitudes []ProfileAptitude `json:"aptitudes"`
+}
+
+type ProfileSpec struct {
+	Directive string `json:"directive"`
+}
+
+type ProfileAptitude struct {
+	Description string `json:"description"`
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/swaggest/jsonrpc"
 	"github.com/swaggest/usecase"
 
-	"github.com/greenboxal/aip/pkg/ford/forddb"
+	"github.com/greenboxal/aip/pkg/utils"
 )
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
@@ -25,7 +25,7 @@ func NewRpcService() *RpcService {
 	apiSchema.Reflector().SpecEns().Info.Version = "v1.0.0"
 
 	apiSchema.Reflector().InterceptDefName(func(t reflect.Type, defaultDefName string) string {
-		return forddb.NormalizedTypeName(t)
+		return utils.GetParsedTypeName(t).NormalizedFullNameWithArguments()
 	})
 
 	handler.OpenAPI = &apiSchema

@@ -124,7 +124,7 @@ func (q *GraphQL) initializeTypeSystem() {
 }
 
 func (q *GraphQL) lookupType(typ forddb.BasicResourceType) graphql.Output {
-	return q.lookupTypeFromReflection(typ.ResourceType())
+	return q.lookupTypeFromReflection(typ.ResourceType().RuntimeType())
 }
 
 func (q *GraphQL) lookupTypeFromReflection(typ reflect.Type) (result graphql.Output) {

@@ -23,7 +23,7 @@ func CloneResource(resource BasicResource) BasicResource {
 		panic(err)
 	}
 
-	return cloned
+	return cloned.(BasicResource)
 }
 
 func Encode(resource BasicResource) (RawResource, error) {
@@ -64,7 +64,7 @@ func Decode(rawResource RawResource) (BasicResource, error) {
 		return nil, err
 	}
 
-	return resource, nil
+	return resource.(BasicResource), nil
 }
 
 type CodecEncoder interface {

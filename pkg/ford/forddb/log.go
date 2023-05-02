@@ -57,9 +57,10 @@ func MakeLSN(clock uint64, ts time.Time) LSN {
 }
 
 type LogEntry struct {
-	Kind LogEntryKind    `json:"kind"`
-	Type ResourceTypeID  `json:"type"`
 	ID   BasicResourceID `json:"id"`
+	Type ResourceTypeID  `json:"type"`
+
+	Kind LogEntryKind `json:"kind"`
 
 	Version uint64 `json:"version,omitempty"`
 

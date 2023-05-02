@@ -15,6 +15,8 @@ type BasicResource interface {
 	IResourceMetadata
 
 	GetMetadata() *BasicResourceMetadata
+
+	onBeforeSerialize()
 }
 
 type Resource[ID BasicResourceID] interface {
@@ -24,11 +26,12 @@ type Resource[ID BasicResourceID] interface {
 }
 
 type BasicResourceMetadata struct {
-	Namespace string    `json:"namespace"`
-	Name      string    `json:"name"`
-	Version   uint64    `json:"version"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Kind      ResourceTypeID `json:"kind"`
+	Namespace string         `json:"namespace"`
+	Name      string         `json:"name"`
+	Version   uint64         `json:"version"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
 type ResourceMetadata[ID ResourceID[T], T Resource[ID]] struct {
@@ -61,4 +64,8 @@ func (r *ResourceMetadata[ID, T]) GetType() ResourceTypeID {
 
 func (r *BasicResourceMetadata) GetVersion() uint64 {
 	return r.Version
+}
+
+func (r *ResourceMetadata[ID, T]) onBeforeSerialize() {
+	r.Kind = r.GetType()
 }

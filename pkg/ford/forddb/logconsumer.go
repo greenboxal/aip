@@ -1,6 +1,9 @@
 package forddb
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 type LogStreamHandler func(ctx context.Context, record *LogEntryRecord) error
 
@@ -18,7 +21,13 @@ func (lc *LogConsumer) Run(ctx context.Context) error {
 	}
 
 	for stream.Next(ctx) {
-		if err := lc.Handler(ctx, stream.Record()); err != nil {
+		record := stream.Record()
+
+		if record.Kind == LogEntryKindInvalid {
+			return errors.New("invalid log entry kind")
+		}
+
+		if err := lc.Handler(ctx, record); err != nil {
 			return err
 		}
 

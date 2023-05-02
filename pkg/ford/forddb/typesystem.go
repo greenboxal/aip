@@ -2,14 +2,15 @@ package forddb
 
 import (
 	"reflect"
-	"regexp"
+	"strings"
 	"sync"
+	"time"
 
-	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"github.com/ipld/go-ipld-prime/schema"
-)
 
-var NormalizeTypeNameRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
+	"github.com/greenboxal/aip/pkg/ford/forddb/nodebinder"
+	"github.com/greenboxal/aip/pkg/utils"
+)
 
 var basicResourceType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
 var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
@@ -24,25 +25,21 @@ type ResourceTypeSystem struct {
 	resourceTypes   map[ResourceTypeID]BasicResourceType
 	idTypeMap       map[reflect.Type]BasicResourceType
 	resourceTypeMap map[reflect.Type]BasicResourceType
+	typeMap         map[reflect.Type]BasicType
 	typeSchemaCache map[reflect.Type]schema.Type
 
 	universe        schema.TypeSystem
-	bindNodeOptions []bindnode.Option
+	bindNodeOptions []nodebinder.Option
 }
 
 func NewResourceTypeSystem() *ResourceTypeSystem {
-	typeType := &resourceType[ResourceTypeID, BasicResourceType]{
-		resourceType: reflect.TypeOf((*BasicResourceType)(nil)).Elem(),
-		idType:       reflect.TypeOf((*ResourceTypeID)(nil)).Elem(),
-	}
-
+	typeType := newResourceType[ResourceTypeID, BasicResourceType]("type")
 	typeType.isRuntimeOnly = true
-	typeType.ResourceMetadata.Name = "type"
-	typeType.ResourceMetadata.ID = typeType.CreateID(typeType.ResourceMetadata.Name).(ResourceTypeID)
 
 	rts := &ResourceTypeSystem{
 		resourceTypes:   make(map[ResourceTypeID]BasicResourceType, 32),
 		idTypeMap:       make(map[reflect.Type]BasicResourceType, 32),
+		typeMap:         make(map[reflect.Type]BasicType, 32),
 		resourceTypeMap: make(map[reflect.Type]BasicResourceType, 32),
 		typeSchemaCache: make(map[reflect.Type]schema.Type, 32),
 	}
@@ -51,32 +48,66 @@ func NewResourceTypeSystem() *ResourceTypeSystem {
 
 	rts.Register(typeType)
 
+	rts.bindNodeOptions = append(rts.bindNodeOptions, nodebinder.TypedIntConverter(
+		(*time.Time)(nil),
+		func(i int64) (interface{}, error) {
+			return time.Unix(0, i), nil
+		},
+		func(i interface{}) (int64, error) {
+			t := i.(time.Time)
+
+			return t.UnixNano(), nil
+		},
+	))
+
+	rts.accumulate(reflect.TypeOf((*time.Time)(nil)).Elem(), schema.SpawnInt("timeTime"))
+
 	return rts
 }
 
 func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
-	rts.resourceTypes[t.GetID()] = t
-	rts.idTypeMap[t.IDType()] = t
-	rts.resourceTypeMap[t.ResourceType()] = t
+	if rts.doRegister(t, true) {
+		t.initializeSchema(rts, rts.bindNodeOptions...)
+	}
+}
+func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
+	if lock {
+		rts.m.Lock()
+		defer rts.m.Unlock()
+	}
 
-	rts.bindNodeOptions = append(
-		rts.bindNodeOptions,
+	if _, ok := rts.typeMap[t.RuntimeType()]; ok {
+		return false
+	}
 
-		bindnode.TypedStringConverter(
-			reflect.New(t.IDType()),
-			func(s string) (interface{}, error) {
-				idVal := reflect.New(t.IDType())
-				idStr := idVal.Interface().(IStringResourceID)
-				idStr.setValueString(s)
-				return idVal.Elem().Interface(), nil
-			},
-			func(i interface{}) (string, error) {
-				return i.(BasicResourceID).String(), nil
-			},
-		),
-	)
+	rts.typeMap[t.RuntimeType()] = t
 
-	t.initializeSchema(rts, rts.bindNodeOptions...)
+	if t, ok := t.(BasicResourceType); ok {
+		rts.resourceTypes[t.GetID()] = t
+		rts.resourceTypeMap[t.RuntimeType()] = t
+		rts.idTypeMap[t.IDType().RuntimeType()] = t
+	}
+
+	if t.Kind() == KindId {
+		rts.bindNodeOptions = append(
+			rts.bindNodeOptions,
+
+			nodebinder.TypedStringConverter(
+				reflect.New(t.RuntimeType()),
+				func(s string) (interface{}, error) {
+					idVal := reflect.New(t.RuntimeType())
+					idStr := idVal.Interface().(IStringResourceID)
+					idStr.setValueString(s)
+					return idVal.Elem().Interface(), nil
+				},
+				func(i interface{}) (string, error) {
+					return i.(BasicResourceID).String(), nil
+				},
+			),
+		)
+	}
+
+	return true
 }
 
 func (rts *ResourceTypeSystem) LookupByID(id ResourceTypeID) BasicResourceType {
@@ -84,19 +115,53 @@ func (rts *ResourceTypeSystem) LookupByID(id ResourceTypeID) BasicResourceType {
 }
 
 func (rts *ResourceTypeSystem) LookupByIDType(typ reflect.Type) BasicResourceType {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
+	typ = derefPointer(typ)
 
 	return rts.idTypeMap[typ]
 }
 
 func (rts *ResourceTypeSystem) LookupByResourceType(typ reflect.Type) BasicResourceType {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
+	typ = derefPointer(typ)
 
 	return rts.resourceTypeMap[typ]
+}
+
+func (rts *ResourceTypeSystem) LookupByType(typ reflect.Type) (result BasicType) {
+	isNew := false
+
+	defer func() {
+		if isNew {
+			result.initializeSchema(rts, rts.bindNodeOptions...)
+		}
+	}()
+
+	typ = derefPointer(typ)
+
+	if existing := rts.resourceTypeMap[typ]; existing != nil {
+		return existing
+	}
+
+	rts.m.Lock()
+	defer rts.m.Unlock()
+
+	if existing := rts.resourceTypeMap[typ]; existing != nil {
+		return existing
+	}
+
+	name := utils.GetParsedTypeName(typ).NormalizedFullNameWithArguments()
+
+	kind := KindValue
+
+	if IsBasicResourceId(typ) {
+		kind = KindId
+	}
+
+	result = newBasicType(kind, name, typ, false)
+	isNew = true
+
+	rts.doRegister(result, false)
+
+	return
 }
 
 func (rts *ResourceTypeSystem) ResourceTypes() []BasicResourceType {
@@ -112,8 +177,8 @@ func (rts *ResourceTypeSystem) ResourceTypes() []BasicResourceType {
 func (rts *ResourceTypeSystem) Freeze() (*schema.TypeSystem, []error) {
 	var result = make([]schema.Type, 0, len(rts.resourceTypes))
 
-	for _, typ := range rts.resourceTypes {
-		result = append(result, typ.SchemaResourceType())
+	for _, typ := range rts.typeMap {
+		result = append(result, typ.SchemaType())
 	}
 
 	return schema.SpawnTypeSystem(result...)
@@ -128,16 +193,26 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 		return existing
 	}
 
+	name := utils.GetParsedTypeName(typ).NormalizedFullNameWithArguments()
+
+	if name == "" {
+		name = typ.Kind().String()
+	}
+
 	switch typ.Kind() {
 	case reflect.Array:
 		fallthrough
 	case reflect.Slice:
 		elem := rts.SchemaForType(typ.Elem())
 
-		result = schema.SpawnList(elem.Name()+"List", elem.Name(), true)
+		result = schema.SpawnList(elem.Name()+"List", elem.Name(), false)
 
 	case reflect.Struct:
-		result = rts.schemaForStruct(typ)
+		if IsBasicResourceId(typ) {
+			result = rts.schemaForId(typ)
+		} else {
+			result = rts.schemaForStruct(typ)
+		}
 
 	case reflect.Int:
 		fallthrough
@@ -158,49 +233,21 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 	case reflect.Uint32:
 		fallthrough
 	case reflect.Uint64:
-		name := NormalizedTypeName(typ)
-
-		if name == "" {
-			name = typ.Kind().String()
-		}
-
 		result = schema.SpawnInt(name)
 
 	case reflect.Float32:
 		fallthrough
 	case reflect.Float64:
-		name := NormalizedTypeName(typ)
-
-		if name == "" {
-			name = typ.Kind().String()
-		}
-
 		result = schema.SpawnFloat(name)
 
 	case reflect.Bool:
-		name := NormalizedTypeName(typ)
-
-		if name == "" {
-			name = typ.Kind().String()
-		}
-
 		result = schema.SpawnBool(name)
 
 	case reflect.String:
-		name := NormalizedTypeName(typ)
-
-		if name == "" {
-			name = typ.Kind().String()
-		}
-
 		result = schema.SpawnString(name)
 
 	default:
 		panic("unsupported type")
-	}
-
-	if result.Name() == "ResourceTypeID" {
-		result.Name()
 	}
 
 	rts.accumulate(typ, result)
@@ -210,8 +257,8 @@ func (rts *ResourceTypeSystem) SchemaForType(typ reflect.Type) schema.Type {
 
 func (rts *ResourceTypeSystem) schemaForStruct(typ reflect.Type) schema.Type {
 	var fields []schema.StructField
-	var repr schema.StructRepresentation
-	name := NormalizedTypeName(typ)
+
+	name := utils.GetParsedTypeName(typ).NormalizedFullNameWithArguments()
 
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
@@ -220,46 +267,36 @@ func (rts *ResourceTypeSystem) schemaForStruct(typ reflect.Type) schema.Type {
 			continue
 		}
 
-		fieldType := derefPointer(field.Type)
+		fieldSchemaType := rts.SchemaForType(field.Type)
 
-		if IsBasicResourcePointer(fieldType) {
-			fieldSchemaType := rts.SchemaForType(field.Type)
-
-			ref := schema.SpawnLinkReference("_"+fieldSchemaType.Name()+"Ptr", fieldSchemaType.Name())
-
-			rts.accumulate(field.Type, ref)
-
-			f := schema.SpawnStructField(
-				field.Name,
-				ref.Name(),
-				false,
-				field.Type.Kind() == reflect.Ptr || field.Type.Kind() == reflect.Interface,
-			)
-
-			fields = append(fields, f)
-		} else if IsBasicResource(fieldType) {
-			fieldSchemaType := rts.SchemaForType(field.Type)
-
-			f := schema.SpawnStructField(
-				field.Name,
-				fieldSchemaType.Name(),
-				false,
-				field.Type.Kind() == reflect.Ptr || field.Type.Kind() == reflect.Interface,
-			)
-
-			fields = append(fields, f)
-		} else {
-			fieldTypeName := NormalizedTypeName(field.Type)
-
-			f := schema.SpawnStructField(
-				field.Name,
-				fieldTypeName,
-				false,
-				field.Type.Kind() == reflect.Ptr || field.Type.Kind() == reflect.Interface,
-			)
-
-			fields = append(fields, f)
+		if field.Anonymous && field.Type.Kind() == reflect.Struct {
+			if fieldSchemaType, ok := fieldSchemaType.(*schema.TypeStruct); ok {
+				fields = append(fields, fieldSchemaType.Fields()...)
+				continue
+			}
 		}
+
+		fieldName := field.Name
+
+		if tag, ok := field.Tag.Lookup("json"); ok {
+			parts := strings.SplitN(tag, ",", 2)
+			fieldName = parts[0]
+		}
+
+		f := schema.SpawnStructField(
+			fieldName,
+			fieldSchemaType.Name(),
+			false,
+			field.Type.Kind() == reflect.Ptr || field.Type.Kind() == reflect.Interface,
+		)
+
+		fields = append(fields, f)
+	}
+
+	var repr schema.StructRepresentation
+
+	if IsBasicResourceId(typ) {
+		repr = schema.SpawnStructRepresentationStringjoin("")
 	}
 
 	return schema.SpawnStruct(name, fields, repr)
@@ -283,5 +320,9 @@ func (rts *ResourceTypeSystem) accumulate(typ reflect.Type, ref schema.Type) {
 }
 
 func (rts *ResourceTypeSystem) MakePrototype(typ reflect.Type, schemaType schema.Type) schema.TypedPrototype {
-	return bindnode.Prototype(reflect.New(typ).Interface(), schemaType, rts.bindNodeOptions...)
+	return nodebinder.Prototype(reflect.New(typ).Interface(), schemaType, rts.bindNodeOptions...)
+}
+
+func (rts *ResourceTypeSystem) schemaForId(typ reflect.Type) schema.Type {
+	return rts.schemaForStruct(typ)
 }

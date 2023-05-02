@@ -2,83 +2,156 @@ package forddb
 
 import (
 	"reflect"
-	"sync"
+	"strings"
 
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/datamodel"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
-	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/multiformats/go-multicodec"
 	"github.com/multiformats/go-multihash"
+
+	"github.com/greenboxal/aip/pkg/ford/forddb/nodebinder"
 )
 
-type BasicResourceType interface {
+type Kind int
+
+const (
+	KindInvalid Kind = iota
+	KindId
+	KindResource
+	KindValue
+	KindPointer
+)
+
+type BasicType interface {
 	BasicResource
 
 	GetID() ResourceTypeID
 	Name() string
-	IDType() reflect.Type
-	ResourceType() reflect.Type
+	Kind() Kind
+
+	RuntimeType() reflect.Type
 	IsRuntimeOnly() bool
 
-	CreateInstance() BasicResource
-	CreateID(name string) BasicResourceID
+	CreateInstance() any
 
-	SchemaIdType() schema.Type
-	SchemaIdPrototype() schema.TypedPrototype
-
-	SchemaResourceType() schema.Type
-	SchemaResourcePrototype() schema.TypedPrototype
-
+	SchemaType() schema.Type
+	SchemaPrototype() schema.TypedPrototype
 	SchemaLinkPrototype() ipld.LinkPrototype
 
 	TypeSystem() *ResourceTypeSystem
 
-	initializeSchema(ts *ResourceTypeSystem, options ...bindnode.Option)
+	//Encode(resource any) (RawResource, error)
+	//Decode(resource RawResource) (any, error)
+
+	NumFields() int
+	Fields() []BasicField
+	FieldByName(name string) BasicField
+	FieldByIndex(index int) BasicField
+
+	initializeSchema(ts *ResourceTypeSystem, options ...nodebinder.Option)
 }
 
-type ResourceType[ID ResourceID[T], T Resource[ID]] interface {
-	BasicResourceType
+type Type[T any] interface {
+	BasicType
 }
 
-func LookupTypeByName(name string) BasicResourceType {
-	return typeSystem.LookupByID(NewStringID[ResourceTypeID](name))
+type basicType struct {
+	ResourceMetadata[ResourceTypeID, BasicResourceType] `json:"metadata"`
+
+	kind     Kind
+	fields   []BasicField
+	fieldMap map[string]BasicField
+
+	typ         reflect.Type
+	schemaType  schema.Type
+	schemaProto schema.TypedPrototype
+
+	isRuntimeOnly bool
+
+	universe *ResourceTypeSystem
 }
 
-func DefineResourceType[ID ResourceID[T], T Resource[ID]](name string) ResourceType[ID, T] {
-	t := &resourceType[ID, T]{
-		idType:       derefType[ID](),
-		resourceType: derefType[T](),
-	}
+var _ BasicType = (*basicType)(nil)
+
+func newBasicType(kind Kind, name string, typ reflect.Type, isRuntimeOnly bool) *basicType {
+	t := &basicType{}
 
 	t.ResourceMetadata.ID = NewStringID[ResourceTypeID](name)
 	t.ResourceMetadata.Name = name
 
-	typeSystem.Register(t)
+	t.kind = kind
+	t.typ = typ
+	t.fieldMap = make(map[string]BasicField, 32)
+
+	t.isRuntimeOnly = isRuntimeOnly
 
 	return t
 }
 
-type resourceType[ID ResourceID[T], T Resource[ID]] struct {
-	ResourceMetadata[ResourceTypeID, BasicResourceType]
-
-	idType       reflect.Type
-	resourceType reflect.Type
-
-	isRuntimeOnly bool
-
-	idSchemaType schema.Type
-	idPrototype  schema.TypedPrototype
-
-	resourceSchemaType schema.Type
-	resourcePrototype  schema.TypedPrototype
-
-	m        sync.Mutex
-	universe *ResourceTypeSystem
+func (bt *basicType) GetID() ResourceTypeID {
+	return bt.ResourceMetadata.ID
 }
 
-func (r *resourceType[ID, T]) SchemaLinkPrototype() ipld.LinkPrototype {
+func (bt *basicType) Name() string {
+	return bt.ResourceMetadata.Name
+}
+
+func (bt *basicType) Kind() Kind {
+	return bt.kind
+}
+
+func (bt *basicType) RuntimeType() reflect.Type {
+	return bt.typ
+}
+
+func (bt *basicType) IsRuntimeOnly() bool {
+	return bt.isRuntimeOnly
+}
+
+func (bt *basicType) NumFields() int {
+	return len(bt.fields)
+}
+
+func (bt *basicType) Fields() []BasicField {
+	return bt.fields
+}
+
+func (bt *basicType) FieldByName(name string) BasicField {
+	return bt.fieldMap[name]
+}
+
+func (bt *basicType) FieldByIndex(index int) BasicField {
+	if index < 0 || index >= len(bt.fields) {
+		return nil
+	}
+
+	return bt.fields[index]
+}
+
+func (bt *basicType) CreateInstance() any {
+	return reflect.New(bt.typ).Interface()
+}
+
+func (bt *basicType) SchemaType() schema.Type {
+	if bt.isRuntimeOnly {
+		return nil
+	}
+
+	return bt.schemaType
+}
+
+func (bt *basicType) SchemaPrototype() schema.TypedPrototype {
+	if bt.isRuntimeOnly {
+		return nil
+	}
+
+	return bt.schemaProto
+}
+
+func (bt *basicType) SchemaLinkPrototype() ipld.LinkPrototype {
 	return cidlink.LinkPrototype{
 		Prefix: cid.Prefix{
 			Version:  1,
@@ -89,123 +162,252 @@ func (r *resourceType[ID, T]) SchemaLinkPrototype() ipld.LinkPrototype {
 	}
 }
 
-func (r *resourceType[ID, T]) TypeSystem() *ResourceTypeSystem {
-	return r.universe
+func (bt *basicType) TypeSystem() *ResourceTypeSystem {
+	return bt.universe
 }
 
-func (r *resourceType[ID, T]) SchemaResourceType() schema.Type {
-	if r.isRuntimeOnly {
-		return nil
-	}
+//func (bt *basicType) Encode(resource any) (RawResource, error) {
+//	node := nodebinder.Wrap(resource, bt.SchemaType(), bt.universe.bindNodeOptions...)
+//
+//	return node, nil
+//}
+//
+//func (bt *basicType) Decode(resource RawResource) (any, error) {
+//	res := nodebinder.Unwrap(resource)
+//
+//	if res == nil {
+//		encoded, err := ipld.Encode(resource, dagjson.Encode)
+//
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		res, err = ipld.DecodeUsingPrototype(encoded, dagjson.Decode, bt.SchemaPrototype())
+//
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		res = nodebinder.Unwrap(resource)
+//	}
+//
+//	return res, nil
+//}
 
-	if r.resourceSchemaType == nil {
-		r.m.Lock()
-		defer r.m.Unlock()
+func (bt *basicType) initializeSchema(ts *ResourceTypeSystem, options ...nodebinder.Option) {
+	bt.universe = ts
 
-		if r.resourceSchemaType == nil {
-			r.resourceSchemaType = r.universe.SchemaForType(r.resourceType)
+	if bt.typ.Kind() == reflect.Struct {
+		for i := 0; i < bt.typ.NumField(); i++ {
+			f := bt.typ.Field(i)
+
+			if !f.IsExported() {
+				continue
+			}
+
+			fieldName := f.Name
+			fieldType := typeSystem.LookupByType(f.Type)
+
+			tag, ok := f.Tag.Lookup("json")
+
+			if !ok {
+				continue
+			}
+
+			tagParts := strings.Split(tag, ",")
+			fieldName = tagParts[0]
+
+			field := NewReflectedField(fieldName, bt, fieldType, f)
+
+			bt.fields = append(bt.fields, field)
+			bt.fieldMap[field.Name()] = field
 		}
 	}
 
-	return r.resourceSchemaType
+	//if !bt.isRuntimeOnly {
+	//	bt.schemaType = bt.universe.SchemaForType(bt.typ)
+
+	//	if bt.Kind() == KindId {
+	//		bt.schemaProto = &resourceIdPrototype{typ: bt}
+	//	} else {
+	//		bt.schemaProto = bt.universe.MakePrototype(bt.typ, bt.schemaType)
+	//	}
+	//}
 }
 
-func (r *resourceType[ID, T]) SchemaResourcePrototype() schema.TypedPrototype {
-	if r.isRuntimeOnly {
-		return nil
+type resourceIdPrototype struct {
+	typ BasicType
+}
+
+func (r *resourceIdPrototype) NewBuilder() datamodel.NodeBuilder {
+	return &resourceIdBuilder{proto: r}
+}
+
+func (r *resourceIdPrototype) Type() schema.Type {
+	return r.typ.SchemaType()
+}
+
+func (r *resourceIdPrototype) Representation() datamodel.NodePrototype {
+	return r
+}
+
+type resourceIdBuilder struct {
+	proto *resourceIdPrototype
+	value reflect.Value
+}
+
+func (r *resourceIdBuilder) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignNull() error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignBool(b bool) error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignInt(i int64) error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignFloat(f float64) error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignString(s string) error {
+	id := r.value.Interface().(IStringResourceID)
+
+	id.setValueString(s)
+
+	return nil
+}
+
+func (r *resourceIdBuilder) AssignBytes(bytes []byte) error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignLink(link datamodel.Link) error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) AssignNode(node datamodel.Node) error {
+	panic("not supported")
+}
+
+func (r *resourceIdBuilder) Prototype() datamodel.NodePrototype {
+	return r.proto
+}
+
+func (r *resourceIdBuilder) Build() datamodel.Node {
+	return &resourceIdNode{
+		typ:   r.proto.typ,
+		value: r.value,
 	}
-
-	if r.resourcePrototype == nil {
-		r.m.Lock()
-		defer r.m.Unlock()
-
-		if r.resourcePrototype == nil {
-			r.resourcePrototype = r.universe.MakePrototype(r.resourceType, r.resourceSchemaType)
-		}
-	}
-
-	return r.resourcePrototype
 }
 
-func (r *resourceType[ID, T]) SchemaIdType() schema.Type {
-	if r.resourceSchemaType == nil {
-		r.m.Lock()
-		defer r.m.Unlock()
-
-		if r.idSchemaType == nil {
-			r.idSchemaType = r.universe.SchemaForType(r.idType)
-		}
-	}
-
-	return r.idSchemaType
+func (r *resourceIdBuilder) Reset() {
 }
 
-func (r *resourceType[ID, T]) SchemaIdPrototype() schema.TypedPrototype {
-	if r.idPrototype == nil {
-		r.m.Lock()
-		defer r.m.Unlock()
-
-		if r.idPrototype == nil {
-			r.idPrototype = r.universe.MakePrototype(r.idType, r.idSchemaType)
-		}
-	}
-
-	return r.idPrototype
+type resourceIdNode struct {
+	typ   BasicType
+	value reflect.Value
 }
 
-func (r *resourceType[ID, T]) CreateInstance() BasicResource {
-	return reflect.New(r.resourceType).Interface().(BasicResource)
+func (r *resourceIdNode) Kind() datamodel.Kind {
+	return datamodel.Kind_String
 }
 
-func (r *resourceType[ID, T]) CreateID(name string) BasicResourceID {
-	idValue := reflect.New(r.idType)
-
-	idValue.Interface().(IStringResourceID).setValueString(name)
-
-	return idValue.Elem().Interface().(BasicResourceID)
+func (r *resourceIdNode) LookupByString(key string) (datamodel.Node, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *resourceType[ID, T]) IsRuntimeOnly() bool {
-	return r.isRuntimeOnly
+func (r *resourceIdNode) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *resourceType[ID, T]) GetID() ResourceTypeID {
-	return r.ResourceMetadata.ID
+func (r *resourceIdNode) LookupByIndex(idx int64) (datamodel.Node, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *resourceType[ID, T]) Name() string {
-	return r.ResourceMetadata.Name
+func (r *resourceIdNode) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *resourceType[ID, T]) IDType() reflect.Type {
-	return r.idType
+func (r *resourceIdNode) MapIterator() datamodel.MapIterator {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *resourceType[ID, T]) ResourceType() reflect.Type {
-	return r.resourceType
+func (r *resourceIdNode) ListIterator() datamodel.ListIterator {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *resourceType[ID, T]) initializeSchema(ts *ResourceTypeSystem, options ...bindnode.Option) {
-	r.universe = ts
-
-	r.SchemaResourceType()
-	r.SchemaIdType()
+func (r *resourceIdNode) Length() int64 {
+	//TODO implement me
+	panic("implement me")
 }
 
-func derefType[T any]() reflect.Type {
-	t := reflect.TypeOf((*T)(nil)).Elem()
-
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	return t
+func (r *resourceIdNode) IsAbsent() bool {
+	//TODO implement me
+	panic("implement me")
 }
 
-func derefPointer(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
+func (r *resourceIdNode) IsNull() bool {
+	//TODO implement me
+	panic("implement me")
+}
 
-	return t
+func (r *resourceIdNode) AsBool() (bool, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *resourceIdNode) AsInt() (int64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *resourceIdNode) AsFloat() (float64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *resourceIdNode) AsString() (string, error) {
+	id := r.value.Interface().(IStringResourceID)
+
+	return id.String(), nil
+}
+
+func (r *resourceIdNode) AsBytes() ([]byte, error) {
+	id := r.value.Interface().(IStringResourceID)
+
+	return id.MarshalBinary()
+}
+
+func (r *resourceIdNode) AsLink() (datamodel.Link, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *resourceIdNode) Prototype() datamodel.NodePrototype {
+	return r.typ.SchemaPrototype()
+}
+
+func (r *resourceIdNode) Type() schema.Type {
+	return r.typ.SchemaType()
+}
+
+func (r *resourceIdNode) Representation() datamodel.Node {
+	return r
 }

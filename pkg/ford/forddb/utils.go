@@ -2,12 +2,12 @@ package forddb
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/pelletier/go-toml/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -43,6 +43,10 @@ func Get[T BasicResource](db Database, id ResourceID[T]) (def T, _ error) {
 
 func TypeSystem() *ResourceTypeSystem {
 	return typeSystem
+}
+
+func LookupTypeByName(name string) BasicResourceType {
+	return typeSystem.LookupByID(NewStringID[ResourceTypeID](name))
 }
 
 func IsBasicResource(t reflect.Type) bool {
@@ -110,7 +114,7 @@ func ImportPath(db Database, path string) error {
 		}
 
 		if !info.IsDir() && isSupportedFile(path) {
-			var rawResource RawResource
+			var raw RawResource
 
 			data, err := os.ReadFile(path)
 
@@ -121,12 +125,27 @@ func ImportPath(db Database, path string) error {
 
 			switch filepath.Ext(path) {
 			case ".toml":
-				if err := toml.Unmarshal(data, &rawResource); err != nil {
+				if err := toml.Unmarshal(data, &raw); err != nil {
 					merr = multierror.Append(merr, err)
 					return nil
 				}
+
+				data, err = json.Marshal(raw)
+
+				if err != nil {
+					merr = multierror.Append(merr, err)
+					return nil
+				}
+
 			case ".yaml", ".yml", ".json":
-				if err := yaml.Unmarshal(data, &rawResource); err != nil {
+				if err := yaml.Unmarshal(data, &raw); err != nil {
+					merr = multierror.Append(merr, err)
+					return nil
+				}
+
+				data, err = json.Marshal(raw)
+
+				if err != nil {
 					merr = multierror.Append(merr, err)
 					return nil
 				}
@@ -134,7 +153,7 @@ func ImportPath(db Database, path string) error {
 				return nil
 			}
 
-			resource, err := Decode(rawResource)
+			resource, err := Deserialize(data, Json)
 
 			if err != nil {
 				merr = multierror.Append(merr, err)
@@ -168,20 +187,20 @@ func isSupportedFile(path string) bool {
 	return false
 }
 
-func NormalizeName(str string) string {
-	return NormalizeTypeNameRegex.ReplaceAllString(str, "")
+func derefType[T any]() reflect.Type {
+	t := reflect.TypeOf((*T)(nil)).Elem()
+
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t
 }
 
-func NormalizedTypeName(typ reflect.Type) schema.TypeName {
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
+func derefPointer(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
 
-	name := typ.Name()
-
-	if name == "" {
-		name = typ.Kind().String()
-	}
-
-	return NormalizeTypeNameRegex.ReplaceAllString(name, "")
+	return t
 }

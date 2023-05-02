@@ -102,7 +102,7 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 	}
 
 	resourceId := resourceType.CreateID(resourceIdName)
-	resource := resourceType.CreateInstance()
+	resource := resourceType.CreateInstance().(forddb.BasicResource)
 
 	data, err := io.ReadAll(request.Body)
 

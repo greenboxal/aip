@@ -20,10 +20,12 @@ type Process struct {
 	program string
 	args    []string
 
+	cmd          *exec.Cmd
 	stdinWriter  io.WriteCloser
 	stdoutReader io.ReadCloser
 
-	outgoingCh chan collective.Message
+	procStartedCh chan struct{}
+	outgoingCh    chan collective.Message
 
 	handler func(m collective.Message)
 }
@@ -40,7 +42,8 @@ func NewProcess(
 		program: program,
 		args:    args,
 
-		outgoingCh: make(chan collective.Message, 128),
+		procStartedCh: make(chan struct{}),
+		outgoingCh:    make(chan collective.Message, 128),
 	}, nil
 }
 
@@ -78,13 +81,17 @@ func (p *Process) Run(ctx context.Context) error {
 	env = append(env, os.Environ()...)
 	env = append(env, "AIP_IPC_BASE_FD=3")
 
-	cmd := exec.CommandContext(gctx, p.program, p.args...)
+	p.cmd = exec.CommandContext(gctx, p.program, p.args...)
 
-	cmd.Env = env
-	cmd.Stdin = nil
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
-	cmd.ExtraFiles = []*os.File{stdinReader, stdoutWriter, stdinWriter, stdoutReader}
+	p.cmd.Env = env
+	p.cmd.Stdin = nil
+	p.cmd.Stdout = os.Stdout
+	p.cmd.Stderr = os.Stdout
+	p.cmd.ExtraFiles = []*os.File{stdinReader, stdoutWriter, stdinWriter, stdoutReader}
+
+	if err := p.cmd.Start(); err != nil {
+		return err
+	}
 
 	wg.Go(func() error {
 		for {
@@ -139,13 +146,26 @@ func (p *Process) Run(ctx context.Context) error {
 	})
 
 	wg.Go(func() error {
-		return cmd.Run()
+		close(p.procStartedCh)
+
+		return p.cmd.Wait()
 	})
 
 	return wg.Wait()
 }
 
 func (p *Process) Close() error {
-
 	return nil
+}
+
+func (p *Process) Process() *os.Process {
+	_, _ = <-p.procStartedCh
+
+	return p.cmd.Process
+}
+
+func (p *Process) Pid() int {
+	_, _ = <-p.procStartedCh
+
+	return p.cmd.Process.Pid
 }
