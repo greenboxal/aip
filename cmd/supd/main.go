@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jbenet/goprocess"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -48,11 +49,13 @@ func main() {
 		milvus.WithMilvusStorage(),
 
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.API) error {
-			if err := forddb.ImportPath(db, "./data/initrd"); err != nil {
-				return err
-			}
-
 			return d.Run()
+		}),
+
+		fx.Provide(NewChatHandler),
+
+		fx.Invoke(func(handler *ChatHandler) {
+			goprocess.Go(handler.Run)
 		}),
 	)
 

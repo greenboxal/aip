@@ -8,8 +8,8 @@ import (
 
 	"github.com/greenboxal/aip/pkg/indexing"
 	"github.com/greenboxal/aip/pkg/indexing/impl"
-	"github.com/greenboxal/aip/pkg/indexing/reducers/summarizers"
-	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
+	summarizers2 "github.com/greenboxal/aip/pkg/llm/summarizers"
+	"github.com/greenboxal/aip/pkg/llm/tokenizers"
 )
 
 type Manager struct {
@@ -33,10 +33,10 @@ func NewManager(
 	}
 
 	m.index = impl.NewIndex(storage, indexing.IndexConfiguration{
-		Reducer: &summarizers.MipMapSummarizer{
+		Reducer: &summarizers2.MipMapSummarizer{
 			Tokenizer: tokenizer,
 
-			Summarizer: &summarizers.ChatGptSummarizer{
+			Summarizer: &summarizers2.ChatGptSummarizer{
 				Client: oai,
 				Model:  openai.GPT3Dot5Turbo,
 			},

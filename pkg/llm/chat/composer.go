@@ -1,41 +1,15 @@
-package llm
+package chat
 
-import "github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
-
-type Message struct {
-	Entries []MessageEntry
-}
-
-func (m *Message) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
-	total := 0
-
-	for _, entry := range m.Entries {
-		count, err := entry.CalculateTokenCount(tokenizer)
-
-		if err != nil {
-			return 0, err
-		}
-
-		total += count
-	}
-
-	return total, nil
-}
-
-type MessageEntry struct {
-	Role    string
-	Content string
-}
-
-func (m *MessageEntry) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (int, error) {
-	return tokenizer.Count(m.Content)
-}
+import (
+	"github.com/greenboxal/aip/pkg/llm"
+	"github.com/greenboxal/aip/pkg/llm/tokenizers"
+)
 
 type MessageComposer struct {
 	Tokenizer tokenizers.BasicTokenizer
 
-	Constraints
-	Statistics
+	llm.Constraints
+	llm.Statistics
 
 	entries []MessageEntry
 }

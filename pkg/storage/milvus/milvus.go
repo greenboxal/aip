@@ -9,7 +9,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/greenboxal/aip/pkg/collective"
-	"github.com/greenboxal/aip/pkg/indexing/reducers/chunkers"
+	"github.com/greenboxal/aip/pkg/llm/chunkers"
 	"github.com/greenboxal/aip/pkg/utils"
 )
 

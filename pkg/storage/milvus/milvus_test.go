@@ -12,8 +12,8 @@ import (
 	"github.com/greenboxal/aip/pkg/ford/forddb"
 	"github.com/greenboxal/aip/pkg/indexing"
 	"github.com/greenboxal/aip/pkg/indexing/impl"
-	"github.com/greenboxal/aip/pkg/indexing/reducers/summarizers"
-	"github.com/greenboxal/aip/pkg/indexing/reducers/tokenizers"
+	summarizers2 "github.com/greenboxal/aip/pkg/llm/summarizers"
+	"github.com/greenboxal/aip/pkg/llm/tokenizers"
 )
 
 func TestMilvusStorage(t *testing.T) {
@@ -64,10 +64,10 @@ func TestMilvusStorageWithIndex(t *testing.T) {
 	require.Nil(t, err)
 
 	index := impl.NewIndex(milvus, indexing.IndexConfiguration{
-		Reducer: &summarizers.MipMapSummarizer{
+		Reducer: &summarizers2.MipMapSummarizer{
 			Tokenizer: tokenizer,
 
-			Summarizer: &summarizers.ChatGptSummarizer{
+			Summarizer: &summarizers2.ChatGptSummarizer{
 				Client: oai,
 				Model:  openai.GPT3Dot5Turbo,
 			},
