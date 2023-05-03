@@ -49,7 +49,6 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 	ch.ctx = llm.NewChainContext(ctx)
 
 	inputStream := bufio.NewReader(ch.Input)
-	outputStream := bufio.NewWriter(ch.Output)
 
 	history := chat.Message{}
 
@@ -61,15 +60,21 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 		default:
 		}
 
-		line, err := inputStream.ReadString('\n')
+		entry := chat.MessageEntry{
+			Role:    chat.RoleUser,
+			Content: "",
+		}
+
+		_, err := fmt.Fprintf(ch.Output, "%s", entry)
 
 		if err != nil {
 			panic(err)
 		}
 
-		entry := chat.MessageEntry{
-			Role:    chat.RoleUser,
-			Content: line,
+		entry.Content, err = inputStream.ReadString('\n')
+
+		if err != nil {
+			panic(err)
 		}
 
 		ch.ctx.Flip()
@@ -77,7 +82,7 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 		ch.ctx.SetInput(chat.ChatHistoryContextKey, history)
 
 		if err := ch.chain.Run(ch.ctx); err != nil {
-			_, err = outputStream.WriteString(fmt.Sprintf("ERROR: %s\n", err))
+			_, err = fmt.Fprintf(ch.Output, "ERROR: %s\n", err)
 
 			if err != nil {
 				panic(err)
@@ -86,11 +91,11 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 
 		result := llm.GetOutput(ch.ctx, chat.ChatReplyContextKey)
 
-		newEntries := append([]chat.MessageEntry{entry}, result.Entries...)
-		history.Entries = append(history.Entries, newEntries...)
+		history.Entries = append(history.Entries, entry)
+		history.Entries = append(history.Entries, result.Entries...)
 
-		for _, entry := range newEntries {
-			_, err = fmt.Fprintf(ch.Output, "%s\n", entry)
+		for _, replies := range result.Entries {
+			_, err = fmt.Fprintf(ch.Output, "%s\n", replies)
 
 			if err != nil {
 				panic(err)
