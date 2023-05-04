@@ -1,4 +1,4 @@
-package llm
+package chain
 
 type OutputParser interface {
 	Parse(ctx ChainContext, result string) error

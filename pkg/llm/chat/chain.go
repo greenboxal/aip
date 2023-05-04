@@ -1,14 +1,16 @@
 package chat
 
-import "github.com/greenboxal/aip/pkg/llm"
+import (
+	"github.com/greenboxal/aip/pkg/llm/chain"
+)
 
 type predictChain struct {
 	model   LanguageModel
 	prompt  Prompt
-	outputs []llm.OutputParser
+	outputs []chain.OutputParser
 }
 
-func (p *predictChain) Run(ctx llm.ChainContext) error {
+func (p *predictChain) Run(ctx chain.ChainContext) error {
 	prompt, err := p.prompt.Build(ctx)
 
 	if err != nil {
@@ -32,8 +34,8 @@ func (p *predictChain) Run(ctx llm.ChainContext) error {
 	return nil
 }
 
-func CompletionMessageParser(key llm.ContextKey[Message]) llm.OutputParser {
-	return llm.OutputParserFunc(func(ctx llm.ChainContext, result string) error {
+func CompletionMessageParser(key chain.ContextKey[Message]) chain.OutputParser {
+	return chain.OutputParserFunc(func(ctx chain.ChainContext, result string) error {
 		msg := Compose(Entry(RoleAI, result))
 
 		ctx.SetOutput(key, msg)
@@ -42,9 +44,9 @@ func CompletionMessageParser(key llm.ContextKey[Message]) llm.OutputParser {
 	})
 }
 
-func Predict(model LanguageModel, prompt Prompt, parsers ...llm.OutputParser) llm.Chainable {
+func Predict(model LanguageModel, prompt Prompt, parsers ...chain.OutputParser) chain.Chain {
 	if len(parsers) == 0 {
-		parsers = []llm.OutputParser{
+		parsers = []chain.OutputParser{
 			CompletionMessageParser(ChatReplyContextKey),
 		}
 	}

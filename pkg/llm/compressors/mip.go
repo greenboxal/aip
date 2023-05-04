@@ -1,7 +1,7 @@
 package compressors
 
-import (
-	"github.com/greenboxal/aip/pkg/llm"
+/*import (
+	"github.com/greenboxal/aip/pkg/llm/chain"
 	"github.com/greenboxal/aip/pkg/llm/documents"
 	"github.com/greenboxal/aip/pkg/llm/tokenizers"
 )
@@ -33,7 +33,7 @@ func (mc *MipCompressor) MaxTokens() int {
 	return mc.MaxMipLevels
 }
 
-func (mc *MipCompressor) Compress(ctx llm.ChainContext, document documents.Document, options ...CompressionOption) (documents.Document, error) {
+func (mc *MipCompressor) Compress(ctx chain.ChainContext, document documents.Document, options ...CompressionOption) (documents.Document, error) {
 	opts := NewCompressionOptions(options...)
 
 	mctx := &mipCompressorContext{
@@ -51,7 +51,7 @@ func (mc *MipCompressor) Compress(ctx llm.ChainContext, document documents.Docum
 type mipCompressorContext struct {
 	*MipCompressor
 
-	ctx     llm.ChainContext
+	ctx     chain.ChainContext
 	options CompressionOptions
 
 	currentDocument   documents.Document
@@ -152,3 +152,4 @@ func (ctx *mipCompressorContext) Reduce() (documents.Document, error) {
 
 	return ctx.outputDocument, nil
 }
+*/

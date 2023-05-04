@@ -1,9 +1,11 @@
 package chat
 
-import "github.com/greenboxal/aip/pkg/llm"
+import (
+	"github.com/greenboxal/aip/pkg/llm/chain"
+)
 
-const ChatHistoryContextKey llm.ContextKey[Message] = "chat_history"
-const ChatReplyContextKey llm.ContextKey[Message] = "chat_reply"
+const ChatHistoryContextKey chain.ContextKey[Message] = "chat_history"
+const ChatReplyContextKey chain.ContextKey[Message] = "chat_reply"
 
 type ChatHistory interface {
 	AsSlice() []MessageEntry

@@ -3,8 +3,12 @@ package compressors
 import (
 	"context"
 
+	"github.com/greenboxal/aip/pkg/llm/chain"
 	"github.com/greenboxal/aip/pkg/llm/documents"
 )
+
+const CompressionInputKey chain.ContextKey[string] = "input"
+const CompressionOutputKey chain.ContextKey[string] = "output"
 
 type CompressionOption func(options *CompressionOptions)
 
@@ -22,12 +26,12 @@ func NewCompressionOptions(options ...CompressionOption) (result CompressionOpti
 	for _, opt := range options {
 		opt(&result)
 	}
-	
+
 	return
 }
 
 type Compressor interface {
-	MaxTokens() int
+	MaxInputTokens() int
 
 	Compress(ctx context.Context, text string, options ...CompressionOption) (string, error)
 	Decompress(ctx context.Context, text string, options ...CompressionOption) (string, error)
@@ -38,4 +42,20 @@ type DocumentCompressor interface {
 
 	CompressDocument(ctx context.Context, text documents.Document, options ...CompressionOption) (documents.Document, error)
 	DecompressDocument(ctx context.Context, text documents.Document, options ...CompressionOption) (documents.Document, error)
+}
+
+func CompressorChain(compressor Compressor) chain.Chain {
+	return chain.Func(func(ctx chain.ChainContext) error {
+		input := chain.Input(ctx, CompressionInputKey)
+
+		output, err := compressor.Compress(ctx.Context(), input)
+
+		if err != nil {
+			return err
+		}
+
+		ctx.SetOutput(CompressionOutputKey, output)
+
+		return nil
+	})
 }

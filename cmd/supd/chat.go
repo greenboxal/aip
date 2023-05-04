@@ -9,48 +9,73 @@ import (
 	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
 
-	"github.com/greenboxal/aip/pkg/llm"
+	"github.com/greenboxal/aip/pkg/llm/chain"
 	"github.com/greenboxal/aip/pkg/llm/chat"
+	"github.com/greenboxal/aip/pkg/llm/compressors"
 	"github.com/greenboxal/aip/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/pkg/llm/tokenizers"
 )
 
 type ChatHandler struct {
 	Input  io.Reader
 	Output io.Writer
 
-	ctx   llm.ChainContext
-	chain llm.Chainable
+	model      *openai.ChatLanguageModel
+	tokenizer  *tokenizers.TikTokenTokenizer
+	compressor compressors.Compressor
+
+	ctx   chain.ChainContext
+	chain chain.Chain
 }
 
 var ChatPrompt = chat.ComposeTemplate(
 	chat.HistoryFromContext(chat.ChatHistoryContextKey),
-	chat.EntryTemplate("", chat.RoleUser, llm.TemplateFromContext(chat.ChatReplyContextKey)),
+	chat.EntryTemplate("", chat.RoleUser, chain.TemplateFromContext(chat.ChatReplyContextKey)),
+	chat.EntryTemplate("", chat.RoleAI, chain.Static("")),
 )
 
-func NewChatHandler(client *openai.Client) *ChatHandler {
+func NewChatHandler(client *openai.Client) (*ChatHandler, error) {
 	model := &openai.ChatLanguageModel{
 		Client: client,
 		Model:  "gpt-3.5-turbo",
 	}
 
+	tokenizer, err := tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
+
+	if err != nil {
+		return nil, err
+	}
+
+	compressor := compressors.NewSimpleCompressor(model, tokenizer)
+
 	return &ChatHandler{
 		Input:  os.Stdin,
 		Output: os.Stdout,
 
-		chain: llm.Chain(
+		model:      model,
+		tokenizer:  tokenizer,
+		compressor: compressor,
+
+		chain: chain.Compose(
 			chat.Predict(model, ChatPrompt),
+
+			chain.MapContext(
+				chain.TransformInput(chat.ChatReplyContextKey, compressors.CompressionInputKey, func(msg chat.Message) string {
+					return msg.String()
+				}),
+			),
+
+			compressors.CompressorChain(compressor),
 		),
-	}
+	}, nil
 }
 
 func (ch *ChatHandler) Run(proc goprocess.Process) {
-	ctx := goprocessctx.OnClosingContext(proc)
-
-	ch.ctx = llm.NewChainContext(ctx)
-
+	history := chat.Message{}
 	inputStream := bufio.NewReader(ch.Input)
 
-	history := chat.Message{}
+	ctx := goprocessctx.OnClosingContext(proc)
+	ch.ctx = chain.NewChainContext(ctx)
 
 	for {
 		select {
@@ -89,7 +114,7 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 			}
 		}
 
-		result := llm.GetOutput(ch.ctx, chat.ChatReplyContextKey)
+		result := chain.Output(ch.ctx, chat.ChatReplyContextKey)
 
 		history.Entries = append(history.Entries, entry)
 		history.Entries = append(history.Entries, result.Entries...)
@@ -100,6 +125,14 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 			if err != nil {
 				panic(err)
 			}
+		}
+
+		compressed := chain.Output(ch.ctx, compressors.CompressionOutputKey)
+
+		_, err = fmt.Fprintf(ch.Output, "COMPRESSED: %s\n", compressed)
+
+		if err != nil {
+			panic(err)
 		}
 	}
 }

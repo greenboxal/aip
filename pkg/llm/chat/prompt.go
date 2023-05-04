@@ -3,17 +3,18 @@ package chat
 import (
 	"fmt"
 
-	"github.com/greenboxal/aip/pkg/llm"
+	"github.com/greenboxal/aip/pkg/llm/chain"
+	"github.com/greenboxal/aip/pkg/llm/tokenizers"
 )
 
 type Prompt interface {
-	AsPrompt() llm.Prompt
-	Build(ctx llm.ChainContext) (Message, error)
+	AsPrompt() chain.Prompt
+	Build(ctx chain.ChainContext) (Message, error)
 }
 
-type PromptFunc func(ctx llm.ChainContext) (Message, error)
+type PromptFunc func(ctx chain.ChainContext) (Message, error)
 
-func (t PromptFunc) Build(ctx llm.ChainContext) (Message, error) {
+func (t PromptFunc) Build(ctx chain.ChainContext) (Message, error) {
 	return t(ctx)
 }
 
@@ -23,7 +24,7 @@ func ComposeTemplate(entries ...Prompt) Prompt {
 	}
 }
 
-func EntryTemplate(name string, role Role, template llm.Prompt) *SingleEntryTemplate {
+func EntryTemplate(name string, role Role, template chain.Prompt) *SingleEntryTemplate {
 	return &SingleEntryTemplate{
 		Name:     name,
 		Role:     role,
@@ -31,7 +32,7 @@ func EntryTemplate(name string, role Role, template llm.Prompt) *SingleEntryTemp
 	}
 }
 
-func HistoryFromContext(key llm.ContextKey[Message]) *HistoryFromContextTemplate {
+func HistoryFromContext(key chain.ContextKey[Message]) *HistoryFromContextTemplate {
 	return &HistoryFromContextTemplate{
 		Key: key,
 	}
@@ -39,14 +40,17 @@ func HistoryFromContext(key llm.ContextKey[Message]) *HistoryFromContextTemplate
 
 type HistoryTemplate struct {
 	Entries []Prompt
+
+	hasEmptyTokenCount bool
+	emptyTokenCount    int
 }
 
-func (h *HistoryTemplate) AsPrompt() llm.Prompt { return (*historyPromptTemplate)(h) }
+func (tp *HistoryTemplate) AsPrompt() chain.Prompt { return (*historyPromptTemplate)(tp) }
 
-func (h *HistoryTemplate) Build(ctx llm.ChainContext) (Message, error) {
+func (tp *HistoryTemplate) Build(ctx chain.ChainContext) (Message, error) {
 	var entries []MessageEntry
 
-	for _, entry := range h.Entries {
+	for _, entry := range tp.Entries {
 		message, err := entry.Build(ctx)
 
 		if err != nil {
@@ -59,10 +63,19 @@ func (h *HistoryTemplate) Build(ctx llm.ChainContext) (Message, error) {
 	return Message{Entries: entries}, nil
 }
 
+func (tp *HistoryTemplate) GetEmptyTokenCount(tokenizer tokenizers.BasicTokenizer) int {
+	if !tp.hasEmptyTokenCount {
+		tp.emptyTokenCount = chain.GetEmptyTokenCountNoCache(tokenizer, tp.AsPrompt())
+		tp.hasEmptyTokenCount = true
+	}
+
+	return tp.emptyTokenCount
+}
+
 type historyPromptTemplate HistoryTemplate
 
-func (b *historyPromptTemplate) Build(ctx llm.ChainContext) (string, error) {
-	result, err := (*HistoryTemplate)(b).Build(ctx)
+func (p *historyPromptTemplate) Build(ctx chain.ChainContext) (string, error) {
+	result, err := (*HistoryTemplate)(p).Build(ctx)
 
 	if err != nil {
 		return "", err
@@ -74,41 +87,65 @@ func (b *historyPromptTemplate) Build(ctx llm.ChainContext) (string, error) {
 type SingleEntryTemplate struct {
 	Name     string
 	Role     Role
-	Template llm.Prompt
+	Template chain.Prompt
+
+	hasEmptyTokenCount bool
+	emptyTokenCount    int
 }
 
-func (p *SingleEntryTemplate) AsPrompt() llm.Prompt { return (*basicPromptTemplate)(p) }
+func (tp *SingleEntryTemplate) AsPrompt() chain.Prompt { return (*basicPromptTemplate)(tp) }
 
-func (p *SingleEntryTemplate) Build(ctx llm.ChainContext) (Message, error) {
-	prompt, err := p.Template.Build(ctx)
+func (tp *SingleEntryTemplate) Build(ctx chain.ChainContext) (Message, error) {
+	prompt, err := tp.Template.Build(ctx)
 
 	if err != nil {
 		return Message{}, err
 	}
 
-	return Compose(Entry(p.Role, prompt)), nil
+	return Compose(Entry(tp.Role, prompt)), nil
+}
+
+func (tp *SingleEntryTemplate) GetEmptyTokenCount(tokenizer tokenizers.BasicTokenizer) int {
+	if !tp.hasEmptyTokenCount {
+		tp.emptyTokenCount = chain.GetEmptyTokenCountNoCache(tokenizer, tp.AsPrompt())
+		tp.hasEmptyTokenCount = true
+	}
+
+	return tp.emptyTokenCount
 }
 
 type basicPromptTemplate SingleEntryTemplate
 
-func (b *basicPromptTemplate) Build(ctx llm.ChainContext) (string, error) {
-	result, err := (*SingleEntryTemplate)(b).Build(ctx)
+func (tp *basicPromptTemplate) Build(ctx chain.ChainContext) (string, error) {
+	result, err := (*SingleEntryTemplate)(tp).Build(ctx)
 
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%s: %s", b.Role, result), nil
+	return fmt.Sprintf("%s: %s", tp.Role, result), nil
 }
 
 type HistoryFromContextTemplate struct {
-	Key llm.ContextKey[Message]
+	Key chain.ContextKey[Message]
+
+	hasEmptyTokenCount bool
+	emptyTokenCount    int
 }
 
-func (b *HistoryFromContextTemplate) AsPrompt() llm.Prompt { panic("not supported") }
+func (tp *HistoryFromContextTemplate) AsPrompt() chain.Prompt { panic("not supported") }
 
-func (b *HistoryFromContextTemplate) Build(ctx llm.ChainContext) (Message, error) {
-	history := llm.GetInput(ctx, b.Key)
+func (tp *HistoryFromContextTemplate) Build(ctx chain.ChainContext) (Message, error) {
+	history := chain.Input(ctx, tp.Key)
 
 	return history, nil
+}
+
+func (tp *HistoryFromContextTemplate) GetEmptyTokenCount(tokenizer tokenizers.BasicTokenizer) int {
+	if !tp.hasEmptyTokenCount {
+		tp.emptyTokenCount = chain.GetEmptyTokenCountNoCache(tokenizer, tp.AsPrompt())
+		tp.hasEmptyTokenCount = true
+	}
+
+	return tp.emptyTokenCount
 }
