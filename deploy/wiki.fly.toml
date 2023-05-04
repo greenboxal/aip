@@ -1,0 +1,31 @@
+[build]
+builder = "paketobuildpacks/builder:0.3.235-base"
+buildpacks = ["gcr.io/paketo-buildpacks/go:4.3.2"]
+
+[build.args]
+BP_GO_VERSION = "1.20.3"
+BP_GO_TARGETS = "./aip-controller/cmd/supd"
+
+[env]
+MILVUS_ENDPOINT="https://in01-84a205d8686450d.aws-us-east-2.vectordb.zillizcloud.com:19534"
+MILVUS_HOST="in01-84a205d8686450d.aws-us-east-2.vectordb.zillizcloud.com"
+MILVUS_PORT="19534"
+MILVUS_USERNAME="aip"
+
+AIP_FORD_STORAGE_MEMGRAPH_CONNECTION_URI="bolt+ssc://54.152.19.198:7687"
+AIP_FORD_STORAGE_MEMGRAPH_USERNAME="aip"
+
+[http_service]
+internal_port = 30100
+force_https = true
+auto_stop_machines = false
+auto_start_machines = true
+
+[http_service.concurrency]
+type = "requests"
+soft_limit = 200
+hard_limit = 250
+
+[metrics]
+port = 30100
+path = "/metrics"

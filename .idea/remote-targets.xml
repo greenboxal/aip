@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="greenboxal@10.1.0.10:222" type="ssh/sftp" uuid="7b9085ca-21ca-4eb1-bb58-de362814659b">
+        <config>
+          <option name="projectRootOnTarget" value="/home/greenboxal/aip" />
+          <option name="serverName" value="greenboxal@10.1.0.10:22 agent" />
+          <option name="useRsync" value="true" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="goPath" value="/home/greenboxal/src" />
+            <option name="goRoot" value="/snap/bin/go" />
+            <option name="goVersion" value="go1.20.4 linux/amd64" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>
