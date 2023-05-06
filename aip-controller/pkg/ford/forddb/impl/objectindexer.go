@@ -2,11 +2,10 @@ package forddbimpl
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ipfs/go-cid"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	logstore2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
 
@@ -32,25 +31,31 @@ func (oi *objectIndexer) processLogRecord(ctx context.Context, record *logstore2
 	switch record.Kind {
 	case logstore2.LogEntryKindSet:
 		if err := oi.prefetchObject(ctx, record, record.Version > 1, true); err != nil {
+			if !forddb.IsNotFound(err) {
+				return err
+			}
+		}
+
+		if _, err := oi.db.storage.Put(ctx, record.Current, forddb.PutOptions{
+			OnConflict: forddb.OnConflictReplace,
+		}); err != nil {
 			return err
 		}
 
-		if _, err := oi.db.storage.Put(ctx, record.CachedCurrent); err != nil {
-			return err
-		}
-
-		forddb2.FireListeners(&oi.db.HasListenersBase, record.ID, record.CachedPrevious, record.CachedCurrent)
+		forddb.FireListeners(&oi.db.HasListenersBase, record.ID, record.CachedPrevious, record.CachedCurrent)
 
 	case logstore2.LogEntryKindDelete:
 		if err := oi.prefetchObject(ctx, record, true, false); err != nil {
+			if !forddb.IsNotFound(err) {
+				return err
+			}
+		}
+
+		if _, err := oi.db.storage.Delete(ctx, record.Previous, forddb.DeleteOptions{}); err != nil {
 			return err
 		}
 
-		if _, err := oi.db.storage.Delete(ctx, record.CachedPrevious); err != nil {
-			return err
-		}
-
-		forddb2.FireListeners(&oi.db.HasListenersBase, record.ID, record.CachedPrevious, record.CachedCurrent)
+		forddb.FireListeners(&oi.db.HasListenersBase, record.ID, record.CachedPrevious, record.CachedCurrent)
 	}
 
 	return nil
@@ -97,14 +102,14 @@ func (oi *objectIndexer) prefetchObject(
 
 func (oi *objectIndexer) doPrefetchObject(
 	ctx context.Context,
-	dst *forddb2.BasicResource,
-	raw forddb2.RawResource,
+	dst *forddb.BasicResource,
+	raw forddb.RawResource,
 	cid *cid.Cid,
 	version uint64,
-	id forddb2.BasicResourceID,
+	id forddb.BasicResourceID,
 ) error {
 	if *dst == nil && raw != nil {
-		res, err := forddb2.Decode(raw)
+		res, err := forddb.Decode(raw)
 
 		if err != nil {
 			return err
@@ -129,7 +134,7 @@ func (oi *objectIndexer) doPrefetchObject(
 	// FIXME: figure out what this is supposed to do, like scanning the log?
 
 	if *dst == nil {
-		return errors.New("could not fetch object")
+		return forddb.ErrNotFound
 	}
 
 	return nil

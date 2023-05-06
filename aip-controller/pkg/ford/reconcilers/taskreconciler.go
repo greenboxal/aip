@@ -49,7 +49,7 @@ func (tr *TaskReconciler) Reconcile(
 
 	tr.logger.Info("entering reconciliation loop", "task_id", current.ID)
 
-	pipeline, err := forddb2.Get[*collective2.Pipeline](tr.db, current.Spec.PipelineID)
+	pipeline, err := forddb2.Get[*collective2.Pipeline](ctx, tr.db, current.Spec.PipelineID)
 
 	if err != nil {
 		return nil, err

@@ -21,6 +21,7 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
+	"github.com/greenboxal/aip/aip-controller/pkg/storage/firestore"
 	"github.com/greenboxal/aip/aip-controller/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
@@ -44,7 +45,8 @@ func main() {
 		//badger.WithBadgerStorage(),
 		//memgraph.WithMemgraphStorage(),
 		//ipfs.WithIpfsStorage(),
-		milvus.WithMilvusStorage(),
+		firestore.WithStorage(),
+		milvus.WithIndexStorage(),
 
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.Server) {
 		}),

@@ -1,4 +1,4 @@
-package cms
+package generators
 
 import (
 	"context"
@@ -19,10 +19,14 @@ func NewContentCache(
 	}
 }
 
+func (pm *ContentCache) GetPageByID(ctx context.Context, id models.PageID) (*models.Page, error) {
+	return forddb.Get[*models.Page](ctx, pm.db, id)
+}
+
 func (pm *ContentCache) GetPage(ctx context.Context, spec models.PageSpec) (*models.Page, error) {
 	id := models.BuildPageID(spec)
 
-	return forddb.Get[*models.Page](pm.db, id)
+	return forddb.Get[*models.Page](ctx, pm.db, id)
 }
 
 func (pm *ContentCache) PutPage(ctx context.Context, page *models.Page) (*models.Page, error) {
@@ -35,7 +39,7 @@ func (pm *ContentCache) PutPage(ctx context.Context, page *models.Page) (*models
 func (pm *ContentCache) GetImage(ctx context.Context, spec models.ImageSpec) (*models.Image, error) {
 	id := models.BuildImageID(spec)
 
-	return forddb.Get[*models.Image](pm.db, id)
+	return forddb.Get[*models.Image](ctx, pm.db, id)
 }
 
 func (pm *ContentCache) PutImage(ctx context.Context, image *models.Image) (*models.Image, error) {

@@ -26,6 +26,7 @@ type Storage struct {
 }
 
 func NewStorage(lc fx.Lifecycle, oai *openai.Client) (*Storage, error) {
+	ctx := context.Background()
 
 	s := &Storage{
 		oai:        oai,
@@ -38,10 +39,6 @@ func NewStorage(lc fx.Lifecycle, oai *openai.Client) (*Storage, error) {
 		},
 	})
 
-	return s, nil
-}
-
-func (s *Storage) initialize(ctx context.Context) error {
 	endpoint := os.Getenv("MILVUS_ENDPOINT")
 	username := os.Getenv("MILVUS_USERNAME")
 	password := os.Getenv("MILVUS_PASSWORD")
@@ -54,11 +51,15 @@ func (s *Storage) initialize(ctx context.Context) error {
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	s.db = c
 
+	return s, nil
+}
+
+func (s *Storage) initialize(ctx context.Context) error {
 	ok, _ := s.db.HasCollection(ctx, s.collection)
 
 	if !ok {
@@ -82,7 +83,7 @@ func (s *Storage) initialize(ctx context.Context) error {
 			},
 		}
 
-		err = s.db.CreateCollection(ctx, schema, numShards)
+		err := s.db.CreateCollection(ctx, schema, numShards)
 
 		if err != nil {
 			return err
@@ -107,7 +108,7 @@ func (s *Storage) initialize(ctx context.Context) error {
 			},
 		}
 
-		err = s.db.CreateCollection(ctx, schema, numShards)
+		err := s.db.CreateCollection(ctx, schema, numShards)
 
 		if err != nil {
 			return err
@@ -211,50 +212,64 @@ func (s *Storage) GetMemory(ctx context.Context, id collective2.MemoryID) (*coll
 	panic("implement me")
 }
 
-func (s *Storage) List(ctx context.Context, typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
-	pkColumns := entity.NewColumnString("kind", []string{typ.BasicResourceType().Name()})
-
-	res, err := s.db.QueryByPks(ctx, "forddb", []string{"_default"}, pkColumns, []string{"data"})
+func (s *Storage) List(
+	ctx context.Context,
+	typ forddb.ResourceTypeID,
+	opts forddb.ListOptions,
+) ([]forddb.RawResource, error) {
+	res, err := s.db.Query(
+		ctx,
+		"forddb",
+		[]string{"_default"},
+		"kind in [\""+typ.Name()+"\"]",
+		[]string{"data"},
+	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	dataColumn, ok := res[0].(*entity.ColumnVarChar)
+	result := make([]forddb.RawResource, 0, 32)
 
-	if !ok {
-		if len(res) == 0 {
-			return nil, forddb.ErrNotFound
-		}
-	}
-
-	values := dataColumn.Data()
-	result := make([]forddb.BasicResource, len(values))
-
-	for i, v := range values {
-		var raw forddb.RawResource
-
-		if err := json.Unmarshal([]byte(v), &raw); err != nil {
-			return nil, err
+	for _, col := range res {
+		if col.Name() != "data" {
+			continue
 		}
 
-		resource, err := forddb.Decode(raw)
+		dataColumn, ok := col.(*entity.ColumnVarChar)
 
-		if err != nil {
-			return nil, err
+		if !ok {
+			if len(res) == 0 {
+				return nil, forddb.ErrNotFound
+			}
 		}
 
-		result[i] = resource
+		values := dataColumn.Data()
+
+		for _, v := range values {
+			var raw forddb.RawResource
+
+			if err := json.Unmarshal([]byte(v), &raw); err != nil {
+				return nil, err
+			}
+
+			result = append(result, raw)
+		}
 	}
 
 	return result, nil
 }
 
-func (s *Storage) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+func (s *Storage) Get(
+	ctx context.Context,
+	typ forddb.ResourceTypeID,
+	id forddb.BasicResourceID,
+	opts forddb.GetOptions,
+) (forddb.RawResource, error) {
 	pk := fmt.Sprintf("%s:%s", id.String(), typ.Name())
 
 	primaryKeys := []string{pk}
-	pkColumns := entity.NewColumnString("_pk", primaryKeys)
+	pkColumns := entity.NewColumnVarChar("_pk", primaryKeys)
 
 	result, err := s.db.QueryByPks(ctx, "forddb", []string{"_default"}, pkColumns, []string{"data"})
 
@@ -262,37 +277,43 @@ func (s *Storage) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.
 		return nil, err
 	}
 
-	dataColumn, ok := result[0].(*entity.ColumnVarChar)
+	for _, col := range result {
+		if col.Name() != "data" {
+			continue
+		}
 
-	if !ok {
-		if len(result) == 0 {
+		dataColumn, ok := col.(*entity.ColumnVarChar)
+
+		if !ok {
+			if len(result) == 0 {
+				return nil, forddb.ErrNotFound
+			}
+		}
+
+		values := dataColumn.Data()
+
+		if len(values) == 0 {
 			return nil, forddb.ErrNotFound
 		}
+
+		var raw forddb.RawResource
+
+		if err := json.Unmarshal([]byte(values[0]), &raw); err != nil {
+			return nil, err
+		}
+
+		return raw, nil
 	}
 
-	values := dataColumn.Data()
-
-	if len(values) == 0 {
-		return nil, forddb.ErrNotFound
-	}
-
-	var raw forddb.RawResource
-
-	if err := json.Unmarshal([]byte(values[0]), &raw); err != nil {
-		return nil, err
-	}
-
-	return forddb.Decode(raw)
+	return nil, forddb.ErrNotFound
 }
 
-func (s *Storage) Put(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
-	raw, err := forddb.Encode(resource)
-
-	if err != nil {
-		return nil, err
-	}
-
-	serialized, err := json.Marshal(raw)
+func (s *Storage) Put(
+	ctx context.Context,
+	resource forddb.RawResource,
+	opts forddb.PutOptions,
+) (forddb.RawResource, error) {
+	serialized, err := json.Marshal(resource)
 
 	if err != nil {
 		return nil, err
@@ -327,7 +348,11 @@ func (s *Storage) Put(ctx context.Context, resource forddb.BasicResource) (fordd
 	return resource, nil
 }
 
-func (s *Storage) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (s *Storage) Delete(
+	ctx context.Context,
+	resource forddb.RawResource,
+	opts forddb.DeleteOptions,
+) (forddb.RawResource, error) {
 	//TODO implement me
 	panic("implement me")
 }

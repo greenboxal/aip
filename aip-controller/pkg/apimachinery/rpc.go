@@ -62,8 +62,10 @@ func mustRegister(srv *jsonrpc.Handler, name string, target any) {
 
 			hasCtx = true
 			inType = mtyp.In(1)
-		} else {
+		} else if mtyp.NumIn() == 1 {
 			inType = mtyp.In(0)
+		} else {
+			continue
 		}
 
 		if mtyp.NumOut() == 2 {
@@ -73,8 +75,10 @@ func mustRegister(srv *jsonrpc.Handler, name string, target any) {
 
 			hasError = true
 			outType = mtyp.Out(0)
-		} else if mtyp.NumOut() > 0 {
+		} else if mtyp.NumOut() == 1 {
 			outType = mtyp.Out(0)
+		} else {
+			continue
 		}
 
 		if inType == nil {
@@ -91,6 +95,14 @@ func mustRegister(srv *jsonrpc.Handler, name string, target any) {
 
 		for outType.Kind() == reflect.Ptr {
 			outType = outType.Elem()
+		}
+
+		if inType.Kind() == reflect.Interface {
+			continue
+		}
+
+		if outType.Kind() == reflect.Interface {
+			continue
 		}
 
 		u := usecase.NewIOI(

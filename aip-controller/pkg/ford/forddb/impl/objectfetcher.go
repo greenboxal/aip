@@ -7,7 +7,7 @@ import (
 	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type objectFetcher struct {
@@ -25,7 +25,7 @@ func newObjectFetcher(db *database) *objectFetcher {
 }
 
 type fetchResourceRequest struct {
-	storage forddb2.Storage
+	storage forddb.Storage
 	slot    *resourceSlot
 }
 
@@ -48,11 +48,18 @@ func (of *objectFetcher) runWorker(proc goprocess.Process) {
 			return
 
 		case req := <-of.requestCh:
-			if res, err := of.fetchResource(ctx, req.storage, req.slot.id); err != nil {
+			if raw, err := of.fetchResource(ctx, req.storage, req.slot.id); err != nil {
 				req.slot.setError(err)
 			} else {
-				_, err = req.slot.Update(ctx, res, forddb2.PutOptions{
-					OnConflict: forddb2.OnConflictLatestWins,
+				res, err := forddb.Decode(raw)
+
+				if err != nil {
+					req.slot.setError(err)
+					continue
+				}
+
+				_, err = req.slot.Update(ctx, res, forddb.PutOptions{
+					OnConflict: forddb.OnConflictLatestWins,
 				})
 
 				if err != nil {
@@ -65,8 +72,8 @@ func (of *objectFetcher) runWorker(proc goprocess.Process) {
 
 func (of *objectFetcher) fetchResource(
 	ctx context.Context,
-	storage forddb2.Storage,
-	id forddb2.BasicResourceID,
-) (forddb2.BasicResource, error) {
-	return storage.Get(ctx, id.BasicResourceType().GetResourceID(), id)
+	storage forddb.Storage,
+	id forddb.BasicResourceID,
+) (forddb.RawResource, error) {
+	return storage.Get(ctx, id.BasicResourceType().GetResourceID(), id, forddb.GetOptions{})
 }

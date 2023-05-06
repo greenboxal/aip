@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
@@ -41,7 +43,7 @@ func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
 	raw, res, err := rs.doGet(ctx, true, true, false)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get resource")
 	}
 
 	if res != nil {
@@ -49,7 +51,7 @@ func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
 	}
 
 	if raw == nil {
-		return nil, forddb.ErrNotFound
+		return nil, errors.Wrap(forddb.ErrNotFound, "failed to get resource")
 	}
 
 	return forddb.Decode(raw)
@@ -61,15 +63,46 @@ func (rs *resourceSlot) doGet(
 	wait bool,
 	decode bool,
 ) (raw forddb.RawResource, res forddb.BasicResource, err error) {
-	if lock {
-		rs.m.RLock()
-		defer rs.m.RUnlock()
+	if !rs.table.typ.Type().IsRuntimeOnly() {
+		res, err := rs.table.db.storage.Get(ctx, rs.table.typ, rs.id, forddb.GetOptions{})
+
+		if forddb.IsNotFound(err) {
+			return nil, nil, err
+		}
+
+		if err == nil {
+			if lock {
+				rs.m.Lock()
+				defer rs.m.Unlock()
+
+				lock = false
+			}
+
+			if rs.lastRecord.Version < res.GetResourceVersion() {
+				rs.hasValue = true
+				rs.encoded = res
+				rs.value, err = forddb.Decode(rs.encoded)
+
+				if err != nil {
+					return nil, nil, err
+				}
+
+				return rs.encoded, rs.value, err
+			}
+		}
 	}
 
-	rs.table.notifyGet(rs)
+	if lock {
+		rs.m.Lock()
+		defer rs.m.Unlock()
+	}
 
-	for wait && !rs.hasValue && rs.err == nil {
-		rs.cond.Wait()
+	if wait && !rs.hasValue && rs.err == nil {
+		//rs.table.notifyGet(rs)
+
+		for !rs.hasValue && rs.err == nil {
+			rs.cond.Wait()
+		}
 	}
 
 	if rs.err != nil {
@@ -127,7 +160,7 @@ func (rs *resourceSlot) doUpdate(
 
 	_, current, err := rs.doGet(ctx, false, false, true)
 
-	if err == forddb.ErrNotFound {
+	if forddb.IsNotFound(err) {
 		current = nil
 	} else if err != nil {
 		return nil, nil, false, err

@@ -7,18 +7,18 @@ import (
 	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
 
 type database struct {
-	forddb2.HasListenersBase
+	forddb.HasListenersBase
 
 	m       sync.RWMutex
 	log     logstore.LogStore
-	storage forddb2.Storage
+	storage forddb.Storage
 
-	resources map[forddb2.ResourceTypeID]*resourceTable
+	resources map[forddb.ResourceTypeID]*resourceTable
 
 	objectIndexer        *objectIndexer
 	objectIndexerProcess goprocess.Process
@@ -27,12 +27,12 @@ type database struct {
 	objectFetchProcess goprocess.Process
 }
 
-func NewDatabase(logStore logstore.LogStore, storage forddb2.Storage) forddb2.Database {
+func NewDatabase(logStore logstore.LogStore, storage forddb.Storage) forddb.Database {
 	db := &database{
 		log:     logStore,
 		storage: storage,
 
-		resources: make(map[forddb2.ResourceTypeID]*resourceTable),
+		resources: make(map[forddb.ResourceTypeID]*resourceTable),
 	}
 
 	db.objectIndexer = newObjectIndexer(db)
@@ -45,16 +45,10 @@ func NewDatabase(logStore logstore.LogStore, storage forddb2.Storage) forddb2.Da
 	})
 
 	db.objectFetcher = newObjectFetcher(db)
-	db.objectFetchProcess = goprocess.Go(func(proc goprocess.Process) {
-		ctx := goprocessctx.OnClosingContext(proc)
-
-		if err := db.objectIndexer.Run(ctx); err != nil {
-			panic(err)
-		}
-	})
+	db.objectFetchProcess = goprocess.Go(db.objectFetcher.Run)
 
 	// Index all resource types
-	for _, typ := range forddb2.TypeSystem().ResourceTypes() {
+	for _, typ := range forddb.TypeSystem().ResourceTypes() {
 		if _, err := db.Put(context.Background(), typ); err != nil {
 			panic(err)
 		}
@@ -63,48 +57,50 @@ func NewDatabase(logStore logstore.LogStore, storage forddb2.Storage) forddb2.Da
 	return db
 }
 
-func (db *database) List(ctx context.Context, typ forddb2.ResourceTypeID) ([]forddb2.BasicResource, error) {
-	rt := db.GetTable(typ, false)
+func (db *database) List(ctx context.Context, typ forddb.ResourceTypeID, options ...forddb.ListOption) ([]forddb.BasicResource, error) {
+	opts := forddb.NewListOptions(options...)
+
+	rt := db.GetTable(typ, true)
 
 	if rt == nil {
 		return nil, nil
 	}
 
-	return rt.List(ctx)
+	return rt.List(ctx, opts)
 }
 
-func (db *database) Get(ctx context.Context, typ forddb2.ResourceTypeID, id forddb2.BasicResourceID) (forddb2.BasicResource, error) {
-	slot := db.GetSlot(typ, id, false)
+func (db *database) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+	slot := db.GetSlot(typ, id, true)
 
 	if slot == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Get(ctx)
 }
 
-func (db *database) Put(ctx context.Context, resource forddb2.BasicResource, options ...forddb2.PutOption) (forddb2.BasicResource, error) {
-	opts := forddb2.NewPutOptions(options...)
+func (db *database) Put(ctx context.Context, resource forddb.BasicResource, options ...forddb.PutOption) (forddb.BasicResource, error) {
+	opts := forddb.NewPutOptions(options...)
 	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
 	if slot == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Update(ctx, resource, opts)
 }
 
-func (db *database) Delete(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
+func (db *database) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
 	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
 	if slot == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Delete(ctx)
 }
 
-func (db *database) GetSlot(typ forddb2.ResourceTypeID, id forddb2.BasicResourceID, create bool) *resourceSlot {
+func (db *database) GetSlot(typ forddb.ResourceTypeID, id forddb.BasicResourceID, create bool) *resourceSlot {
 	tb := db.GetTable(typ, create)
 
 	if tb == nil {
@@ -120,7 +116,7 @@ func (db *database) GetSlot(typ forddb2.ResourceTypeID, id forddb2.BasicResource
 	return slot
 }
 
-func (db *database) GetTable(typ forddb2.ResourceTypeID, create bool) *resourceTable {
+func (db *database) GetTable(typ forddb.ResourceTypeID, create bool) *resourceTable {
 	db.m.Lock()
 	defer db.m.Unlock()
 

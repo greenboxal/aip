@@ -3,11 +3,18 @@ package llm
 import "context"
 
 type PredictOptions struct {
-	MaxTokens   int
-	Temperature float32
+	MaxTokens     int
+	Temperature   float32
+	StopSequences []string
 }
 
 type PredictOption func(opts *PredictOptions)
+
+func WithStopSequences(stopSequences ...string) PredictOption {
+	return func(opts *PredictOptions) {
+		opts.StopSequences = stopSequences
+	}
+}
 
 func WithTemperature(temperature float32) PredictOption {
 	return func(opts *PredictOptions) {

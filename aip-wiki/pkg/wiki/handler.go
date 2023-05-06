@@ -2,12 +2,14 @@ package wiki
 
 import (
 	"net/http"
+	"net/url"
 	"path"
 	"regexp"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
@@ -73,12 +75,16 @@ func (r *Router) getPageSettings(request *http.Request) (models.PageSpec, error)
 		}
 	}
 
+	if basePageId := url.Query().Get("basePageId"); basePageId != "" {
+		pageSettings.BasePage = forddb.NewStringID[models.PageID](basePageId)
+	}
+
 	return pageSettings, nil
 }
 
 func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
-	url := request.URL
-	extension := path.Ext(url.Path)
+	requestUrl := request.URL
+	extension := path.Ext(requestUrl.Path)
 	isImage := false
 
 	pageSpec, err := r.getPageSettings(request)
@@ -98,8 +104,8 @@ func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
 		pageSpec.Format = "HTML"
 		isImage = true
 	default:
-		if url.Query().Has("format") {
-			pageSpec.Format = url.Query().Get("format")
+		if requestUrl.Query().Has("format") {
+			pageSpec.Format = requestUrl.Query().Get("format")
 		} else {
 			pageSpec.Format = "text/html"
 		}
@@ -107,7 +113,7 @@ func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
 
 	if isImage {
 		spec := models.ImageSpec{
-			Path: path.Join(url.Path, url.RawQuery),
+			Path: path.Join(requestUrl.Path, requestUrl.RawQuery),
 		}
 
 		imageUrl, err := r.pm.GetImage(request.Context(), spec)
@@ -119,14 +125,46 @@ func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Location", imageUrl.Status.URL)
 		writer.WriteHeader(http.StatusMovedPermanently)
 	} else {
-		pageContents, err := r.pm.GetPage(request.Context(), pageSpec)
+		var pageContents *models.Page
 
-		if err != nil {
-			panic(err)
+		isCanonicalPath := false
+		pathComponents := strings.Split(requestUrl.Path, "/")
+
+		if len(pathComponents) >= 2 && pathComponents[0] == "wiki" {
+			pageIdStr := pathComponents[1]
+			pageId := forddb.NewStringID[models.PageID](pageIdStr)
+
+			page, err := r.pm.GetPageByID(request.Context(), pageId)
+
+			if err != nil {
+				panic(err)
+			}
+
+			pageContents = page
+			isCanonicalPath = true
+		}
+
+		if pageContents == nil {
+			pageContents, err = r.pm.GetPage(request.Context(), pageSpec)
+
+			if err != nil {
+				panic(err)
+			}
+
+			isCanonicalPath = false
 		}
 
 		writer.Header().Set("Content-Type", pageSpec.Format+";charset=UTF-8")
-		writer.WriteHeader(http.StatusOK)
+
+		if isCanonicalPath {
+			writer.WriteHeader(http.StatusOK)
+		} else {
+			canonicalPath := "/wiki/" + pageContents.ID.String() + "/" + url.PathEscape(pageContents.Spec.Title)
+
+			writer.Header().Set("Location", canonicalPath)
+			writer.WriteHeader(http.StatusTemporaryRedirect)
+		}
+
 		writer.Write([]byte(pageContents.Status.HTML))
 	}
 }

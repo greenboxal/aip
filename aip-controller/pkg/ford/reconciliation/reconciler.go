@@ -47,7 +47,7 @@ func (r *ReconcilerBase[ID, T]) Run(ctx context.Context) {
 	for id := range r.ch {
 		previous := r.cache[id.String()]
 
-		current, err := forddb2.Get[T](r.db, id)
+		current, err := forddb2.Get[T](ctx, r.db, id)
 
 		if err != nil {
 			r.logger.Error(err)

@@ -5,9 +5,11 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
 
-var PageSettingsKey chain.ContextKey[PageSettings] = "PageSettings"
+var BasePageKey chain.ContextKey[*models.Page] = "BasePage"
+var PageSettingsKey chain.ContextKey[models.PageSpec] = "PageSettings"
 var SiteSettingsKey chain.ContextKey[SiteSettings] = "SiteSettings"
 var PageLayoutKey chain.ContextKey[*template.Template] = "PageLayout"
 var PageContentKey chain.ContextKey[string] = "PageContent"
@@ -28,10 +30,9 @@ type PageSettings struct {
 	Language    string
 }
 
-var PageGeneratorPrompt = chat.ComposeTemplate(
-	chat.EntryTemplate(
-		chat.RoleSystem,
-		chain.NewTemplatePrompt(`
+var PageGeneratorHeader = chat.EntryTemplate(
+	chat.RoleSystem,
+	chain.NewTemplatePrompt(`
 You are an AI assistant specialized in generating Wiki-style satirical content in the voice of {{.PageSettings.Voice}}.
 Be as expressive as possible. Use as many curse words as you can. Be as funny as you can.
 
@@ -46,9 +47,12 @@ You should follow the following rules:
 * Make it funny. Use satire, irony, exaggeration, ridicule, or the like, in exposing, denouncing, or deriding vice, folly, etc.
 * Write it in {{.PageSettings.Language}}.
 `,
-			chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey),
-		),
+		chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey),
 	),
+)
+
+var PageGeneratorPrompt = chat.ComposeTemplate(
+	PageGeneratorHeader,
 
 	/*chat.EntryTemplate(
 			chat.RoleSystem,
@@ -61,6 +65,29 @@ You should follow the following rules:
 		chat.RoleUser,
 		chain.NewTemplatePrompt(
 			`Generate a Wiki style page about "{{.PageSettings.Title}}".`,
+			chain.WithRequiredInput(PageSettingsKey),
+		),
+	),
+
+	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+)
+
+var PageEditorPrompt = chat.ComposeTemplate(
+	PageGeneratorHeader,
+
+	chat.EntryTemplate(
+		chat.RoleSystem,
+		chain.NewTemplatePrompt(
+			`You are gonna be asked to perform a task based on the following Wiki page: {{.BasePage.Status.Markdown}}`,
+			chain.WithRequiredInput(PageSettingsKey, BasePageKey),
+		),
+	),
+
+	chat.EntryTemplate(
+		chat.RoleUser,
+		chain.NewTemplatePrompt(
+			`Improve the Wiki page by expanding the topic about "{{.PageSettings.Title}}, and correcting anything you believe is wrong.
+Remember to leave notes at the bottom of the page explaining what you did and why. Write everything in {{.PageSettings.Language}}.`,
 			chain.WithRequiredInput(PageSettingsKey),
 		),
 	),

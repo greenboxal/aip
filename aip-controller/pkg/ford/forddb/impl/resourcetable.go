@@ -4,29 +4,30 @@ import (
 	"context"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/dgraph-io/ristretto"
 	"github.com/hashicorp/go-multierror"
 	"github.com/zyedidia/generic/mapset"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type resourceTable struct {
 	m sync.RWMutex
 
 	db  *database
-	typ forddb2.ResourceTypeID
+	typ forddb.ResourceTypeID
 
 	cache               *ristretto.Cache
-	persistentResources mapset.Set[forddb2.BasicResourceID]
+	persistentResources mapset.Set[forddb.BasicResourceID]
 }
 
-func newResourceTable(db *database, typ forddb2.ResourceTypeID) (*resourceTable, error) {
+func newResourceTable(db *database, typ forddb.ResourceTypeID) (*resourceTable, error) {
 	rt := &resourceTable{
 		db:  db,
 		typ: typ,
 
-		persistentResources: mapset.New[forddb2.BasicResourceID](),
+		persistentResources: mapset.New[forddb.BasicResourceID](),
 	}
 
 	cache, err := ristretto.NewCache(&ristretto.Config{
@@ -68,21 +69,43 @@ func newResourceTable(db *database, typ forddb2.ResourceTypeID) (*resourceTable,
 	return rt, nil
 }
 
-func (rt *resourceTable) ListKeys() ([]forddb2.BasicResourceID, error) {
+func (rt *resourceTable) ListKeys() ([]forddb.BasicResourceID, error) {
 	rt.m.RLock()
 	defer rt.m.RUnlock()
 
-	resources := make([]forddb2.BasicResourceID, 0, rt.persistentResources.Size())
+	resources := make([]forddb.BasicResourceID, 0, rt.persistentResources.Size())
 
-	rt.persistentResources.Each(func(key forddb2.BasicResourceID) {
+	rt.persistentResources.Each(func(key forddb.BasicResourceID) {
 		resources = append(resources, key)
 	})
 
 	return resources, nil
 }
 
-func (rt *resourceTable) List(ctx context.Context) ([]forddb2.BasicResource, error) {
+func (rt *resourceTable) List(ctx context.Context, opts forddb.ListOptions) ([]forddb.BasicResource, error) {
 	var merr error
+
+	if !rt.typ.Type().IsRuntimeOnly() {
+		results, err := rt.db.storage.List(ctx, rt.typ, opts)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list resources")
+		}
+
+		resources := make([]forddb.BasicResource, len(results))
+
+		for i, v := range results {
+			resource, err := forddb.Decode(v)
+
+			if err != nil {
+				return nil, err
+			}
+
+			resources[i] = resource
+		}
+
+		return resources, nil
+	}
 
 	keys, err := rt.ListKeys()
 
@@ -90,7 +113,7 @@ func (rt *resourceTable) List(ctx context.Context) ([]forddb2.BasicResource, err
 		return nil, err
 	}
 
-	resources := make([]forddb2.BasicResource, 0, len(keys))
+	resources := make([]forddb.BasicResource, 0, len(keys))
 
 	for _, key := range keys {
 		v := rt.GetSlot(key, false)
@@ -105,7 +128,7 @@ func (rt *resourceTable) List(ctx context.Context) ([]forddb2.BasicResource, err
 
 		_, value, err := v.doGet(ctx, false, false, true)
 
-		if err == forddb2.ErrNotFound {
+		if forddb.IsNotFound(err) {
 			continue
 		} else if err != nil {
 			merr = multierror.Append(merr, err)
@@ -118,7 +141,7 @@ func (rt *resourceTable) List(ctx context.Context) ([]forddb2.BasicResource, err
 	return resources, nil
 }
 
-func (rt *resourceTable) GetSlot(id forddb2.BasicResourceID, create bool) *resourceSlot {
+func (rt *resourceTable) GetSlot(id forddb.BasicResourceID, create bool) *resourceSlot {
 	isNew := false
 
 	defer func() {

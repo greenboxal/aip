@@ -49,6 +49,7 @@ type PageSpec struct {
 	Description string `json:"description"`
 	Voice       string `json:"voice"`
 	Language    string `json:"language"`
+	BasePage    PageID `json:"base_page_id,omitempty"`
 }
 
 func BuildPageID(spec PageSpec) PageID {

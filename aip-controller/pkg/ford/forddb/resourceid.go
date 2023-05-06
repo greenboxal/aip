@@ -51,6 +51,7 @@ func NewStringID[ID BasicResourceID](name string) (result ID) {
 
 type StringResourceID[T BasicResource] string
 
+func (s StringResourceID[T]) IsEmpty() bool { return string(s) == "" }
 func (s StringResourceID[T]) BasicResourceType() BasicResourceType {
 	return TypeSystem().LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
 }

@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective"
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type InMemoryDatabase struct {
-	forddb2.HasListenersBase
+	forddb.HasListenersBase
 
 	m         sync.RWMutex
-	resources map[forddb2.ResourceTypeID]*resourceTable
+	resources map[forddb.ResourceTypeID]*resourceTable
 }
 
 func (db *InMemoryDatabase) AppendSegment(ctx context.Context, segment *collective.MemorySegment) error {
@@ -38,20 +38,17 @@ func (db *InMemoryDatabase) Close() error {
 
 func NewInMemory() *InMemoryDatabase {
 	db := &InMemoryDatabase{
-		resources: make(map[forddb2.ResourceTypeID]*resourceTable),
-	}
-
-	// FIXME: Shouldn't happen here
-	for _, typ := range forddb2.TypeSystem().ResourceTypes() {
-		if _, err := db.Put(context.Background(), typ); err != nil {
-			panic(err)
-		}
+		resources: make(map[forddb.ResourceTypeID]*resourceTable),
 	}
 
 	return db
 }
 
-func (db *InMemoryDatabase) List(ctx context.Context, typ forddb2.ResourceTypeID) ([]forddb2.BasicResource, error) {
+func (db *InMemoryDatabase) List(
+	ctx context.Context,
+	typ forddb.ResourceTypeID,
+	opts forddb.ListOptions,
+) ([]forddb.BasicResource, error) {
 	rt := db.getTable(typ, false)
 
 	if rt == nil {
@@ -61,37 +58,50 @@ func (db *InMemoryDatabase) List(ctx context.Context, typ forddb2.ResourceTypeID
 	return rt.List()
 }
 
-func (db *InMemoryDatabase) Get(ctx context.Context, typ forddb2.ResourceTypeID, id forddb2.BasicResourceID) (forddb2.BasicResource, error) {
+func (db *InMemoryDatabase) Get(
+	ctx context.Context,
+	typ forddb.ResourceTypeID,
+	id forddb.BasicResourceID,
+	opts forddb.GetOptions,
+) (forddb.BasicResource, error) {
 	slot := db.getSlot(typ, id, false, false)
 
 	if slot == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Get()
 }
 
-func (db *InMemoryDatabase) Put(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
+func (db *InMemoryDatabase) Put(
+	ctx context.Context,
+	resource forddb.BasicResource,
+	opts forddb.PutOptions,
+) (forddb.BasicResource, error) {
 	slot := db.getSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true, false)
 
 	if slot == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Update(resource)
 }
 
-func (db *InMemoryDatabase) Delete(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
+func (db *InMemoryDatabase) Delete(
+	ctx context.Context,
+	resource forddb.BasicResource,
+	opts forddb.DeleteOptions,
+) (forddb.BasicResource, error) {
 	slot := db.getSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true, false)
 
 	if slot == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	return slot.Delete()
 }
 
-func (db *InMemoryDatabase) getSlot(typ forddb2.ResourceTypeID, id forddb2.BasicResourceID, create, lock bool) *resourceSlot {
+func (db *InMemoryDatabase) getSlot(typ forddb.ResourceTypeID, id forddb.BasicResourceID, create, lock bool) *resourceSlot {
 	tb := db.getTable(typ, create)
 
 	if tb == nil {
@@ -107,7 +117,7 @@ func (db *InMemoryDatabase) getSlot(typ forddb2.ResourceTypeID, id forddb2.Basic
 	return slot
 }
 
-func (db *InMemoryDatabase) getTable(typ forddb2.ResourceTypeID, create bool) *resourceTable {
+func (db *InMemoryDatabase) getTable(typ forddb.ResourceTypeID, create bool) *resourceTable {
 	db.m.Lock()
 	defer db.m.Unlock()
 
@@ -123,7 +133,7 @@ func (db *InMemoryDatabase) getTable(typ forddb2.ResourceTypeID, create bool) *r
 		db:  db,
 		typ: typ,
 
-		resources: make(map[forddb2.BasicResourceID]*resourceSlot, 32),
+		resources: make(map[forddb.BasicResourceID]*resourceSlot, 32),
 	}
 
 	db.resources[typ] = rt
@@ -132,15 +142,15 @@ func (db *InMemoryDatabase) getTable(typ forddb2.ResourceTypeID, create bool) *r
 }
 
 type resourceTable struct {
-	forddb2.HasListenersBase
+	forddb.HasListenersBase
 
 	m         sync.RWMutex
 	db        *InMemoryDatabase
-	typ       forddb2.ResourceTypeID
-	resources map[forddb2.BasicResourceID]*resourceSlot
+	typ       forddb.ResourceTypeID
+	resources map[forddb.BasicResourceID]*resourceSlot
 }
 
-func (rt *resourceTable) getSlot(id forddb2.BasicResourceID, create bool, lock bool) *resourceSlot {
+func (rt *resourceTable) getSlot(id forddb.BasicResourceID, create bool, lock bool) *resourceSlot {
 	rt.m.Lock()
 	defer rt.m.Unlock()
 
@@ -166,11 +176,11 @@ func (rt *resourceTable) getSlot(id forddb2.BasicResourceID, create bool, lock b
 	return rs
 }
 
-func (rt *resourceTable) List() ([]forddb2.BasicResource, error) {
+func (rt *resourceTable) List() ([]forddb.BasicResource, error) {
 	rt.m.RLock()
 	defer rt.m.RUnlock()
 
-	resources := make([]forddb2.BasicResource, 0, len(rt.resources))
+	resources := make([]forddb.BasicResource, 0, len(rt.resources))
 
 	for _, v := range rt.resources {
 		if !v.hasValue {
@@ -191,39 +201,39 @@ func (rt *resourceTable) List() ([]forddb2.BasicResource, error) {
 
 type resourceSlot struct {
 	sync.RWMutex
-	forddb2.HasListenersBase
+	forddb.HasListenersBase
 
 	table *resourceTable
-	id    forddb2.BasicResourceID
+	id    forddb.BasicResourceID
 
 	hasValue bool
 
-	encoded forddb2.RawResource
-	value   forddb2.BasicResource
+	encoded forddb.RawResource
+	value   forddb.BasicResource
 }
 
-func (s *resourceSlot) Get() (forddb2.BasicResource, error) {
+func (s *resourceSlot) Get() (forddb.BasicResource, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	if !s.hasValue {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
 	if s.table.typ.Type().IsRuntimeOnly() {
 		return s.value, nil
 	}
 
-	instance, err := forddb2.Decode(s.encoded)
+	instance, err := forddb.Decode(s.encoded)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return instance.(forddb2.BasicResource), nil
+	return instance.(forddb.BasicResource), nil
 }
 
-func (s *resourceSlot) Update(resource forddb2.BasicResource) (forddb2.BasicResource, error) {
+func (s *resourceSlot) Update(resource forddb.BasicResource) (forddb.BasicResource, error) {
 	old, current, changed, err := s.doUpdate(resource)
 
 	if err != nil {
@@ -231,21 +241,21 @@ func (s *resourceSlot) Update(resource forddb2.BasicResource) (forddb2.BasicReso
 	}
 
 	if changed {
-		forddb2.FireListeners(&s.HasListenersBase, s.id, old, current)
-		forddb2.FireListeners(&s.table.HasListenersBase, s.id, old, current)
-		forddb2.FireListeners(&s.table.db.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&s.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&s.table.HasListenersBase, s.id, old, current)
+		forddb.FireListeners(&s.table.db.HasListenersBase, s.id, old, current)
 	}
 
 	return current, nil
 }
 
-func (s *resourceSlot) doUpdate(resource forddb2.BasicResource) (forddb2.BasicResource, forddb2.BasicResource, bool, error) {
+func (s *resourceSlot) doUpdate(resource forddb.BasicResource) (forddb.BasicResource, forddb.BasicResource, bool, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	current, err := s.Get()
 
-	if err == forddb2.ErrNotFound {
+	if forddb.IsNotFound(err) {
 		current = nil
 	} else if err != nil {
 		return nil, nil, false, err
@@ -253,7 +263,7 @@ func (s *resourceSlot) doUpdate(resource forddb2.BasicResource) (forddb2.BasicRe
 
 	if current != nil {
 		if current.GetResourceVersion() != resource.GetResourceVersion() {
-			return nil, nil, false, forddb2.ErrVersionMismatch
+			return nil, nil, false, forddb.ErrVersionMismatch
 		}
 
 		if current != nil {
@@ -275,7 +285,7 @@ func (s *resourceSlot) doUpdate(resource forddb2.BasicResource) (forddb2.BasicRe
 	if s.table.typ.Type().IsRuntimeOnly() {
 		s.value = resource
 	} else {
-		encoded, err := forddb2.Encode(resource)
+		encoded, err := forddb.Encode(resource)
 
 		if err != nil {
 			return nil, nil, false, err
@@ -289,7 +299,7 @@ func (s *resourceSlot) doUpdate(resource forddb2.BasicResource) (forddb2.BasicRe
 	return current, resource, true, nil
 }
 
-func (s *resourceSlot) Delete() (forddb2.BasicResource, error) {
+func (s *resourceSlot) Delete() (forddb.BasicResource, error) {
 	previous, ok, err := s.doDelete()
 
 	if err != nil {
@@ -297,15 +307,15 @@ func (s *resourceSlot) Delete() (forddb2.BasicResource, error) {
 	}
 
 	if ok {
-		forddb2.FireListeners(&s.HasListenersBase, s.id, previous, nil)
-		forddb2.FireListeners(&s.table.HasListenersBase, s.id, previous, nil)
-		forddb2.FireListeners(&s.table.db.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&s.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&s.table.HasListenersBase, s.id, previous, nil)
+		forddb.FireListeners(&s.table.db.HasListenersBase, s.id, previous, nil)
 	}
 
 	return previous, nil
 }
 
-func (s *resourceSlot) doDelete() (forddb2.BasicResource, bool, error) {
+func (s *resourceSlot) doDelete() (forddb.BasicResource, bool, error) {
 	value, err := s.Get()
 
 	if err != nil {

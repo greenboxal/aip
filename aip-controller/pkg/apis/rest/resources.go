@@ -7,16 +7,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type ResourcesAPI struct {
 	chi.Router
 
-	db forddb2.Database
+	db forddb.Database
 }
 
-func NewResourcesAPI(db forddb2.Database) *ResourcesAPI {
+func NewResourcesAPI(db forddb.Database) *ResourcesAPI {
 	api := &ResourcesAPI{
 		Router: chi.NewMux(),
 		db:     db,
@@ -33,7 +33,7 @@ func NewResourcesAPI(db forddb2.Database) *ResourcesAPI {
 func (a *ResourcesAPI) ListResource(writer http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 	resourceTypeName := chi.URLParam(request, "resource")
-	resourceType := forddb2.LookupTypeByName(resourceTypeName)
+	resourceType := forddb.LookupTypeByName(resourceTypeName)
 
 	if resourceType == nil {
 		writer.WriteHeader(http.StatusBadRequest)
@@ -61,7 +61,7 @@ func (a *ResourcesAPI) GetResource(writer http.ResponseWriter, request *http.Req
 	resourceTypeName := chi.URLParam(request, "resource")
 	resourceIdName := chi.URLParam(request, "id")
 
-	resourceType := forddb2.LookupTypeByName(resourceTypeName)
+	resourceType := forddb.LookupTypeByName(resourceTypeName)
 
 	if resourceType == nil {
 		writer.WriteHeader(http.StatusBadRequest)
@@ -94,7 +94,7 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 	resourceTypeName := chi.URLParam(request, "resource")
 	resourceIdName := chi.URLParam(request, "id")
 
-	resourceType := forddb2.LookupTypeByName(resourceTypeName)
+	resourceType := forddb.LookupTypeByName(resourceTypeName)
 
 	if resourceType == nil {
 		writer.WriteHeader(http.StatusNotFound)
@@ -102,7 +102,7 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 	}
 
 	resourceId := resourceType.CreateID(resourceIdName)
-	resource := resourceType.CreateInstance().(forddb2.BasicResource)
+	resource := resourceType.CreateInstance().(forddb.BasicResource)
 
 	data, err := io.ReadAll(request.Body)
 
@@ -119,9 +119,9 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 		return
 	}
 
-	result, err := forddb2.Put(a.db, resource)
+	result, err := forddb.Put(a.db, resource)
 
-	if err == forddb2.ErrVersionMismatch {
+	if err == forddb.ErrVersionMismatch {
 		writer.WriteHeader(http.StatusConflict)
 		return
 	} else if err != nil {
@@ -143,7 +143,7 @@ func (a *ResourcesAPI) DeleteResource(writer http.ResponseWriter, request *http.
 	resourceTypeName := chi.URLParam(request, "resource")
 	resourceIdName := chi.URLParam(request, "id")
 
-	resourceType := forddb2.LookupTypeByName(resourceTypeName)
+	resourceType := forddb.LookupTypeByName(resourceTypeName)
 
 	if resourceType == nil {
 		writer.WriteHeader(http.StatusBadRequest)

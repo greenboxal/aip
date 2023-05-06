@@ -170,7 +170,7 @@ const App: React.FC = () => {
     React.useEffect(() => {
         buildGraphQLProvider({
             clientOptions: {
-                uri: 'https://desciclo.ai/v1/graphql',
+                uri: 'http://localhost:30100/v1/graphql',
                 connectToDevTools: true,
             },
         })

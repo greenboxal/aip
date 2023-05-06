@@ -7,9 +7,10 @@ BP_GO_VERSION = "1.20.3"
 BP_GO_TARGETS = "./aip-wiki/cmd/wikid"
 
 [env]
-MILVUS_ENDPOINT="https://in01-84a205d8686450d.aws-us-east-2.vectordb.zillizcloud.com:19534"
-MILVUS_HOST="in01-84a205d8686450d.aws-us-east-2.vectordb.zillizcloud.com"
-MILVUS_PORT="19534"
+MILVUS_HOST="in01-56f0a7dbf08d4a1.aws-us-east-2.vectordb.zillizcloud.com"
+MILVUS_PORT="19537"
+
+MILVUS_ENDPOINT="https://in01-56f0a7dbf08d4a1.aws-us-east-2.vectordb.zillizcloud.com:19537"
 MILVUS_USERNAME="db_admin"
 
 AIP_FORD_STORAGE_MEMGRAPH_CONNECTION_URI="bolt+ssc://54.152.19.198:7687"
@@ -19,7 +20,7 @@ AIP_FORD_STORAGE_MEMGRAPH_USERNAME="aip"
 internal_port = 30100
 force_https = true
 auto_stop_machines = false
-auto_start_machines = true
+auto_start_machines = false
 
 [http_service.concurrency]
 type = "requests"

@@ -17,11 +17,17 @@ func WithMilvusStorage() fx.Option {
 	return fx.Options(
 		Module,
 
-		fx.Provide(func(s *Storage) indexing.MemoryStorage {
+		fx.Provide(func(s *Storage) forddb.Storage {
 			return s
 		}),
+	)
+}
 
-		fx.Provide(func(s *Storage) forddb.Storage {
+func WithIndexStorage() fx.Option {
+	return fx.Options(
+		Module,
+
+		fx.Provide(func(s *Storage) indexing.MemoryStorage {
 			return s
 		}),
 	)

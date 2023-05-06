@@ -40,7 +40,7 @@ func NewPutOptions(options ...PutOption) PutOptions {
 type Database interface {
 	HasListeners
 
-	List(ctx context.Context, typ ResourceTypeID) ([]BasicResource, error)
+	List(ctx context.Context, typ ResourceTypeID, options ...ListOption) ([]BasicResource, error)
 	Get(ctx context.Context, typ ResourceTypeID, id BasicResourceID) (BasicResource, error)
 	Put(ctx context.Context, resource BasicResource, options ...PutOption) (BasicResource, error)
 	Delete(ctx context.Context, resource BasicResource) (BasicResource, error)

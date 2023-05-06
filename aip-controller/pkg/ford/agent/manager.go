@@ -80,7 +80,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 		return err
 	}
 
-	profile, err := forddb2.Get[*collective2.Profile](m.db, task.Spec.ProfileID)
+	profile, err := forddb2.Get[*collective2.Profile](ctx, m.db, task.Spec.ProfileID)
 
 	if err != nil {
 		return err

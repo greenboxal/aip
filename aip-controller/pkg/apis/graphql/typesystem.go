@@ -170,7 +170,23 @@ func (q *GraphQL) compileResource(fields graphql.Fields, typ forddb.BasicResourc
 		},
 
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			results, err := q.db.List(p.Context, typ.GetResourceID())
+			pageIndex := 0
+			perPage := 10
+
+			if pageVal, ok := p.Args["page"]; ok {
+				pageIndex = pageVal.(int)
+			}
+
+			if perPageVal, ok := p.Args["perPage"]; ok {
+				perPage = perPageVal.(int)
+			}
+
+			results, err := q.db.List(
+				p.Context,
+				typ.GetResourceID(),
+				forddb.WithOffset(pageIndex*perPage),
+				forddb.WithLimit(perPage),
+			)
 
 			if err != nil {
 				return nil, err

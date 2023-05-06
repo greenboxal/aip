@@ -2,14 +2,19 @@ package cms
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+	"github.com/multiformats/go-multihash"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
@@ -17,10 +22,13 @@ import (
 )
 
 const PageGeneratorBaseUrl = "http://127.0.0.1:30100"
+const PageGeneratorWikiUrl = "http://127.0.0.1:30100"
 
 type PageManager struct {
-	db    forddb.Database
-	cache *ContentCache
+	db forddb.Database
+
+	fm    *FileManager
+	cache *generators.ContentCache
 
 	pageGenerator  *generators.PageGenerator
 	imageGenerator *generators.ImageGenerator
@@ -28,22 +36,28 @@ type PageManager struct {
 
 func NewPageManager(
 	db forddb.Database,
-	cache *ContentCache,
+	fm *FileManager,
+	cache *generators.ContentCache,
 	pageGenerator *generators.PageGenerator,
 	imageGenerator *generators.ImageGenerator,
 ) *PageManager {
 	return &PageManager{
 		db:             db,
+		fm:             fm,
 		cache:          cache,
 		pageGenerator:  pageGenerator,
 		imageGenerator: imageGenerator,
 	}
 }
 
+func (pm *PageManager) GetPageByID(ctx context.Context, id models.PageID) (*models.Page, error) {
+	return forddb.Get[*models.Page](ctx, pm.db, id)
+}
+
 func (pm *PageManager) GetPage(ctx context.Context, spec models.PageSpec) (*models.Page, error) {
 	page, err := pm.cache.GetPage(ctx, spec)
 
-	if err == forddb.ErrNotFound {
+	if forddb.IsNotFound(err) {
 		return pm.GeneratePage(ctx, spec)
 	} else if err != nil {
 		return nil, err
@@ -55,7 +69,7 @@ func (pm *PageManager) GetPage(ctx context.Context, spec models.PageSpec) (*mode
 func (pm *PageManager) GetImage(ctx context.Context, spec models.ImageSpec) (*models.Image, error) {
 	page, err := pm.cache.GetImage(ctx, spec)
 
-	if err == forddb.ErrNotFound {
+	if forddb.IsNotFound(err) {
 		return pm.GenerateImage(ctx, spec)
 	} else if err != nil {
 		return nil, err
@@ -85,6 +99,10 @@ func (pm *PageManager) GeneratePage(ctx context.Context, spec models.PageSpec) (
 			link := models.PageLink{
 				Title: string(n.Title),
 				To:    string(n.Destination),
+			}
+
+			if strings.HasPrefix(link.To, PageGeneratorWikiUrl) {
+				link.To = strings.TrimPrefix(link.To, PageGeneratorWikiUrl)
 			}
 
 			if strings.HasPrefix(link.To, PageGeneratorBaseUrl) {
@@ -129,14 +147,43 @@ func (pm *PageManager) GenerateImage(ctx context.Context, spec models.ImageSpec)
 		return nil, err
 	}
 
-	image := &models.Image{
+	response, err := http.Get(status.URL)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tempFileName := fmt.Sprintf("temp-%s-%d", id.String(), time.Now().UnixNano())
+
+	writer := pm.fm.OpenWriter(ctx, tempFileName)
+	reader := io.TeeReader(response.Body, writer)
+
+	h, err := multihash.SumStream(reader, multihash.SHA2_256, -1)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	fileName := "images/" + h.B58String() + path.Ext(status.URL)
+
+	if err := pm.fm.Rename(ctx, tempFileName, fileName); err != nil {
+		return nil, err
+	}
+
+	status.URL = "https://cdn.desciclo.ai/" + fileName
+
+	result := &models.Image{
 		Spec:   spec,
 		Status: status,
 	}
 
-	image.ID = id
+	result.ID = id
 
-	return pm.cache.PutImage(ctx, image)
+	return pm.cache.PutImage(ctx, result)
 }
 
 func ParseMarkdown(md []byte) ast.Node {
