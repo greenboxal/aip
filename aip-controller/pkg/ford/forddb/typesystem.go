@@ -395,6 +395,10 @@ func getTypePrimitiveKind(typ reflect.Type) PrimitiveKind {
 		return PrimitiveKindString
 
 	default:
+		if typ.Name() == "error" {
+			return PrimitiveKindString
+		}
+
 		panic("unsupported type")
 	}
 }

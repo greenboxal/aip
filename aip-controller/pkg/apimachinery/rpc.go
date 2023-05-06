@@ -6,6 +6,7 @@ import (
 
 	"github.com/swaggest/jsonrpc"
 	"github.com/swaggest/usecase"
+	"go.uber.org/fx"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/utils"
 )
@@ -143,4 +144,44 @@ func mustRegister(srv *jsonrpc.Handler, name string, target any) {
 
 		srv.Add(u)
 	}
+}
+
+type RpcServiceBinding interface {
+	Name() string
+	Bind(server *RpcService)
+	Implementation() any
+}
+
+type rpcServiceBinding[T any] struct {
+	name    string
+	handler T
+}
+
+func (r *rpcServiceBinding[T]) Name() string {
+	return r.name
+}
+
+func (r *rpcServiceBinding[T]) Implementation() any {
+	return r.handler
+}
+
+func (r *rpcServiceBinding[T]) Bind(server *RpcService) {
+	mustRegister(server.Handler, r.name, r.handler)
+}
+
+func BindRpcService[T any](name string) fx.Option {
+	return utils.WithBinding[RpcServiceBinding]("rpc-service-bindings", func(handler T) RpcServiceBinding {
+		return &rpcServiceBinding[T]{
+			name:    name,
+			handler: handler,
+		}
+	})
+}
+
+func ProvideRpcService[T any](constructor any, name string) fx.Option {
+	return fx.Options(
+		fx.Provide(constructor),
+
+		BindRpcService[T](name),
+	)
 }

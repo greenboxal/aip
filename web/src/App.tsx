@@ -170,7 +170,7 @@ const App: React.FC = () => {
     React.useEffect(() => {
         buildGraphQLProvider({
             clientOptions: {
-                uri: 'https://main--aip.apollographos.net/graphql',
+                uri: 'https://desciclo.ai/v1/graphql',
                 connectToDevTools: true,
             },
         })

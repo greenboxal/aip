@@ -29,8 +29,8 @@ func NewRouter(wiki *Wiki, pm *cms.PageManager) *Router {
 
 	assets := http.FileServer(http.FS(public.Content()))
 
-	r.Handle("/assets/", assets)
-	r.NotFound(r.handle)
+	r.Handle("/static/*", http.StripPrefix("static", assets))
+	r.Get("/*", r.handle)
 
 	return r
 }
@@ -43,6 +43,10 @@ func (r *Router) getPageSettings(request *http.Request) (models.PageSpec, error)
 
 	url := request.URL
 	host := request.Header.Get("Host")
+
+	if idx := strings.LastIndex(host, ":"); idx != -1 {
+		host = host[:idx]
+	}
 
 	siteSettings.Title = "BolsoWiki"
 	siteSettings.BaseUrl = "http://127.0.0.1:30100/wiki"

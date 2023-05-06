@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+
+	"github.com/greenboxal/aip/aip-controller/pkg/utils"
 )
 
 type MountOption func(opts *MountOptions)
@@ -51,13 +53,13 @@ func NewMountOptions(opts ...MountOption) MountOptions {
 func MountHttpService[T http.Handler](path string, options ...MountOption) fx.Option {
 	opts := NewMountOptions(options...)
 
-	return fx.Provide(fx.Annotate(func(handler T) *httpServiceMount[T] {
+	return utils.WithBinding[HttpServiceMount]("http-service-mounts", func(handler T) HttpServiceMount {
 		return &httpServiceMount[T]{
 			Path:    path,
 			Handler: handler,
 			Options: opts,
 		}
-	}, fx.As((*HttpServiceMount)(nil)), fx.ResultTags(`group:"http-service-mounts"`)))
+	})
 }
 
 func ProvideHttpService[T http.Handler](constructor any, path string, options ...MountOption) fx.Option {
