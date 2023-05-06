@@ -1,10 +1,12 @@
 package graphql
 
 import (
+	"encoding/json"
 	"reflect"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/mashingan/smapping"
 	"github.com/stoewer/go-strcase"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/apimachinery"
@@ -19,8 +21,9 @@ type GraphQL struct {
 
 	schema graphql.Schema
 
-	typeMap     map[reflect.Type]graphql.Output
-	rpcBindings utils.BindingRegistry[apimachinery.RpcServiceBinding]
+	outputTypeMap map[reflect.Type]graphql.Output
+	inputTypeMap  map[reflect.Type]graphql.Input
+	rpcBindings   utils.BindingRegistry[apimachinery.RpcServiceBinding]
 
 	rootQueryFields graphql.Fields
 	rootQueryConfig graphql.ObjectConfig
@@ -39,7 +42,8 @@ func NewGraphQL(
 		db:          db,
 		rpcBindings: rpcBindings,
 
-		typeMap: map[reflect.Type]graphql.Output{},
+		outputTypeMap: map[reflect.Type]graphql.Output{},
+		inputTypeMap:  map[reflect.Type]graphql.Input{},
 	}
 
 	gql.initializeTypeSystem()
@@ -133,40 +137,70 @@ func (q *GraphQL) compileRpcMutation(binding apimachinery.RpcServiceBinding) {
 		}
 
 		name := strcase.LowerCamelCase(binding.Name()) + strcase.UpperCamelCase(m.Name)
+
+		if inType == nil {
+			continue
+		}
+
+		inBasicType := forddb.TypeSystem().LookupByType(inType)
+
+		if inBasicType == nil {
+			continue
+		}
+
 		args := graphql.FieldConfigArgument{}
 
-		if inType != nil {
-			args["args"] = &graphql.ArgumentConfig{
-				Type: graphql.NewObject(graphql.ObjectConfig{
-					Name: "empty",
-					Fields: graphql.Fields{
-						"empty": &graphql.Field{
-							Type: graphql.String,
-						},
-					},
-				}),
+		if inBasicType.PrimitiveKind() == forddb.PrimitiveKindStruct {
+			for _, f := range inBasicType.Fields() {
+				args[f.Name()] = &graphql.ArgumentConfig{
+					Type: q.lookupInputType(f.BasicType()),
+				}
 			}
 		} else {
-			args["args"] = &graphql.ArgumentConfig{
-				Type: q.lookupType(forddb.TypeSystem().LookupByType(inType)),
+			args["arg"] = &graphql.ArgumentConfig{
+				Type: q.lookupInputType(inBasicType),
 			}
 		}
 
-		q.rootMutationFields[name] = &graphql.Field{
-			Type: q.lookupType(forddb.TypeSystem().LookupByType(outType)),
+		if len(args) == 0 {
+			args = nil
+		}
 
-			Args: map[string]*graphql.ArgumentConfig{},
+		q.rootMutationFields[name] = &graphql.Field{
+			Type: q.lookupOutputType(forddb.TypeSystem().LookupByType(outType)),
+
+			Args: args,
 
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var args [2]reflect.Value
 
-				input := p.Args["args"]
+				data, err := json.Marshal(p.Args)
+
+				if err != nil {
+					return nil, err
+				}
+
+				input := inBasicType.CreateInstance()
+
+				if err := json.Unmarshal(data, &input); err != nil {
+					return nil, err
+				}
+
+				inputVal := reflect.ValueOf(input)
+
+				if inType.Kind() == reflect.Ptr && inputVal.Kind() != reflect.Ptr {
+					inputVal = inputVal.Addr()
+				} else if inType.Kind() != reflect.Ptr && inputVal.Kind() == reflect.Ptr {
+					for inputVal.Kind() == reflect.Ptr {
+						inputVal = inputVal.Elem()
+					}
+				}
 
 				if hasCtx {
 					args[0] = reflect.ValueOf(p.Context)
-					args[1] = reflect.ValueOf(input)
+					args[1] = inputVal
 				} else {
-					args[0] = reflect.ValueOf(input)
+					args[0] = inputVal
 				}
 
 				result := mi.Call(args[:mtyp.NumIn()])
@@ -190,11 +224,24 @@ func (q *GraphQL) compileRpcMutation(binding apimachinery.RpcServiceBinding) {
 						v := result[0]
 
 						if v.IsValid() {
-							for v.Kind() == reflect.Ptr {
-								v = v.Elem()
+							if v.Type().ConvertibleTo(outType) {
+								v = v.Convert(outType)
 							}
 
-							return v.Interface(), nil
+							if forddb.IsBasicResource(v.Type()) {
+								resource := v.Interface().(forddb.BasicResource)
+								mapped, err := forddb.Encode(resource)
+
+								if err != nil {
+									return nil, err
+								}
+
+								mapped["id"] = resource.GetResourceBasicID().String()
+
+								return mapped, nil
+							} else {
+								return smapping.MapTags(v.Interface(), "json"), nil
+							}
 						}
 					}
 				}

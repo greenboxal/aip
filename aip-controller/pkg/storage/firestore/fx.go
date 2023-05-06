@@ -15,7 +15,7 @@ var Module = fx.Module(
 	config.RegisterConfig[Config]("storage.firestore"),
 )
 
-func WithStorage() fx.Option {
+func WithFordStorage() fx.Option {
 	return fx.Options(
 		Module,
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,11 +22,14 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
+	"github.com/greenboxal/aip/aip-controller/pkg/storage/firestore"
 	"github.com/greenboxal/aip/aip-controller/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
 
 func main() {
+	SetupGoogleCredentials()
+
 	var app *fx.App
 
 	app = fx.New(
@@ -42,7 +46,8 @@ func main() {
 		daemon.Module,
 		wiki.Module,
 
-		milvus.WithMilvusStorage(),
+		milvus.WithIndexStorage(),
+		firestore.WithFordStorage(),
 
 		fx.Invoke(func(db forddb.Database, _api *apimachinery.Server) error {
 			return nil
@@ -90,4 +95,28 @@ func BuildLogging() fx.Option {
 			return zl
 		}),
 	)
+}
+
+func SetupGoogleCredentials() {
+	if creds := os.Getenv("GOOGLE_CREDENTIALS"); creds != "" {
+		tmpFile, err := os.CreateTemp("", "google-credentials-*.json")
+
+		if err != nil {
+			panic(err)
+		}
+
+		data, err := base64.StdEncoding.DecodeString(creds)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if err := os.WriteFile(tmpFile.Name(), data, 0600); err != nil {
+			panic(err)
+		}
+
+		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmpFile.Name()); err != nil {
+			panic(err)
+		}
+	}
 }

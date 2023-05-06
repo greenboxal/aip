@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/ipfs/go-cid"
 	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
@@ -16,7 +17,11 @@ var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
 
 func (q *GraphQL) initializeTypeSystem() {
-	q.typeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
+	q.outputTypeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
+	q.inputTypeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
+
+	q.outputTypeMap[reflect.TypeOf((*cid.Cid)(nil)).Elem()] = graphql.String
+	q.inputTypeMap[reflect.TypeOf((*cid.Cid)(nil)).Elem()] = graphql.String
 
 	// TODO: Freeze and use IPLD type system
 	ts := forddb.TypeSystem()
@@ -51,7 +56,7 @@ func (q *GraphQL) initializeTypeSystem() {
 func (q *GraphQL) buildTypeSystem() {
 	var types []graphql.Type
 
-	for _, typ := range q.typeMap {
+	for _, typ := range q.outputTypeMap {
 		types = append(types, typ)
 	}
 
@@ -94,7 +99,7 @@ func (q *GraphQL) compileResource(fields graphql.Fields, typ forddb.BasicResourc
 	name := typ.Name()
 	name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
 
-	gqlType := q.lookupType(typ)
+	gqlType := q.lookupOutputType(typ)
 
 	if gqlType == nil {
 		panic("no gql type for " + name)
@@ -246,10 +251,91 @@ func (q *GraphQL) compileResource(fields graphql.Fields, typ forddb.BasicResourc
 	}
 }
 
-func (q *GraphQL) lookupType(typ forddb.BasicType) graphql.Output {
+func (q *GraphQL) lookupInputType(typ forddb.BasicType) graphql.Input {
+	var result graphql.Input
+
+	if typ == nil {
+		panic("typ is null")
+	}
+
+	if existing, ok := q.inputTypeMap[typ.RuntimeType()]; ok {
+		return existing
+	}
+
+	if typ.Kind() == forddb.KindId {
+		result = graphql.String
+	} else {
+		switch typ.PrimitiveKind() {
+		case forddb.PrimitiveKindBoolean:
+			result = graphql.Boolean
+		case forddb.PrimitiveKindString:
+			result = graphql.String
+		case forddb.PrimitiveKindBytes:
+			result = graphql.String
+		case forddb.PrimitiveKindFloat:
+			result = graphql.Float
+		case forddb.PrimitiveKindInt:
+			result = graphql.Int
+		case forddb.PrimitiveKindUnsignedInt:
+			result = graphql.Int
+
+		case forddb.PrimitiveKindList:
+			elemType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
+			elem := q.lookupInputType(elemType)
+
+			return graphql.NewList(elem)
+
+		case forddb.PrimitiveKindStruct:
+			fields := graphql.InputObjectConfigFieldMap{}
+
+			for _, field := range typ.Fields() {
+				fieldType := field.BasicType()
+
+				f := &graphql.InputObjectFieldConfig{
+					Type: q.lookupInputType(fieldType),
+				}
+
+				fields[field.Name()] = f
+			}
+
+			if len(fields) == 0 {
+				result = graphql.String
+				break
+			}
+
+			name := typ.Name()
+
+			if typ, ok := typ.(forddb.BasicResourceType); ok {
+				name = typ.ResourceName().ToTitle()
+			}
+
+			name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+			config := graphql.InputObjectConfig{
+				Name:   "In" + name,
+				Fields: fields,
+			}
+
+			result = graphql.NewInputObject(config)
+
+		default:
+			panic("unknown primitive kind")
+		}
+	}
+
+	if result == nil {
+		panic("result is null")
+	}
+
+	q.inputTypeMap[typ.RuntimeType()] = result
+
+	return result
+}
+
+func (q *GraphQL) lookupOutputType(typ forddb.BasicType) graphql.Output {
 	var result graphql.Output
 
-	if existing, ok := q.typeMap[typ.RuntimeType()]; ok {
+	if existing, ok := q.outputTypeMap[typ.RuntimeType()]; ok {
 		return existing
 	}
 
@@ -272,7 +358,7 @@ func (q *GraphQL) lookupType(typ forddb.BasicType) graphql.Output {
 
 		case forddb.PrimitiveKindList:
 			elemType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
-			elem := q.lookupType(elemType)
+			elem := q.lookupOutputType(elemType)
 
 			return graphql.NewList(elem)
 
@@ -289,7 +375,7 @@ func (q *GraphQL) lookupType(typ forddb.BasicType) graphql.Output {
 
 				f := &graphql.Field{
 					Name: field.Name(),
-					Type: q.lookupType(fieldType),
+					Type: q.lookupOutputType(fieldType),
 				}
 
 				fields[f.Name] = f
@@ -320,7 +406,7 @@ func (q *GraphQL) lookupType(typ forddb.BasicType) graphql.Output {
 		}
 	}
 
-	q.typeMap[typ.RuntimeType()] = result
+	q.outputTypeMap[typ.RuntimeType()] = result
 
 	return result
 }

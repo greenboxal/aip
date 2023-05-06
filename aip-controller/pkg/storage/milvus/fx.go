@@ -13,7 +13,7 @@ var Module = fx.Module(
 	fx.Provide(NewStorage),
 )
 
-func WithMilvusStorage() fx.Option {
+func WithFordStorage() fx.Option {
 	return fx.Options(
 		Module,
 

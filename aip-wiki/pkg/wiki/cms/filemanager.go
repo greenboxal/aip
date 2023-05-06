@@ -2,9 +2,7 @@ package cms
 
 import (
 	"context"
-	"encoding/base64"
 	"io"
-	"os"
 
 	"cloud.google.com/go/storage"
 	"go.uber.org/fx"
@@ -29,28 +27,6 @@ type FileManager struct {
 
 func NewFileManager(lc fx.Lifecycle, logger *zap.SugaredLogger, config *FileManagerConfig) (*FileManager, error) {
 	ctx := context.Background()
-
-	if creds := os.Getenv("GOOGLE_CREDENTIALS"); creds != "" {
-		tmpFile, err := os.CreateTemp("", "google-credentials-*.json")
-
-		if err != nil {
-			return nil, err
-		}
-
-		data, err := base64.StdEncoding.DecodeString(creds)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if err := os.WriteFile(tmpFile.Name(), data, 0600); err != nil {
-			return nil, err
-		}
-
-		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmpFile.Name()); err != nil {
-			return nil, err
-		}
-	}
 
 	client, err := storage.NewClient(ctx)
 

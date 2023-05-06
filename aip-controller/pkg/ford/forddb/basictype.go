@@ -144,16 +144,16 @@ func (bt *basicTypeImpl) Initialize(ts *ResourceTypeSystem, options ...nodebinde
 				actualType = actualType.Elem()
 			}
 
-			if f.Anonymous && actualType.Kind() == reflect.Struct && taggedName == "" {
+			fieldType := TypeSystem().LookupByType(f.Type)
+
+			if fieldType == nil {
+				TypeSystem().LookupByType(f.Type)
+				panic("field type not found")
+			}
+
+			if f.Anonymous && fieldType.Kind() != KindId && actualType.Kind() == reflect.Struct && taggedName == "" {
 				walkFields(f.Type, nestedF.Index)
 			} else {
-				fieldType := TypeSystem().LookupByType(f.Type)
-
-				if fieldType == nil {
-					TypeSystem().LookupByType(f.Type)
-					panic("field type not found")
-				}
-
 				field := NewReflectedField(fieldName, bt, fieldType, f)
 
 				bt.fields = append(bt.fields, field)

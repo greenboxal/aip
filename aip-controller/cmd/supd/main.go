@@ -45,7 +45,7 @@ func main() {
 		//badger.WithBadgerStorage(),
 		//memgraph.WithMemgraphStorage(),
 		//ipfs.WithIpfsStorage(),
-		firestore.WithStorage(),
+		firestore.WithFordStorage(),
 		milvus.WithIndexStorage(),
 
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.Server) {

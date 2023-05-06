@@ -31,102 +31,20 @@ import {
 import { MarkdownField } from "@react-admin/ra-markdown"
 
 import { MultiLevelMenu, AppLocationContext, Breadcrumb} from '@react-admin/ra-navigation'
-
+import { ReactQueryDevtools } from "react-query/devtools"
+import {ImageList, ImageShow} from "./resources/Image";
+import {PageCreate, PageList, PageShow} from "./resources/Page";
 import DefaultIcon from '@mui/icons-material/ViewList'
 
-import { ReactQueryDevtools } from "react-query/devtools"
-
-import buildGraphQLProvider from "ra-data-graphql-simple"
-
-export const PageList = () => (
-    <List>
-        <Datagrid>
-            <TextField source="spec.title" label="Title" />
-            <TextField source="spec.language" label="Language" />
-            <TextField source="spec.voice" label="Voice" />
-
-            <TextField source="id" label="ID" />
-
-            <ShowButton />
-        </Datagrid>
-    </List>
-);
-
-export const PageShow = () => (
-    <Show>
-        <TabbedShowLayout>
-            <TabbedShowLayout.Tab label="General">
-                <TextField source="id" label="ID" />
-
-                <DateField source="metadata.created_at" label="Created At" />
-                <DateField source="metadata.updated_at" label="Updated At" />
-
-                <TextField source="spec.title" label="Title" />
-                <TextField source="spec.language" label="Language" />
-                <TextField source="spec.voice" label="Voice" />
-
-                <ArrayField source="status.images" label="Images">
-                    <Datagrid bulkActionButtons={false}>
-                        <TextField source="title" label="Title" />
-                        <TextField source="source" label="Source" />
-                    </Datagrid>
-                </ArrayField>
-
-                <ArrayField source="status.links" label="Links">
-                    <Datagrid bulkActionButtons={false}>
-                        <TextField source="title" label="Title" />
-                        <TextField source="to" label="To" />
-                    </Datagrid>
-                </ArrayField>
-
-
-                <MarkdownField source="status.markdown" label="Markdown Contents" />
-            </TabbedShowLayout.Tab>
-            <TabbedShowLayout.Tab label="HTML Preview">
-                <RichTextField source="status.html" label="HTML Contents" />
-            </TabbedShowLayout.Tab>
-        </TabbedShowLayout>
-    </Show>
-);
-
-export const ImageList = () => (
-    <List>
-        <Datagrid>
-            <ImageField source="status.url" title="Thumbnail" label="" />
-
-            <TextField source="id" label="ID" />
-
-            <TextField source="spec.path" label="Path" />
-            <TextField source="spec.prompt" label="Prompt" />
-            <UrlField source="status.url" label="URL" />
-
-            <ShowButton />
-        </Datagrid>
-    </List>
-);
-
-export const ImageShow = () => (
-    <Show>
-        <SimpleShowLayout>
-            <TextField source="id" label="ID" />
-
-            <DateField source="metadata.created_at" label="Created At" />
-            <DateField source="metadata.updated_at" label="Updated At" />
-
-            <TextField source="spec.path" label="Path" />
-            <TextField source="spec.prompt" label="Prompt" />
-            <UrlField source="status.url" label="URL" />
-
-            <ImageField source="status.url" title="Preview" />
-        </SimpleShowLayout>
-    </Show>
-);
+import buildGraphQLProvider, { buildQuery } from 'ra-data-graphql-simple';
+import { CREATE } from 'ra-core';
 
 export const ResourceMenuItem = ({ name }: { name: string }) => {
     const resources = useResourceDefinitions();
     const getResourceLabel = useGetResourceLabel();
     const createPath = useCreatePath();
     if (!resources || !resources[name]) return null;
+
     return (
         <MultiLevelMenu.Item
             name={name}
@@ -169,6 +87,18 @@ const App: React.FC = () => {
 
     React.useEffect(() => {
         buildGraphQLProvider({
+            introspection: {
+                operationNames: {
+                    [CREATE]: (type) => {
+                        switch (type.name) {
+                            case "Page": return "wikiPageManagerGetPage"
+                        }
+
+                        return undefined
+                    },
+                },
+            },
+
             clientOptions: {
                 uri: 'http://localhost:30100/v1/graphql',
                 connectToDevTools: true,
@@ -192,8 +122,8 @@ const App: React.FC = () => {
 
     return (
         <Admin layout={AppLayout} theme={theme} dataProvider={dataProvider}>
-            <Resource name="Image" hasShow list={ImageList} show={ImageShow}/>
-            <Resource name="Page" hasShow list={PageList} show={PageShow}/>
+            <Resource name="Image" list={ImageList} show={ImageShow} />
+            <Resource name="Page" list={PageList} show={PageShow} create={PageCreate} />
 
             <Resource name="Agent" list={ListGuesser}/>
             <Resource name="Profile" list={ListGuesser}/>
