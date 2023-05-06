@@ -134,8 +134,8 @@ func (s *Storage) doPut(resource forddb2.BasicResource) (forddb2.BasicResource, 
 
 	tx := s.db.NewTransaction(true)
 
-	typ := resource.GetType()
-	id := resource.GetResourceID()
+	typ := resource.GetResourceTypeID()
+	id := resource.GetResourceBasicID()
 	key := []byte(fmt.Sprintf("ford/%s/%s", typ.Name(), id.String()))
 
 	item, err := tx.Get(key)
@@ -159,7 +159,7 @@ func (s *Storage) doPut(resource forddb2.BasicResource) (forddb2.BasicResource, 
 			return nil, nil, err
 		}
 
-		if existing.GetVersion() != resource.GetVersion() {
+		if existing.GetResourceVersion() != resource.GetResourceVersion() {
 			return nil, existing, forddb2.ErrVersionMismatch
 		}
 	}
@@ -198,8 +198,8 @@ func (s *Storage) Delete(ctx context.Context, resource forddb2.BasicResource) (f
 func (s *Storage) doDelete(resource forddb2.BasicResource) (forddb2.BasicResource, error) {
 	tx := s.db.NewTransaction(true)
 
-	typ := resource.GetType()
-	id := resource.GetResourceID()
+	typ := resource.GetResourceTypeID()
+	id := resource.GetResourceBasicID()
 	key := []byte(fmt.Sprintf("ford/%s/%s", typ.Name(), id.String()))
 
 	item, err := tx.Get(key)
@@ -222,7 +222,7 @@ func (s *Storage) doDelete(resource forddb2.BasicResource) (forddb2.BasicResourc
 		return nil, err
 	}
 
-	if existing.GetVersion() != resource.GetVersion() {
+	if existing.GetResourceVersion() != resource.GetResourceVersion() {
 		return nil, forddb2.ErrVersionMismatch
 	}
 

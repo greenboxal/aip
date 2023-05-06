@@ -4,13 +4,13 @@ buildpacks = ["gcr.io/paketo-buildpacks/go:4.3.2"]
 
 [build.args]
 BP_GO_VERSION = "1.20.3"
-BP_GO_TARGETS = "./aip-controller/cmd/supd"
+BP_GO_TARGETS = "./aip-wiki/cmd/wikid"
 
 [env]
 MILVUS_ENDPOINT="https://in01-84a205d8686450d.aws-us-east-2.vectordb.zillizcloud.com:19534"
 MILVUS_HOST="in01-84a205d8686450d.aws-us-east-2.vectordb.zillizcloud.com"
 MILVUS_PORT="19534"
-MILVUS_USERNAME="aip"
+MILVUS_USERNAME="db_admin"
 
 AIP_FORD_STORAGE_MEMGRAPH_CONNECTION_URI="bolt+ssc://54.152.19.198:7687"
 AIP_FORD_STORAGE_MEMGRAPH_USERNAME="aip"

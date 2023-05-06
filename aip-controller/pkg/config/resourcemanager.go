@@ -5,28 +5,31 @@ import (
 	"path"
 )
 
-type ResourceManager struct {
-	cm *ConfigManager
-
-	dataDirectory    string
-	privateDirectory string
-	procDirectory    string
+type ResourceConfig struct {
+	DataDirectory    string `json:"data_dir"`
+	PrivateDirectory string `json:"private_dir"`
+	ProcDirectory    string `json:"proc_dir"`
 }
 
-func NewResourceManager(cm *ConfigManager) *ResourceManager {
-	return &ResourceManager{
-		cm: cm,
+func (rc *ResourceConfig) SetDefaults() {
+	rc.DataDirectory = "/tmp/aip/data"
+	rc.PrivateDirectory = "/tmp/aip/private"
+	rc.ProcDirectory = "/tmp/aip/data/tmp/proc"
+}
 
-		// TODO: Read from ConfigManager
-		dataDirectory:    "/tmp/aip/data",
-		privateDirectory: "/tmp/aip/private",
-		procDirectory:    "/tmp/aip/data/tmp/proc",
+type ResourceManager struct {
+	config *ResourceConfig
+}
+
+func NewResourceManager(config *ResourceConfig) *ResourceManager {
+	return &ResourceManager{
+		config: config,
 	}
 }
 
 func (rm *ResourceManager) GetProcDirectory(subPaths ...string) string {
 	subPath := path.Join(subPaths...)
-	p := path.Join(rm.procDirectory, subPath)
+	p := path.Join(rm.config.ProcDirectory, subPath)
 
 	if err := os.MkdirAll(p, 0750); err != nil {
 		panic(err)
@@ -37,7 +40,7 @@ func (rm *ResourceManager) GetProcDirectory(subPaths ...string) string {
 
 func (rm *ResourceManager) GetDataDirectory(subPaths ...string) string {
 	subPath := path.Join(subPaths...)
-	p := path.Join(rm.dataDirectory, subPath)
+	p := path.Join(rm.config.DataDirectory, subPath)
 
 	if err := os.MkdirAll(p, 0750); err != nil {
 		panic(err)
@@ -48,7 +51,7 @@ func (rm *ResourceManager) GetDataDirectory(subPaths ...string) string {
 
 func (rm *ResourceManager) GetPrivateDirectory(subPaths ...string) string {
 	subPath := path.Join(subPaths...)
-	p := path.Join(rm.privateDirectory, subPath)
+	p := path.Join(rm.config.PrivateDirectory, subPath)
 
 	if err := os.MkdirAll(p, 0700); err != nil {
 		panic(err)

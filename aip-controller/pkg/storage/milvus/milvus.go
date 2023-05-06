@@ -2,13 +2,18 @@ package milvus
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"math"
 	"os"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"github.com/sashabaranov/go-openai"
+	"go.uber.org/fx"
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chunkers"
 	"github.com/greenboxal/aip/aip-controller/pkg/utils"
 )
@@ -20,41 +25,96 @@ type Storage struct {
 	collection string
 }
 
-func (s *Storage) GetSegment(ctx context.Context, id collective2.MemorySegmentID) (*collective2.MemorySegment, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *Storage) GetMemory(ctx context.Context, id collective2.MemoryID) (*collective2.Memory, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func NewStorage(oai *openai.Client) (*Storage, error) {
-	ctx := context.Background()
-
-	c, err := client.NewDefaultGrpcClientWithTLSAuth(
-		ctx,
-		os.Getenv("MILVUS_ENDPOINT"),
-		os.Getenv("MILVUS_USERNAME"),
-		os.Getenv("MILVUS_PASSWORD"),
-	)
-
-	if err != nil {
-		return nil, err
-	}
+func NewStorage(lc fx.Lifecycle, oai *openai.Client) (*Storage, error) {
 
 	s := &Storage{
-		db:         c,
 		oai:        oai,
 		collection: "memories",
 	}
 
-	if err = s.initialize(ctx); err != nil {
-		return nil, err
-	}
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			return s.initialize(ctx)
+		},
+	})
 
 	return s, nil
+}
+
+func (s *Storage) initialize(ctx context.Context) error {
+	endpoint := os.Getenv("MILVUS_ENDPOINT")
+	username := os.Getenv("MILVUS_USERNAME")
+	password := os.Getenv("MILVUS_PASSWORD")
+
+	c, err := client.NewDefaultGrpcClientWithURI(
+		ctx,
+		endpoint,
+		username,
+		password,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	s.db = c
+
+	ok, _ := s.db.HasCollection(ctx, s.collection)
+
+	if !ok {
+
+		numShards := int32(2)
+
+		schema := &entity.Schema{
+			CollectionName: s.collection,
+			Fields: []*entity.Field{
+				{Name: "_id", PrimaryKey: true, DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "timestamp", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "64"}},
+				{Name: "segment_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "parent_memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "branch_memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "root_memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "clock", DataType: entity.FieldTypeInt64},
+				{Name: "height", DataType: entity.FieldTypeInt64},
+				{Name: "text", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "embedding", DataType: entity.FieldTypeFloatVector, TypeParams: map[string]string{"dim": "1536"}},
+			},
+		}
+
+		err = s.db.CreateCollection(ctx, schema, numShards)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	ok, _ = s.db.HasCollection(ctx, "forddb")
+
+	if !ok {
+		numShards := int32(2)
+
+		schema := &entity.Schema{
+			CollectionName: "forddb",
+			Fields: []*entity.Field{
+				{Name: "_pk", PrimaryKey: true, DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "256"}},
+				{Name: "_vec", DataType: entity.FieldTypeFloatVector, TypeParams: map[string]string{"dim": "1"}},
+				{Name: "id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "kind", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "namespace", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
+				{Name: "version", DataType: entity.FieldTypeInt64},
+				{Name: "data", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "65535"}},
+			},
+		}
+
+		err = s.db.CreateCollection(ctx, schema, numShards)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Storage) AppendSegment(ctx context.Context, segment *collective2.MemorySegment) error {
@@ -141,42 +201,137 @@ func (s *Storage) AppendSegment(ctx context.Context, segment *collective2.Memory
 	return nil
 }
 
-func (s *Storage) initialize(ctx context.Context) error {
-	ok, err := s.db.HasCollection(ctx, s.collection)
+func (s *Storage) GetSegment(ctx context.Context, id collective2.MemorySegmentID) (*collective2.MemorySegment, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) GetMemory(ctx context.Context, id collective2.MemoryID) (*collective2.Memory, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) List(ctx context.Context, typ forddb.ResourceTypeID) ([]forddb.BasicResource, error) {
+	pkColumns := entity.NewColumnString("kind", []string{typ.BasicResourceType().Name()})
+
+	res, err := s.db.QueryByPks(ctx, "forddb", []string{"_default"}, pkColumns, []string{"data"})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if ok {
-		return nil
+	dataColumn, ok := res[0].(*entity.ColumnVarChar)
+
+	if !ok {
+		if len(res) == 0 {
+			return nil, forddb.ErrNotFound
+		}
 	}
 
-	numShards := int32(2)
+	values := dataColumn.Data()
+	result := make([]forddb.BasicResource, len(values))
 
-	schema := &entity.Schema{
-		CollectionName: s.collection,
-		AutoID:         true,
-		Fields: []*entity.Field{
-			{Name: "_id", PrimaryKey: true, AutoID: true, DataType: entity.FieldTypeInt64},
-			{Name: "timestamp", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "64"}},
-			{Name: "segment_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
-			{Name: "memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
-			{Name: "parent_memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
-			{Name: "branch_memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
-			{Name: "root_memory_id", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
-			{Name: "clock", DataType: entity.FieldTypeInt64},
-			{Name: "height", DataType: entity.FieldTypeInt64},
-			{Name: "text", DataType: entity.FieldTypeVarChar, TypeParams: map[string]string{"max_length": "128"}},
-			{Name: "embedding", DataType: entity.FieldTypeFloatVector, TypeParams: map[string]string{"dim": "1536"}},
-		},
+	for i, v := range values {
+		var raw forddb.RawResource
+
+		if err := json.Unmarshal([]byte(v), &raw); err != nil {
+			return nil, err
+		}
+
+		resource, err := forddb.Decode(raw)
+
+		if err != nil {
+			return nil, err
+		}
+
+		result[i] = resource
 	}
 
-	err = s.db.CreateCollection(ctx, schema, numShards)
+	return result, nil
+}
+
+func (s *Storage) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+	pk := fmt.Sprintf("%s:%s", id.String(), typ.Name())
+
+	primaryKeys := []string{pk}
+	pkColumns := entity.NewColumnString("_pk", primaryKeys)
+
+	result, err := s.db.QueryByPks(ctx, "forddb", []string{"_default"}, pkColumns, []string{"data"})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	dataColumn, ok := result[0].(*entity.ColumnVarChar)
+
+	if !ok {
+		if len(result) == 0 {
+			return nil, forddb.ErrNotFound
+		}
+	}
+
+	values := dataColumn.Data()
+
+	if len(values) == 0 {
+		return nil, forddb.ErrNotFound
+	}
+
+	var raw forddb.RawResource
+
+	if err := json.Unmarshal([]byte(values[0]), &raw); err != nil {
+		return nil, err
+	}
+
+	return forddb.Decode(raw)
+}
+
+func (s *Storage) Put(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
+	raw, err := forddb.Encode(resource)
+
+	if err != nil {
+		return nil, err
+	}
+
+	serialized, err := json.Marshal(raw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pk := fmt.Sprintf("%s:%s", resource.GetResourceBasicID().String(), resource.GetResourceTypeID().Name())
+
+	primaryKeys := []string{pk}
+	primaryVecs := [][]float32{{math.Pi}}
+	resourceIds := []string{resource.GetResourceBasicID().String()}
+	resourceKinds := []string{resource.GetResourceTypeID().Name()}
+	resourceVersions := []int64{int64(resource.GetResourceVersion())}
+	resourceNamespaces := []string{resource.GetResourceMetadata().Namespace}
+	resourcesData := []string{string(serialized)}
+
+	columns := []entity.Column{
+		entity.NewColumnVarChar("_pk", primaryKeys),
+		entity.NewColumnFloatVector("_vec", 1, primaryVecs),
+		entity.NewColumnVarChar("id", resourceIds),
+		entity.NewColumnVarChar("kind", resourceKinds),
+		entity.NewColumnInt64("version", resourceVersions),
+		entity.NewColumnVarChar("namespace", resourceNamespaces),
+		entity.NewColumnVarChar("data", resourcesData),
+	}
+
+	_, err = s.db.Insert(ctx, "forddb", "_default", columns...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resource, nil
+}
+
+func (s *Storage) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) Close() error {
+	return s.db.Close()
 }

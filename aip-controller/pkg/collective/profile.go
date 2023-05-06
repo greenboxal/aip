@@ -9,7 +9,7 @@ type ProfileID struct {
 }
 
 type Profile struct {
-	forddb2.ResourceMetadata[ProfileID, *Profile] `json:"metadata"`
+	forddb2.ResourceBase[ProfileID, *Profile] `json:"metadata"`
 
 	Spec ProfileSpec `json:"spec"`
 

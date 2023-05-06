@@ -1,15 +1,13 @@
 package forddb
 
 type BasicResource interface {
-	IResourceMetadata
+	ResourceMetadata
 
-	GetMetadata() *BasicResourceMetadata
-
-	onBeforeSerialize()
+	OnBeforeSave(self BasicResource)
 }
 
 type Resource[ID BasicResourceID] interface {
 	BasicResource
 
-	GetID() ID
+	GetResourceID() ID
 }

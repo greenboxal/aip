@@ -17,7 +17,7 @@ type Document interface {
 }
 
 type DocumentBase[T Document] struct {
-	forddb2.ResourceMetadata[DocumentID, Document]
+	forddb2.ResourceBase[DocumentID, Document]
 
 	node *documentNode
 }

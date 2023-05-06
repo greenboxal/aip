@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
 
@@ -15,18 +15,18 @@ type resourceSlot struct {
 	cond *sync.Cond
 
 	table *resourceTable
-	id    forddb2.BasicResourceID
+	id    forddb.BasicResourceID
 
 	isPinned bool
 	hasValue bool
 
 	lastRecord logstore.LogEntryRecord
-	encoded    forddb2.RawResource
-	value      forddb2.BasicResource
+	encoded    forddb.RawResource
+	value      forddb.BasicResource
 	err        error
 }
 
-func newResourceSlot(table *resourceTable, id forddb2.BasicResourceID) *resourceSlot {
+func newResourceSlot(table *resourceTable, id forddb.BasicResourceID) *resourceSlot {
 	rs := &resourceSlot{
 		table: table,
 		id:    id,
@@ -37,7 +37,7 @@ func newResourceSlot(table *resourceTable, id forddb2.BasicResourceID) *resource
 	return rs
 }
 
-func (rs *resourceSlot) Get(ctx context.Context) (forddb2.BasicResource, error) {
+func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
 	raw, res, err := rs.doGet(ctx, true, true, false)
 
 	if err != nil {
@@ -49,10 +49,10 @@ func (rs *resourceSlot) Get(ctx context.Context) (forddb2.BasicResource, error) 
 	}
 
 	if raw == nil {
-		return nil, forddb2.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
-	return forddb2.Decode(raw)
+	return forddb.Decode(raw)
 }
 
 func (rs *resourceSlot) doGet(
@@ -60,7 +60,7 @@ func (rs *resourceSlot) doGet(
 	lock bool,
 	wait bool,
 	decode bool,
-) (raw forddb2.RawResource, res forddb2.BasicResource, err error) {
+) (raw forddb.RawResource, res forddb.BasicResource, err error) {
 	if lock {
 		rs.m.RLock()
 		defer rs.m.RUnlock()
@@ -77,7 +77,7 @@ func (rs *resourceSlot) doGet(
 	}
 
 	if !rs.hasValue {
-		return nil, nil, forddb2.ErrNotFound
+		return nil, nil, forddb.ErrNotFound
 	}
 
 	if rs.table.typ.Type().IsRuntimeOnly() {
@@ -86,7 +86,7 @@ func (rs *resourceSlot) doGet(
 		raw = rs.encoded
 
 		if decode {
-			res, err = forddb2.Decode(rs.encoded)
+			res, err = forddb.Decode(rs.encoded)
 
 			if err != nil {
 				return
@@ -99,9 +99,9 @@ func (rs *resourceSlot) doGet(
 
 func (rs *resourceSlot) Update(
 	ctx context.Context,
-	resource forddb2.BasicResource,
-	opts forddb2.PutOptions,
-) (forddb2.BasicResource, error) {
+	resource forddb.BasicResource,
+	opts forddb.PutOptions,
+) (forddb.BasicResource, error) {
 	_, current, changed, err := rs.doUpdate(ctx, resource, opts)
 
 	if err != nil {
@@ -117,15 +117,17 @@ func (rs *resourceSlot) Update(
 
 func (rs *resourceSlot) doUpdate(
 	ctx context.Context,
-	resource forddb2.BasicResource,
-	opts forddb2.PutOptions,
-) (forddb2.BasicResource, forddb2.BasicResource, bool, error) {
+	resource forddb.BasicResource,
+	opts forddb.PutOptions,
+) (forddb.BasicResource, forddb.BasicResource, bool, error) {
+	resource.OnBeforeSave(resource)
+
 	rs.cond.L.Lock()
 	defer rs.cond.L.Unlock()
 
 	_, current, err := rs.doGet(ctx, false, false, true)
 
-	if err == forddb2.ErrNotFound {
+	if err == forddb.ErrNotFound {
 		current = nil
 	} else if err != nil {
 		return nil, nil, false, err
@@ -137,22 +139,22 @@ func (rs *resourceSlot) doUpdate(
 		}
 
 		switch opts.OnConflict {
-		case forddb2.OnConflictError:
-			return current, nil, false, forddb2.ErrVersionMismatch
-		case forddb2.OnConflictOptimistic:
-			if current.GetVersion() != resource.GetVersion() {
-				return current, nil, false, forddb2.ErrVersionMismatch
+		case forddb.OnConflictError:
+			return current, nil, false, forddb.ErrVersionMismatch
+		case forddb.OnConflictOptimistic:
+			if current.GetResourceVersion() != resource.GetResourceVersion() {
+				return current, nil, false, forddb.ErrVersionMismatch
 			}
-		case forddb2.OnConflictLatestWins:
-			if current.GetVersion() >= resource.GetVersion() {
+		case forddb.OnConflictLatestWins:
+			if current.GetResourceVersion() >= resource.GetResourceVersion() {
 				return current, current, false, nil
 			}
-		case forddb2.OnConflictReplace:
+		case forddb.OnConflictReplace:
 			// Nothing
 		}
 	}
 
-	meta := resource.GetMetadata()
+	meta := resource.GetResourceMetadata()
 
 	meta.Version += 1
 	meta.UpdatedAt = time.Now()
@@ -164,7 +166,7 @@ func (rs *resourceSlot) doUpdate(
 	if rs.table.typ.Type().IsRuntimeOnly() {
 		rs.value = resource
 	} else {
-		encoded, err := forddb2.Encode(resource)
+		encoded, err := forddb.Encode(resource)
 
 		if err != nil {
 			return nil, nil, false, err
@@ -197,7 +199,7 @@ func (rs *resourceSlot) doUpdate(
 	return current, resource, true, nil
 }
 
-func (rs *resourceSlot) Delete(ctx context.Context) (forddb2.BasicResource, error) {
+func (rs *resourceSlot) Delete(ctx context.Context) (forddb.BasicResource, error) {
 	previous, _, err := rs.doDelete(ctx)
 
 	if err != nil {
@@ -207,7 +209,7 @@ func (rs *resourceSlot) Delete(ctx context.Context) (forddb2.BasicResource, erro
 	return previous, nil
 }
 
-func (rs *resourceSlot) doDelete(ctx context.Context) (forddb2.BasicResource, bool, error) {
+func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, bool, error) {
 	rs.cond.L.Lock()
 	defer rs.cond.L.Unlock()
 
@@ -222,7 +224,7 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb2.BasicResource, bo
 			Kind:           logstore.LogEntryKindDelete,
 			Type:           rs.table.typ,
 			ID:             rs.id,
-			Version:        value.GetVersion(),
+			Version:        value.GetResourceVersion(),
 			CurrentCid:     nil,
 			PreviousCid:    nil,
 			Previous:       raw,

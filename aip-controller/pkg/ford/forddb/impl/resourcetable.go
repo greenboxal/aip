@@ -37,7 +37,7 @@ func newResourceTable(db *database, typ forddb2.ResourceTypeID) (*resourceTable,
 		//KeyToHash: func(key interface{}) (uint64, uint64) {
 		//	id := key.(forddb.BasicResourceID)
 
-		//	th := id.BasicResourceType().GetResourceID().Hash64()
+		//	th := id.BasicResourceType().GetResourceBasicID().Hash64()
 		//	ih := id.Hash64()
 
 		//	return th, ih

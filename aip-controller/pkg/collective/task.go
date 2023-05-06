@@ -9,7 +9,7 @@ type TaskID struct {
 }
 
 type Task struct {
-	forddb2.ResourceMetadata[TaskID, *Task] `json:"metadata"`
+	forddb2.ResourceBase[TaskID, *Task] `json:"metadata"`
 
 	Spec   TaskSpec   `json:"spec"`
 	Status TaskStatus `json:"status"`

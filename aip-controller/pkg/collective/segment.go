@@ -16,7 +16,7 @@ type MemorySegmentID struct {
 }
 
 type MemorySegment struct {
-	forddb2.ResourceMetadata[MemorySegmentID, *MemorySegment] `json:"metadata"`
+	forddb2.ResourceBase[MemorySegmentID, *MemorySegment] `json:"metadata"`
 
 	Memories []Memory
 }

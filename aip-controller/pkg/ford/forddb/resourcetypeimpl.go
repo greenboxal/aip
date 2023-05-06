@@ -15,6 +15,8 @@ func newResourceType[ID ResourceID[T], T Resource[ID]](name string) *resourceTyp
 	idTyp := DerefType[ID]()
 	resourceTyp := DerefType[T]()
 
+	rt.name = ResourceTypeNameFromSingular(name)
+
 	rt.idType = newBasicType(
 		KindId,
 		idTemplate.PrimitiveKind(),
@@ -39,9 +41,14 @@ type resourceTypeImpl[ID ResourceID[T], T Resource[ID]] struct {
 
 	m sync.Mutex
 
+	name         ResourceTypeName
 	idType       BasicType
 	idSchemaType schema.Type
 	idPrototype  schema.TypedPrototype
+}
+
+func (rt *resourceTypeImpl[ID, T]) ResourceName() ResourceTypeName {
+	return rt.name
 }
 
 func (rt *resourceTypeImpl[ID, T]) CreateID(name string) BasicResourceID {

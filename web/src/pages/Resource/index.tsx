@@ -11,7 +11,6 @@ const GET_AGENTS = gql(`
     }
 `)
 
-
 export const ResourcesPage = () => {
     const { loading, error, data } = useQuery(GET_AGENTS);
 

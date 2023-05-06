@@ -1,17 +1,21 @@
 package forddb
 
 import (
-	"reflect"
+	"encoding/json"
 	"time"
+
+	"github.com/multiformats/go-multibase"
+	"github.com/multiformats/go-multihash"
 )
 
-type IResourceMetadata interface {
-	GetResourceID() BasicResourceID
-	GetType() ResourceTypeID
-	GetVersion() uint64
+type ResourceMetadata interface {
+	GetResourceMetadata() *Metadata
+	GetResourceBasicID() BasicResourceID
+	GetResourceTypeID() ResourceTypeID
+	GetResourceVersion() uint64
 }
 
-type BasicResourceMetadata struct {
+type Metadata struct {
 	Kind      ResourceTypeID `json:"kind"`
 	Namespace string         `json:"namespace"`
 	Name      string         `json:"name"`
@@ -20,31 +24,70 @@ type BasicResourceMetadata struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 }
 
-func (r *BasicResourceMetadata) GetVersion() uint64 { return r.Version }
+func (r *Metadata) GetResourceMetadata() *Metadata { return r }
 
-type ResourceMetadata[ID ResourceID[T], T Resource[ID]] struct {
-	BasicResourceMetadata
-
+type ResourceBase[ID ResourceID[T], T Resource[ID]] struct {
 	ID ID `json:"id"`
+	Metadata
 }
 
-func (r *ResourceMetadata[ID, T]) GetResourceID() BasicResourceID { return r.ID }
-func (r *ResourceMetadata[ID, T]) GetID() ID                      { return r.ID }
+func (r *ResourceBase[ID, T]) GetResourceMetadata() *Metadata      { return &r.Metadata }
+func (r *ResourceBase[ID, T]) GetResourceID() ID                   { return r.ID }
+func (r *ResourceBase[ID, T]) GetResourceBasicID() BasicResourceID { return r.ID }
+func (r *ResourceBase[ID, T]) GetResourceVersion() uint64          { return r.Version }
 
-func (r *ResourceMetadata[ID, T]) GetMetadata() *BasicResourceMetadata {
-	return &r.BasicResourceMetadata
+func (r *ResourceBase[ID, T]) GetResourceTypeID() ResourceTypeID {
+	return r.ID.BasicResourceType().GetResourceID()
 }
 
-func (r *ResourceMetadata[ID, T]) GetType() ResourceTypeID {
-	t := TypeSystem().LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
+func (r *ResourceBase[ID, T]) GetResourceType() ResourceType[ID, T] {
+	return r.ID.BasicResourceType().(ResourceType[ID, T])
+}
 
-	if t == nil {
-		panic("resource type not found")
+func (r *ResourceBase[ID, T]) OnBeforeSave(self BasicResource) {
+	r.Kind = self.GetResourceTypeID()
+}
+
+type BasicContentAddressedResource interface {
+	GetContentAddressableRoot() any
+}
+
+type ContentAddressedResource[ID BasicResourceID] interface {
+	Resource[ID]
+
+	BasicContentAddressedResource
+}
+
+type ContentAddressedResourceBase[ID ResourceID[T], T ContentAddressedResource[ID]] struct {
+	ResourceBase[ID, T]
+}
+
+func (r *ContentAddressedResourceBase[ID, T]) OnBeforeSave(self BasicResource) {
+	car := self.(BasicContentAddressedResource)
+
+	r.ID = CreateContentAddressableID[ID](car.GetContentAddressableRoot())
+
+	r.ResourceBase.OnBeforeSave(self)
+}
+
+func CreateContentAddressableID[ID BasicResourceID](spec any) ID {
+	data, err := json.Marshal(spec)
+
+	if err != nil {
+		panic(err)
 	}
 
-	return t.GetID()
-}
+	h, err := multihash.Sum(data, multihash.SHA1, -1)
 
-func (r *ResourceMetadata[ID, T]) onBeforeSerialize() {
-	r.Kind = r.GetType()
+	if err != nil {
+		panic(err)
+	}
+
+	b, err := multibase.Encode(multibase.Base36, h)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return NewStringID[ID](b)
 }

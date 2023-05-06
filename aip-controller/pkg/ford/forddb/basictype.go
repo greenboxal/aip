@@ -15,7 +15,7 @@ import (
 )
 
 type basicTypeImpl struct {
-	ResourceMetadata[ResourceTypeID, BasicResourceType] `json:"metadata"`
+	ResourceBase[ResourceTypeID, BasicResourceType] `json:"metadata"`
 
 	kind          Kind
 	primitiveKind PrimitiveKind
@@ -43,8 +43,8 @@ func newBasicType(
 ) *basicTypeImpl {
 	t := &basicTypeImpl{}
 
-	t.ResourceMetadata.ID = NewStringID[ResourceTypeID](name)
-	t.ResourceMetadata.Name = name
+	t.ResourceBase.ID = NewStringID[ResourceTypeID](name)
+	t.ResourceBase.Name = name
 
 	t.kind = kind
 	t.primitiveKind = primitiveKind
@@ -57,8 +57,8 @@ func newBasicType(
 }
 
 func (bt *basicTypeImpl) TypeSystem() *ResourceTypeSystem    { return bt.universe }
-func (bt *basicTypeImpl) GetID() ResourceTypeID              { return bt.ResourceMetadata.ID }
-func (bt *basicTypeImpl) Name() string                       { return bt.ResourceMetadata.Name }
+func (bt *basicTypeImpl) GetResourceID() ResourceTypeID      { return bt.ResourceBase.ID }
+func (bt *basicTypeImpl) Name() string                       { return bt.ResourceBase.Name }
 func (bt *basicTypeImpl) Kind() Kind                         { return bt.kind }
 func (bt *basicTypeImpl) PrimitiveKind() PrimitiveKind       { return bt.primitiveKind }
 func (bt *basicTypeImpl) RuntimeType() reflect.Type          { return bt.typ }
@@ -103,47 +103,67 @@ func (bt *basicTypeImpl) SchemaLinkPrototype() ipld.LinkPrototype {
 }
 
 func (bt *basicTypeImpl) Initialize(ts *ResourceTypeSystem, options ...nodebinder.Option) {
+	var walkFields func(typ reflect.Type, indexBase []int)
+
 	bt.universe = ts
 
-	if bt.typ.Kind() == reflect.Struct {
-		for i := 0; i < bt.typ.NumField(); i++ {
-			f := bt.typ.Field(i)
+	walkFields = func(typ reflect.Type, indexBase []int) {
+		for i := 0; i < typ.NumField(); i++ {
+			f := typ.Field(i)
+
+			nestedF := f
+			nestedF.Index = append([]int{}, indexBase...)
+			nestedF.Index = append([]int{}, f.Index...)
 
 			if !f.IsExported() {
 				continue
 			}
 
 			fieldName := f.Name
-			fieldType := TypeSystem().LookupByType(f.Type)
-
-			if fieldType == nil {
-				fieldType = TypeSystem().LookupByType(f.Type)
-				panic("field type not found")
-			}
+			taggedName := ""
 
 			tag, ok := f.Tag.Lookup("json")
 
-			if !ok {
+			if !ok && !f.Anonymous {
 				continue
 			}
 
-			tagParts := strings.Split(tag, ",")
-			fieldName = tagParts[0]
+			if tag == "-" {
+				continue
+			}
 
-			if f.Anonymous {
-				fieldStructType := fieldType.(*basicTypeImpl)
+			if tag != "" {
+				parts := strings.Split(tag, ",")
+				taggedName = parts[0]
+				fieldName = taggedName
+			}
 
-				for _, field := range fieldStructType.fields {
-					bt.fields = append(bt.fields, field)
-					bt.fieldMap[field.Name()] = field
-				}
+			actualType := f.Type
+
+			for actualType.Kind() == reflect.Ptr {
+				actualType = actualType.Elem()
+			}
+
+			if f.Anonymous && actualType.Kind() == reflect.Struct && taggedName == "" {
+				walkFields(f.Type, nestedF.Index)
 			} else {
+				fieldType := TypeSystem().LookupByType(f.Type)
+
+				if fieldType == nil {
+					TypeSystem().LookupByType(f.Type)
+					panic("field type not found")
+				}
+
 				field := NewReflectedField(fieldName, bt, fieldType, f)
 
 				bt.fields = append(bt.fields, field)
 				bt.fieldMap[field.Name()] = field
 			}
 		}
+	}
+
+	if bt.typ.Kind() == reflect.Struct {
+		walkFields(bt.typ, nil)
 	}
 
 	//if !bt.isRuntimeOnly {

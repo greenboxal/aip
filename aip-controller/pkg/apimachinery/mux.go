@@ -23,6 +23,7 @@ func NewRootMux() *RootMux {
 	mux.Use(middleware.RealIP)
 	mux.Use(middleware.Logger)
 	mux.Use(middleware.Recoverer)
+	mux.Use(middleware.StripSlashes)
 	mux.Use(cors.AllowAll().Handler)
 	mux.Use(middleware.AllowContentEncoding("gzip"))
 	mux.Use(middleware.Heartbeat("/ping"))

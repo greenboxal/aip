@@ -17,7 +17,11 @@
     "@fullcalendar/react": "^6.1.6",
     "@graphql-codegen/cli": "^3.3.1",
     "@graphql-codegen/client-preset": "^3.0.1",
+    "@mui/material": "^5.12.3",
+    "@mui/x-data-grid-premium": "^6.3.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
+    "@react-admin/ra-markdown": "^4.1.5",
+    "@react-admin/ra-navigation": "^4.4.3",
     "@svgr/webpack": "^5.5.0",
     "@tanstack/react-table": "^8.9.0",
     "@testing-library/jest-dom": "^5.16.5",
@@ -46,7 +50,7 @@
     "file-loader": "^6.2.0",
     "framer-motion": "^10.12.6",
     "fs-extra": "^10.0.0",
-    "graphql": "^16.6.0",
+    "graphql": "^15.6.0",
     "html-webpack-plugin": "^5.5.0",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^27.4.3",
@@ -60,7 +64,11 @@
     "postcss-normalize": "^10.0.1",
     "postcss-preset-env": "^7.0.1",
     "prompts": "^2.4.2",
+    "ra-data-graphql": "^4.10.1",
+    "ra-data-graphql-simple": "^4.10.1",
+    "ra-data-json-server": "^4.10.2",
     "react": "^18.2.0",
+    "react-admin": "^4.10.2",
     "react-apexcharts": "^1.4.0",
     "react-app-polyfill": "^3.0.0",
     "react-calendar": "^4.2.1",
@@ -76,12 +84,14 @@
     "react-router": "^6.11.0",
     "react-router-dom": "^6.11.0",
     "react-to-print": "^2.14.12",
+    "recoil": "^0.7.7",
     "resolve": "^1.20.0",
     "resolve-url-loader": "^4.0.0",
     "sass-loader": "^12.3.0",
     "semver": "^7.3.5",
     "source-map-loader": "^3.0.0",
     "style-loader": "^3.3.1",
+    "styled-components": "^5.3.10",
     "tailwindcss": "^3.0.2",
     "terser-webpack-plugin": "^5.2.5",
     "typescript": "^4.9.5",
@@ -159,5 +169,8 @@
     "presets": [
       "react-app"
     ]
+  },
+  "devDependencies": {
+    "@types/styled-components": "^5.1.26"
   }
 }

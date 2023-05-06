@@ -1,15 +1,15 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type AgentID struct {
-	forddb2.StringResourceID[*Agent]
+	forddb.StringResourceID[*Agent]
 }
 
 type Agent struct {
-	forddb2.ResourceMetadata[AgentID, *Agent] `json:"metadata"`
+	forddb.ResourceBase[AgentID, *Agent] `json:"metadata"`
 
 	Spec   AgentSpec   `json:"spec"`
 	Status AgentStatus `json:"status"`

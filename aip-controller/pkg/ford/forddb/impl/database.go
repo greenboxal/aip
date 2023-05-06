@@ -85,7 +85,7 @@ func (db *database) Get(ctx context.Context, typ forddb2.ResourceTypeID, id ford
 
 func (db *database) Put(ctx context.Context, resource forddb2.BasicResource, options ...forddb2.PutOption) (forddb2.BasicResource, error) {
 	opts := forddb2.NewPutOptions(options...)
-	slot := db.GetSlot(resource.GetType(), resource.GetResourceID(), true)
+	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
 	if slot == nil {
 		return nil, forddb2.ErrNotFound
@@ -95,7 +95,7 @@ func (db *database) Put(ctx context.Context, resource forddb2.BasicResource, opt
 }
 
 func (db *database) Delete(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
-	slot := db.GetSlot(resource.GetType(), resource.GetResourceID(), true)
+	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
 	if slot == nil {
 		return nil, forddb2.ErrNotFound

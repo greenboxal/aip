@@ -1,4 +1,4 @@
-package wiki
+package generators
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"

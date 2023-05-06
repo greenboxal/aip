@@ -3,8 +3,6 @@ package apimachinery
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/fx"
 )
 
@@ -31,14 +29,13 @@ type HttpServiceMount interface {
 }
 
 func (m *httpServiceMount[T]) Install(mux *RootMux) {
+	handler := m.Handler
+
 	if m.Options.StripPrefix {
-		mux.Route(m.Path, func(r chi.Router) {
-			r.Use(middleware.PathRewrite(m.Path, ""))
-			r.Mount("/", m.Handler)
-		})
-	} else {
-		mux.Mount(m.Path, m.Handler)
+		handler = http.StripPrefix(m.Path, handler)
 	}
+
+	mux.Mount(m.Path, handler)
 }
 
 func NewMountOptions(opts ...MountOption) MountOptions {

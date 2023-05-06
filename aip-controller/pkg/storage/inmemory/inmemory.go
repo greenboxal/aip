@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective"
 	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
@@ -14,6 +15,21 @@ type InMemoryDatabase struct {
 
 	m         sync.RWMutex
 	resources map[forddb2.ResourceTypeID]*resourceTable
+}
+
+func (db *InMemoryDatabase) AppendSegment(ctx context.Context, segment *collective.MemorySegment) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (db *InMemoryDatabase) GetSegment(ctx context.Context, id collective.MemorySegmentID) (*collective.MemorySegment, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (db *InMemoryDatabase) GetMemory(ctx context.Context, id collective.MemoryID) (*collective.Memory, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (db *InMemoryDatabase) Close() error {
@@ -56,7 +72,7 @@ func (db *InMemoryDatabase) Get(ctx context.Context, typ forddb2.ResourceTypeID,
 }
 
 func (db *InMemoryDatabase) Put(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
-	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
+	slot := db.getSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true, false)
 
 	if slot == nil {
 		return nil, forddb2.ErrNotFound
@@ -66,7 +82,7 @@ func (db *InMemoryDatabase) Put(ctx context.Context, resource forddb2.BasicResou
 }
 
 func (db *InMemoryDatabase) Delete(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
-	slot := db.getSlot(resource.GetType(), resource.GetResourceID(), true, false)
+	slot := db.getSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true, false)
 
 	if slot == nil {
 		return nil, forddb2.ErrNotFound
@@ -236,7 +252,7 @@ func (s *resourceSlot) doUpdate(resource forddb2.BasicResource) (forddb2.BasicRe
 	}
 
 	if current != nil {
-		if current.GetVersion() != resource.GetVersion() {
+		if current.GetResourceVersion() != resource.GetResourceVersion() {
 			return nil, nil, false, forddb2.ErrVersionMismatch
 		}
 
@@ -247,7 +263,7 @@ func (s *resourceSlot) doUpdate(resource forddb2.BasicResource) (forddb2.BasicRe
 		}
 	}
 
-	meta := resource.GetMetadata()
+	meta := resource.GetResourceMetadata()
 
 	meta.Version += 1
 	meta.UpdatedAt = time.Now()

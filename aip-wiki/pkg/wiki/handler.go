@@ -7,33 +7,39 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms"
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
+	"github.com/greenboxal/aip/aip-wiki/public"
 )
 
 type Router struct {
 	chi.Router
 
+	pm   *cms.PageManager
 	wiki *Wiki
 }
 
-func NewRouter(wiki *Wiki) *Router {
+func NewRouter(wiki *Wiki, pm *cms.PageManager) *Router {
 	r := &Router{}
+	r.pm = pm
 	r.wiki = wiki
 	r.Router = chi.NewRouter()
 
-	r.NotFound(r.handlePage)
+	assets := http.FileServer(http.FS(public.Content()))
+
+	r.Handle("/assets/", assets)
+	r.NotFound(r.handle)
 
 	return r
 }
 
 var SanitizePageSlugRegex = regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
 
-func (r *Router) handlePage(writer http.ResponseWriter, request *http.Request) {
-	var pageSettings PageSettings
-	var siteSettings SiteSettings
-	var imageSettings ImageSettings
+func (r *Router) getPageSettings(request *http.Request) (models.PageSpec, error) {
+	var pageSettings models.PageSpec
+	var siteSettings generators.SiteSettings
 
 	url := request.URL
 	host := request.Header.Get("Host")
@@ -63,61 +69,60 @@ func (r *Router) handlePage(writer http.ResponseWriter, request *http.Request) {
 		}
 	}
 
+	return pageSettings, nil
+}
+
+func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
+	url := request.URL
 	extension := path.Ext(url.Path)
 	isImage := false
 
+	pageSpec, err := r.getPageSettings(request)
+
+	if err != nil {
+		panic(err)
+	}
+
 	switch extension {
 	case ".txt":
-		pageSettings.Format = "text/plain"
+		pageSpec.Format = "text/plain"
 	case ".md":
-		pageSettings.Format = "text/markdown"
+		pageSpec.Format = "text/markdown"
 	case ".html":
-		pageSettings.Format = "text/html"
+		pageSpec.Format = "text/html"
 	case ".jpg", ".png", ".gif", ".svg", ".ico", ".webp", ".bmp", ".tiff", ".tif":
-		pageSettings.Format = "HTML"
+		pageSpec.Format = "HTML"
 		isImage = true
 	default:
 		if url.Query().Has("format") {
-			pageSettings.Format = url.Query().Get("format")
+			pageSpec.Format = url.Query().Get("format")
 		} else {
-			pageSettings.Format = "text/html"
+			pageSpec.Format = "text/html"
 		}
 	}
 
 	if isImage {
-		imageSettings.Path = url.Path
+		spec := models.ImageSpec{
+			Path: path.Join(url.Path, url.RawQuery),
+		}
 
-		imageUrl, err := r.wiki.GetImage(request.Context(), siteSettings, pageSettings, imageSettings)
+		imageUrl, err := r.pm.GetImage(request.Context(), spec)
 
 		if err != nil {
 			panic(err)
 		}
 
-		writer.Header().Set("Location", imageUrl)
+		writer.Header().Set("Location", imageUrl.Status.URL)
 		writer.WriteHeader(http.StatusMovedPermanently)
 	} else {
-		pageContents, err := r.wiki.GetPage(request.Context(), siteSettings, pageSettings)
+		pageContents, err := r.pm.GetPage(request.Context(), pageSpec)
 
 		if err != nil {
 			panic(err)
 		}
 
-		writer.Header().Set("Content-Type", pageSettings.Format)
+		writer.Header().Set("Content-Type", pageSpec.Format+";charset=UTF-8")
 		writer.WriteHeader(http.StatusOK)
-		writer.Write(pageContents)
+		writer.Write([]byte(pageContents.Status.HTML))
 	}
-}
-
-func mdToHTML(md []byte) []byte {
-	// create markdown parser with extensions
-	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
-	p := parser.NewWithExtensions(extensions)
-	doc := p.Parse(md)
-
-	// create HTML renderer with extensions
-	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
-	renderer := html.NewRenderer(opts)
-
-	return markdown.Render(doc, renderer)
 }

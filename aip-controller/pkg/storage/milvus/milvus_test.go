@@ -26,13 +26,13 @@ func TestMilvusStorage(t *testing.T) {
 	require.Nil(t, err)
 
 	err = milvus.AppendSegment(ctx, &collective2.MemorySegment{
-		ResourceMetadata: forddb.ResourceMetadata[collective2.MemorySegmentID, *collective2.MemorySegment]{
+		ResourceBase: forddb.ResourceBase[collective2.MemorySegmentID, *collective2.MemorySegment]{
 			ID: collective2.MemorySegmentID{"head"},
 		},
 
 		Memories: []collective2.Memory{
 			{
-				ResourceMetadata: forddb.ResourceMetadata[collective2.MemoryID, *collective2.Memory]{
+				ResourceBase: forddb.ResourceBase[collective2.MemoryID, *collective2.Memory]{
 					ID: collective2.MemoryID{"head"},
 				},
 

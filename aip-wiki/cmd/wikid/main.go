@@ -21,13 +21,14 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
-	"github.com/greenboxal/aip/aip-controller/pkg/storage/inmemory"
 	"github.com/greenboxal/aip/aip-controller/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
 
 func main() {
-	app := fx.New(
+	var app *fx.App
+
+	app = fx.New(
 		BuildLogging(),
 
 		config.Module,
@@ -41,10 +42,6 @@ func main() {
 		daemon.Module,
 		wiki.Module,
 
-		inmemory.WithInMemoryDatabase(),
-		//badger.WithBadgerStorage(),
-		//memgraph.WithMemgraphStorage(),
-		//ipfs.WithIpfsStorage(),
 		milvus.WithMilvusStorage(),
 
 		fx.Invoke(func(db forddb.Database, _api *apimachinery.Server) error {
@@ -53,23 +50,25 @@ func main() {
 
 		fx.Invoke(func(logger *zap.SugaredLogger) {
 			logger.Info("I'm alive.")
+
+			go func() {
+				signalCh := make(chan os.Signal, 1)
+
+				signal.Notify(signalCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+				<-signalCh
+
+				logger.Info("Stopping application")
+
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+
+				if err := app.Stop(shutdownCtx); err != nil {
+					panic(err)
+				}
+			}()
 		}),
 	)
-
-	go func() {
-		signalCh := make(chan os.Signal, 1)
-
-		signal.Notify(signalCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-		<-signalCh
-
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if err := app.Stop(shutdownCtx); err != nil {
-			panic(err)
-		}
-	}()
 
 	app.Run()
 }
@@ -86,8 +85,8 @@ func BuildLogging() fx.Option {
 
 		fx.WithLogger(func(l *zap.Logger) fxevent.Logger {
 			zl := &fxevent.ZapLogger{Logger: l}
-			//zl.UseLogLevel(-2)
-			//zl.UseErrorLevel(zap.ErrorLevel)
+			zl.UseLogLevel(-2)
+			zl.UseErrorLevel(zap.ErrorLevel)
 			return zl
 		}),
 	)

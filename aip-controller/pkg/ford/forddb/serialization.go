@@ -16,7 +16,7 @@ func Clone[T BasicResource](resource T) T {
 
 func CloneResource(resource BasicResource) BasicResource {
 	rawResource := smapping.MapTags(resource, "json")
-	cloned := resource.GetType().Type().CreateInstance()
+	cloned := resource.GetResourceTypeID().Type().CreateInstance()
 
 	if err := smapping.FillStruct(cloned, rawResource); err != nil {
 		panic(err)
@@ -38,7 +38,7 @@ func Encode(resource BasicResource) (RawResource, error) {
 		return nil, err
 	}
 
-	rawResource["kind"] = resource.GetType().Name()
+	rawResource["kind"] = resource.GetResourceTypeID().Name()
 
 	return rawResource, nil
 }

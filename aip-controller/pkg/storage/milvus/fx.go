@@ -3,6 +3,7 @@ package milvus
 import (
 	"go.uber.org/fx"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/indexing"
 )
 
@@ -17,6 +18,10 @@ func WithMilvusStorage() fx.Option {
 		Module,
 
 		fx.Provide(func(s *Storage) indexing.MemoryStorage {
+			return s
+		}),
+
+		fx.Provide(func(s *Storage) forddb.Storage {
 			return s
 		}),
 	)

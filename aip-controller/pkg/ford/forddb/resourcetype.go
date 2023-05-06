@@ -3,6 +3,8 @@ package forddb
 type BasicResourceType interface {
 	BasicType
 
+	ResourceName() ResourceTypeName
+
 	IDType() BasicType
 	ResourceType() BasicType
 

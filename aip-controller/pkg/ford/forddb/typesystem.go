@@ -82,7 +82,13 @@ func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 	rts.typeMap[t.RuntimeType()] = t
 
 	if t, ok := t.(BasicResourceType); ok {
-		rts.resourceTypes[t.GetID()] = t
+		if existing, ok := rts.idTypeMap[t.IDType().RuntimeType()]; ok {
+			if existing != t {
+				panic("duplicate resource type ID type")
+			}
+		}
+
+		rts.resourceTypes[t.GetResourceID()] = t
 		rts.resourceTypeMap[t.RuntimeType()] = t
 		rts.idTypeMap[t.IDType().RuntimeType()] = t
 	}

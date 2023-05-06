@@ -68,5 +68,5 @@ func (of *objectFetcher) fetchResource(
 	storage forddb2.Storage,
 	id forddb2.BasicResourceID,
 ) (forddb2.BasicResource, error) {
-	return storage.Get(ctx, id.BasicResourceType().GetID(), id)
+	return storage.Get(ctx, id.BasicResourceType().GetResourceID(), id)
 }

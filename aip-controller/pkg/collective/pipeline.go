@@ -17,7 +17,7 @@ type PipelineSpec struct {
 }
 
 type Pipeline struct {
-	forddb2.ResourceMetadata[PipelineID, *Pipeline] `json:"metadata"`
+	forddb2.ResourceBase[PipelineID, *Pipeline] `json:"metadata"`
 
 	Spec PipelineSpec `json:"spec"`
 }
@@ -33,7 +33,7 @@ func (p *Pipeline) GetStage(id StageID) *Stage {
 }
 
 type Stage struct {
-	forddb2.ResourceMetadata[StageID, *Stage] `json:"metadata"`
+	forddb2.ResourceBase[StageID, *Stage] `json:"metadata"`
 
 	ID           StageID   `json:"id"`
 	AssignedTeam string    `json:"assigned_team"`

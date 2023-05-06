@@ -13,7 +13,7 @@ type PortBindingID struct {
 }
 
 type Port struct {
-	forddb2.ResourceMetadata[PortID, *Port] `json:"metadata"`
+	forddb2.ResourceBase[PortID, *Port] `json:"metadata"`
 
 	Spec   PortSpec   `json:"spec"`
 	Status PortStatus `json:"status"`
@@ -36,7 +36,7 @@ type PortStatus struct {
 }
 
 type PortBinding struct {
-	forddb2.ResourceMetadata[PortBindingID, *PortBinding] `json:"metadata"`
+	forddb2.ResourceBase[PortBindingID, *PortBinding] `json:"metadata"`
 
 	Spec   PortBindingSpec   `json:"spec"`
 	Status PortBindingStatus `json:"status"`

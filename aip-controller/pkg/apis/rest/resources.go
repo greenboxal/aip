@@ -40,7 +40,7 @@ func (a *ResourcesAPI) ListResource(writer http.ResponseWriter, request *http.Re
 		return
 	}
 
-	resources, err := a.db.List(ctx, resourceType.GetID())
+	resources, err := a.db.List(ctx, resourceType.GetResourceID())
 
 	if err != nil {
 		panic(err)
@@ -69,7 +69,7 @@ func (a *ResourcesAPI) GetResource(writer http.ResponseWriter, request *http.Req
 	}
 
 	resourceId := resourceType.CreateID(resourceIdName)
-	resource, err := a.db.Get(ctx, resourceType.GetID(), resourceId)
+	resource, err := a.db.Get(ctx, resourceType.GetResourceID(), resourceId)
 
 	if err != nil {
 		panic(err)
@@ -114,7 +114,7 @@ func (a *ResourcesAPI) CreateOrUpdateResource(writer http.ResponseWriter, reques
 		panic(err)
 	}
 
-	if resource.GetResourceID() != resourceId {
+	if resource.GetResourceBasicID() != resourceId {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -151,7 +151,7 @@ func (a *ResourcesAPI) DeleteResource(writer http.ResponseWriter, request *http.
 	}
 
 	resourceId := resourceType.CreateID(resourceIdName)
-	resource, err := a.db.Get(ctx, resourceType.GetID(), resourceId)
+	resource, err := a.db.Get(ctx, resourceType.GetResourceID(), resourceId)
 
 	if err != nil {
 		panic(err)

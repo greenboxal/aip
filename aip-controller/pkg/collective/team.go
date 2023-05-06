@@ -9,7 +9,7 @@ type TeamID struct {
 }
 
 type Team struct {
-	forddb2.ResourceMetadata[TeamID, *Team] `json:"metadata"`
+	forddb2.ResourceBase[TeamID, *Team] `json:"metadata"`
 
 	Spec TeamSpec `json:"spec"`
 }

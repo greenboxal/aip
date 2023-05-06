@@ -28,7 +28,7 @@ func Put[T BasicResource](db Database, id T) (def T, _ error) {
 
 func Get[T BasicResource](db Database, id ResourceID[T]) (def T, _ error) {
 	typ := TypeSystem().LookupByIDType(reflect.TypeOf(id))
-	resource, err := db.Get(context.TODO(), typ.GetID(), id)
+	resource, err := db.Get(context.TODO(), typ.GetResourceID(), id)
 
 	if err != nil {
 		return def, err

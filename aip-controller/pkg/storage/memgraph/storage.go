@@ -120,8 +120,8 @@ func (s *Storage) Put(ctx context.Context, resource forddb2.BasicResource) (ford
 	}
 
 	err = s.store.PersistVertex(ctx, &vertexWrapper{
-		ResourceKind:     resource.GetType().Name(),
-		ResourceID:       resource.GetResourceID().String(),
+		ResourceKind:     resource.GetResourceTypeID().Name(),
+		ResourceID:       resource.GetResourceBasicID().String(),
 		ResourceManifest: string(serialized),
 	})
 
@@ -130,15 +130,15 @@ func (s *Storage) Put(ctx context.Context, resource forddb2.BasicResource) (ford
 	}
 
 	// FIXME:
-	forddb2.FireListeners(&s.HasListenersBase, resource.GetResourceID(), resource, resource)
+	forddb2.FireListeners(&s.HasListenersBase, resource.GetResourceBasicID(), resource, resource)
 
 	return resource, nil
 }
 
 func (s *Storage) Delete(ctx context.Context, resource forddb2.BasicResource) (forddb2.BasicResource, error) {
 	_, err := s.conn.ExecuteQuery(ctx, "MATCH (n) WHERE n.metadata.id = $id AND kind = $kind DELETE n", core.Write, map[string]interface{}{
-		"id":   resource.GetResourceID().String(),
-		"kind": resource.GetType().Name(),
+		"id":   resource.GetResourceBasicID().String(),
+		"kind": resource.GetResourceTypeID().Name(),
 	})
 
 	if err != nil {

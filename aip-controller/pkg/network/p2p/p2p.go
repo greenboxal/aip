@@ -22,6 +22,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+
+	"github.com/greenboxal/aip/aip-controller/pkg/config"
 )
 
 type IpfsRouting interface {
@@ -35,6 +37,7 @@ type IpfsRouting interface {
 type Network struct {
 	logger *zap.SugaredLogger
 
+	nm *config.NetworkManager
 	cm *connmgr.BasicConnMgr
 
 	host          host.Host
@@ -48,10 +51,12 @@ func NewNetwork(
 	lc fx.Lifecycle,
 	logger *zap.SugaredLogger,
 	cm *connmgr.BasicConnMgr,
+	nm *config.NetworkManager,
 ) (*Network, error) {
 	n := &Network{}
 
 	n.logger = logger.Named("p2p-network")
+	n.nm = nm
 	n.cm = cm
 
 	if err := n.initializeHost(); err != nil {

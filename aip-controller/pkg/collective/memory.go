@@ -10,7 +10,7 @@ type MemoryID struct {
 }
 
 type Memory struct {
-	forddb2.ResourceMetadata[MemoryID, *Memory] `json:"metadata"`
+	forddb2.ResourceBase[MemoryID, *Memory] `json:"metadata"`
 
 	RootMemoryID   MemoryID   `json:"root_memory_id"`
 	BranchMemoryID MemoryID   `json:"branch_memory_id"`

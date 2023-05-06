@@ -114,9 +114,9 @@ func (oi *objectIndexer) doPrefetchObject(
 	}
 
 	if *dst == nil {
-		res, err := oi.db.Get(ctx, id.BasicResourceType().GetID(), id)
+		res, err := oi.db.Get(ctx, id.BasicResourceType().GetResourceID(), id)
 
-		if err == nil && res.GetVersion() == version {
+		if err == nil && res.GetResourceVersion() == version {
 			*dst = res
 		}
 	}

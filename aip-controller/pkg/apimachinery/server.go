@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/fx"
@@ -40,11 +41,19 @@ func NewServer(
 }
 
 func (a *Server) Start(ctx context.Context) error {
-	l, err := net.Listen("tcp", "0.0.0.0:30100")
+	endpoint := os.Getenv("AIP_LISTEN_ENDPOINT")
+
+	if endpoint == "" {
+		endpoint = "0.0.0.0:30100"
+	}
+
+	l, err := net.Listen("tcp", endpoint)
 
 	if err != nil {
 		return err
 	}
+
+	a.logger.Infow("Server is listening", "endpoint", endpoint)
 
 	go func() {
 		if err := a.server.Serve(l); err != nil {

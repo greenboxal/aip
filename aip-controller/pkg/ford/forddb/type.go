@@ -37,7 +37,7 @@ const (
 type BasicType interface {
 	BasicResource
 
-	GetID() ResourceTypeID
+	GetResourceID() ResourceTypeID
 	Name() string
 	Kind() Kind
 	PrimitiveKind() PrimitiveKind

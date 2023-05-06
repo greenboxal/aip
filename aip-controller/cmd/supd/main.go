@@ -7,7 +7,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sashabaranov/go-openai"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -19,9 +18,9 @@ import (
 	daemon "github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
-	"github.com/greenboxal/aip/aip-controller/pkg/storage/inmemory"
 	"github.com/greenboxal/aip/aip-controller/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
@@ -35,16 +34,13 @@ func main() {
 		apis.Module,
 		p2p.Module,
 		ipfs.Module,
+		openai.Module,
 		comms.Module,
 		ford.Module,
 		daemon.Module,
 		wiki.Module,
 
-		fx.Provide(func() *openai.Client {
-			return openai.NewClient(os.Getenv("OPENAI_API_KEY"))
-		}),
-
-		inmemory.WithInMemoryDatabase(),
+		//inmemory.WithInIndexingMemoryDatabase(),
 		//badger.WithBadgerStorage(),
 		//memgraph.WithMemgraphStorage(),
 		//ipfs.WithIpfsStorage(),
@@ -92,8 +88,8 @@ func BuildLogging() fx.Option {
 
 		fx.WithLogger(func(l *zap.Logger) fxevent.Logger {
 			zl := &fxevent.ZapLogger{Logger: l}
-			//zl.UseLogLevel(-2)
-			//zl.UseErrorLevel(zap.ErrorLevel)
+			zl.UseLogLevel(-2)
+			zl.UseErrorLevel(zap.ErrorLevel)
 			return zl
 		}),
 	)

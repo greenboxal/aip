@@ -54,7 +54,7 @@ func (r *ReconcilerBase[ID, T]) Run(ctx context.Context) {
 			continue
 		}
 
-		if reflect2.IsNil(previous) || reflect2.IsNil(current) || current.GetVersion() > previous.GetVersion() {
+		if reflect2.IsNil(previous) || reflect2.IsNil(current) || current.GetResourceVersion() > previous.GetResourceVersion() {
 			encoded, err := forddb2.Encode(current)
 
 			if err != nil {

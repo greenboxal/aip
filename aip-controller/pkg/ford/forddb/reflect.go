@@ -2,6 +2,7 @@ package forddb
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/utils"
 )
@@ -10,13 +11,13 @@ var basicResourceType = reflect.TypeOf((*BasicResource)(nil)).Elem()
 var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
 var basicResourcePointerType = reflect.TypeOf((*BasicResourcePointer)(nil)).Elem()
 var basicResourceSlotType = reflect.TypeOf((*BasicResourceSlot)(nil)).Elem()
-var resourceMetadataType = reflect.TypeOf((*ResourceMetadata[ResourceTypeID, BasicResourceType])(nil)).Elem()
-var resourceMetadataTypeName = utils.GetParsedTypeName(resourceMetadataType)
+var resourceBaseType = reflect.TypeOf((*ResourceBase[ResourceTypeID, BasicResourceType])(nil)).Elem()
+var resourceBaseTypeName = utils.GetParsedTypeName(resourceBaseType)
 
 func IsBasicResource(t reflect.Type) bool {
 	t = DerefPointer(t)
 
-	if utils.GetParsedTypeName(t).FullName() == resourceMetadataTypeName.FullName() {
+	if strings.HasPrefix(utils.GetParsedTypeName(t).Pkg, resourceBaseTypeName.Pkg) {
 		return false
 	}
 

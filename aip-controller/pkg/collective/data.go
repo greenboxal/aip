@@ -4,15 +4,15 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
 
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type MemoryDataID struct {
-	forddb2.CidResourceID[*Memory]
+	forddb.CidResourceID[*Memory]
 }
 
 type MemoryData struct {
-	forddb2.ResourceMetadata[MemoryDataID, *MemoryData] `json:"metadata"`
+	forddb.ResourceBase[MemoryDataID, *MemoryData] `json:"metadata"`
 
 	Cid  cid.Cid `json:"cid"`
 	Text string  `json:"data"`
