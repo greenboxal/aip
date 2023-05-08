@@ -25,12 +25,12 @@ func NewStorage(m *Manager) *Storage {
 	}
 }
 
-func (s *Storage) List(ctx context.Context, typ forddb2.ResourceTypeID) ([]forddb2.BasicResource, error) {
+func (s *Storage) List(ctx context.Context, typ forddb2.TypeID) ([]forddb2.BasicResource, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Storage) Get(ctx context.Context, typ forddb2.ResourceTypeID, id forddb2.BasicResourceID) (forddb2.BasicResource, error) {
+func (s *Storage) Get(ctx context.Context, typ forddb2.TypeID, id forddb2.BasicResourceID) (forddb2.BasicResource, error) {
 	//TODO implement me
 	panic("implement me")
 }

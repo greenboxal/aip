@@ -14,7 +14,7 @@ type InMemoryDatabase struct {
 	forddb.HasListenersBase
 
 	m         sync.RWMutex
-	resources map[forddb.ResourceTypeID]*resourceTable
+	resources map[forddb.TypeID]*resourceTable
 }
 
 func (db *InMemoryDatabase) AppendSegment(ctx context.Context, segment *collective.MemorySegment) error {
@@ -38,7 +38,7 @@ func (db *InMemoryDatabase) Close() error {
 
 func NewInMemory() *InMemoryDatabase {
 	db := &InMemoryDatabase{
-		resources: make(map[forddb.ResourceTypeID]*resourceTable),
+		resources: make(map[forddb.TypeID]*resourceTable),
 	}
 
 	return db
@@ -46,7 +46,7 @@ func NewInMemory() *InMemoryDatabase {
 
 func (db *InMemoryDatabase) List(
 	ctx context.Context,
-	typ forddb.ResourceTypeID,
+	typ forddb.TypeID,
 	opts forddb.ListOptions,
 ) ([]forddb.BasicResource, error) {
 	rt := db.getTable(typ, false)
@@ -60,7 +60,7 @@ func (db *InMemoryDatabase) List(
 
 func (db *InMemoryDatabase) Get(
 	ctx context.Context,
-	typ forddb.ResourceTypeID,
+	typ forddb.TypeID,
 	id forddb.BasicResourceID,
 	opts forddb.GetOptions,
 ) (forddb.BasicResource, error) {
@@ -101,7 +101,7 @@ func (db *InMemoryDatabase) Delete(
 	return slot.Delete()
 }
 
-func (db *InMemoryDatabase) getSlot(typ forddb.ResourceTypeID, id forddb.BasicResourceID, create, lock bool) *resourceSlot {
+func (db *InMemoryDatabase) getSlot(typ forddb.TypeID, id forddb.BasicResourceID, create, lock bool) *resourceSlot {
 	tb := db.getTable(typ, create)
 
 	if tb == nil {
@@ -117,7 +117,7 @@ func (db *InMemoryDatabase) getSlot(typ forddb.ResourceTypeID, id forddb.BasicRe
 	return slot
 }
 
-func (db *InMemoryDatabase) getTable(typ forddb.ResourceTypeID, create bool) *resourceTable {
+func (db *InMemoryDatabase) getTable(typ forddb.TypeID, create bool) *resourceTable {
 	db.m.Lock()
 	defer db.m.Unlock()
 
@@ -146,7 +146,7 @@ type resourceTable struct {
 
 	m         sync.RWMutex
 	db        *InMemoryDatabase
-	typ       forddb.ResourceTypeID
+	typ       forddb.TypeID
 	resources map[forddb.BasicResourceID]*resourceSlot
 }
 

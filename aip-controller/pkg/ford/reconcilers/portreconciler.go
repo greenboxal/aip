@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective"
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
 )
 
@@ -14,12 +14,12 @@ type PortReconciler struct {
 	*reconciliation.ReconcilerBase[collective.PortID, *collective.Port]
 
 	logger *zap.SugaredLogger
-	db     forddb2.Database
+	db     forddb.Database
 }
 
 func NewPortReconciler(
 	logger *zap.SugaredLogger,
-	db forddb2.Database,
+	db forddb.Database,
 ) *PortReconciler {
 	pr := &PortReconciler{
 		logger: logger.Named("port-reconciler"),
@@ -30,6 +30,7 @@ func NewPortReconciler(
 	pr.ReconcilerBase = reconciliation.NewReconciler(
 		pr.logger,
 		db,
+		"port-reconciler",
 		pr.Reconcile,
 	)
 
@@ -57,7 +58,7 @@ func (pr *PortReconciler) Reconcile(
 	}
 
 	if previous == nil || previous.Status.State != current.Status.State {
-		current, err = forddb2.Put(pr.db, current)
+		current, err = forddb.Put(ctx, pr.db, current)
 
 		if err != nil {
 			return nil, err

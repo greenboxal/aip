@@ -1,15 +1,25 @@
 package wiki
 
 import (
+	"context"
+
+	"go.uber.org/fx"
+
 	openai "github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/indexer"
 )
 
-func NewWiki(client *openai.Client) (*Wiki, error) {
+func NewWiki(
+	lc fx.Lifecycle,
+	client *openai.Client,
+	pageIndexer *indexer.PageIndexer,
+) (*Wiki, error) {
 	var err error
 
 	w := &Wiki{}
 	w.client = client
+	w.pageIndexer = pageIndexer
 
 	w.model = &openai.ChatLanguageModel{
 		Client: client,
@@ -22,6 +32,12 @@ func NewWiki(client *openai.Client) (*Wiki, error) {
 		return nil, err
 	}
 
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			return w.Start(ctx)
+		},
+	})
+
 	return w, nil
 }
 
@@ -30,4 +46,11 @@ type Wiki struct {
 
 	model     *openai.ChatLanguageModel
 	tokenizer *tokenizers.TikTokenTokenizer
+
+	pageIndexer *indexer.PageIndexer
+}
+
+func (w *Wiki) Start(ctx context.Context) error {
+
+	return nil
 }

@@ -8,104 +8,6 @@ import (
 	"github.com/mashingan/smapping"
 )
 
-type RawResource smapping.Mapped
-
-func (r RawResource) GetResourceMetadata() *Metadata {
-	var result Metadata
-
-	metadata := r["metadata"]
-
-	if metadata == nil {
-		return nil
-	}
-
-	metadataMapped, ok := metadata.(map[string]interface{})
-
-	if !ok {
-		return nil
-	}
-
-	if err := smapping.FillStruct(&result, metadataMapped); err != nil {
-		panic(err)
-	}
-
-	return &result
-}
-
-func (r RawResource) GetResourceBasicID() BasicResourceID {
-	metadata := r["metadata"]
-
-	if metadata == nil {
-		return nil
-	}
-
-	metadataMapped, ok := metadata.(map[string]interface{})
-
-	if !ok {
-		return nil
-	}
-
-	idVal, ok := metadataMapped["id"]
-
-	if !ok {
-		return nil
-	}
-
-	return r.GetResourceTypeID().Type().CreateID(idVal.(string))
-}
-
-func (r RawResource) GetResourceTypeID() ResourceTypeID {
-	metadata := r["metadata"]
-
-	if metadata == nil {
-		return ""
-	}
-
-	metadataMapped, ok := metadata.(map[string]interface{})
-
-	if !ok {
-		return ""
-	}
-
-	kindVal, ok := metadataMapped["kind"]
-
-	if !ok {
-		return ""
-	}
-
-	return NewStringID[ResourceTypeID](kindVal.(string))
-}
-
-func (r RawResource) GetResourceVersion() uint64 {
-	metadata := r["metadata"]
-
-	if metadata == nil {
-		return 0
-	}
-
-	metadataMapped, ok := metadata.(map[string]interface{})
-
-	if !ok {
-		return 0
-	}
-
-	versionVal, ok := metadataMapped["version"]
-
-	if !ok {
-		return 0
-	}
-
-	if v, ok := versionVal.(uint64); ok {
-		return v
-	}
-
-	if v, ok := versionVal.(float64); ok {
-		return uint64(v)
-	}
-
-	return 0
-}
-
 func Clone[T BasicResource](resource T) T {
 	return CloneResource(resource).(T)
 }
@@ -121,10 +23,26 @@ func CloneResource(resource BasicResource) BasicResource {
 	return cloned.(BasicResource)
 }
 
-func Encode(resource BasicResource) (RawResource, error) {
+func Convert[T any](raw RawResource) (def T, _ error) {
+	var result T
+
+	data, err := json.Marshal(raw)
+
+	if err != nil {
+		return def, err
+	}
+
+	if err := json.Unmarshal(data, &result); err != nil {
+		return def, err
+	}
+
+	return result, nil
+}
+
+func Encode(value any) (RawResource, error) {
 	var rawResource RawResource
 
-	encoded, err := json.Marshal(resource)
+	encoded, err := json.Marshal(value)
 
 	if err != nil {
 		return nil, err
@@ -134,7 +52,9 @@ func Encode(resource BasicResource) (RawResource, error) {
 		return nil, err
 	}
 
-	rawResource["kind"] = resource.GetResourceTypeID().Name()
+	if resource, ok := value.(BasicResource); ok {
+		rawResource["kind"] = resource.GetResourceTypeID().Name()
+	}
 
 	return rawResource, nil
 }

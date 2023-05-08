@@ -7,7 +7,7 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/agent"
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
 )
 
@@ -16,12 +16,12 @@ type AgentReconciler struct {
 
 	logger  *zap.SugaredLogger
 	manager *agent.Manager
-	db      forddb2.Database
+	db      forddb.Database
 }
 
 func NewAgentReconciler(
 	logger *zap.SugaredLogger,
-	db forddb2.Database,
+	db forddb.Database,
 	manager *agent.Manager,
 ) *AgentReconciler {
 	ar := &AgentReconciler{
@@ -34,6 +34,7 @@ func NewAgentReconciler(
 	ar.ReconcilerBase = reconciliation.NewReconciler(
 		ar.logger,
 		db,
+		"agent-reconciler",
 		ar.Reconcile,
 	)
 
@@ -72,7 +73,7 @@ func (tr *AgentReconciler) Reconcile(
 				current.Status.State = collective.AgentStateFailed
 				current.Status.LastError = err.Error()
 
-				return forddb2.Put(tr.db, current)
+				return forddb.Put(ctx, tr.db, current)
 			}
 
 			current.Status.State = collective.AgentStateScheduled
@@ -81,5 +82,5 @@ func (tr *AgentReconciler) Reconcile(
 		}
 	}
 
-	return forddb2.Put(tr.db, current)
+	return forddb.Put(ctx, tr.db, current)
 }

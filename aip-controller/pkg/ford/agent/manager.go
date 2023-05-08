@@ -72,7 +72,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 		return err
 	}
 
-	if err := port.Subscribe(task.Name); err != nil {
+	if err := port.Subscribe(task.ID.String()); err != nil {
 		return err
 	}
 
@@ -102,7 +102,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 	}
 
 	args := []string{
-		"-i", task.Name,
+		"-i", task.ID.String(),
 		"-p", tmpProfile.Name(),
 	}
 
@@ -115,7 +115,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 	args = append(args, task.Spec.ExtraArgs...)
 
 	p, err := m.supervisor.Spawn(
-		supervisor2.WithID(task.Name),
+		supervisor2.WithID(task.ID.String()),
 		supervisor2.WithArgs(args...),
 		supervisor2.WithPort(port),
 	)

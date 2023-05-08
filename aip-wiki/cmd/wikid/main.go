@@ -19,6 +19,7 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
@@ -41,9 +42,10 @@ func main() {
 		p2p.Module,
 		ipfs.Module,
 		openai.Module,
+		daemon.Module,
+		jobs.Module,
 		comms.Module,
 		ford.Module,
-		daemon.Module,
 		wiki.Module,
 
 		milvus.WithIndexStorage(),

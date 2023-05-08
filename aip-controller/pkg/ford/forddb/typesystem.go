@@ -21,9 +21,12 @@ func TypeSystem() *ResourceTypeSystem {
 type ResourceTypeSystem struct {
 	m sync.Mutex
 
-	resourceTypes   map[ResourceTypeID]BasicResourceType
+	resourceTypes   map[TypeID]BasicResourceType
 	idTypeMap       map[reflect.Type]BasicResourceType
 	resourceTypeMap map[reflect.Type]BasicResourceType
+	singularNameMap map[string]BasicResourceType
+	pluralNameMap   map[string]BasicResourceType
+
 	typeMap         map[reflect.Type]BasicType
 	typeSchemaCache map[reflect.Type]schema.Type
 
@@ -32,13 +35,16 @@ type ResourceTypeSystem struct {
 }
 
 func NewResourceTypeSystem() *ResourceTypeSystem {
-	typeType := newResourceType[ResourceTypeID, BasicResourceType]("type")
+	typeType := newResourceType[TypeID, BasicResourceType]("type")
 	typeType.SetRuntimeOnly()
 
 	rts := &ResourceTypeSystem{
-		resourceTypes:   make(map[ResourceTypeID]BasicResourceType, 32),
+		resourceTypes:   make(map[TypeID]BasicResourceType, 32),
 		idTypeMap:       make(map[reflect.Type]BasicResourceType, 32),
 		typeMap:         make(map[reflect.Type]BasicType, 32),
+		singularNameMap: make(map[string]BasicResourceType, 32),
+		pluralNameMap:   make(map[string]BasicResourceType, 32),
+
 		resourceTypeMap: make(map[reflect.Type]BasicResourceType, 32),
 		typeSchemaCache: make(map[reflect.Type]schema.Type, 32),
 	}
@@ -88,6 +94,8 @@ func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 			}
 		}
 
+		rts.singularNameMap[strings.ToLower(t.ResourceName().Name)] = t
+		rts.pluralNameMap[strings.ToLower(t.ResourceName().Plural)] = t
 		rts.resourceTypes[t.GetResourceID()] = t
 		rts.resourceTypeMap[t.RuntimeType()] = t
 		rts.idTypeMap[t.IDType().RuntimeType()] = t
@@ -115,7 +123,19 @@ func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 	return true
 }
 
-func (rts *ResourceTypeSystem) LookupByID(id ResourceTypeID) BasicResourceType {
+func (rts *ResourceTypeSystem) LookupBySingularName(name string) BasicResourceType {
+	name = strings.ToLower(name)
+
+	return rts.singularNameMap[name]
+}
+
+func (rts *ResourceTypeSystem) LookupByPluralName(name string) BasicResourceType {
+	name = strings.ToLower(name)
+
+	return rts.pluralNameMap[name]
+}
+
+func (rts *ResourceTypeSystem) LookupByID(id TypeID) BasicResourceType {
 	return rts.resourceTypes[id]
 }
 

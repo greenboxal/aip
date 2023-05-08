@@ -2,51 +2,16 @@ package forddb
 
 import "context"
 
-type GetOptions struct {
-}
-
-type DeleteOptions struct {
-}
-
-type ListOptions struct {
-	Offset int
-	Limit  int
-}
-
-func NewListOptions(opts ...ListOption) ListOptions {
-	var result ListOptions
-
-	for _, opt := range opts {
-		opt(&result)
-	}
-
-	return result
-}
-
-type ListOption func(opts *ListOptions)
-
-func WithOffset(offset int) ListOption {
-	return func(opts *ListOptions) {
-		opts.Offset = offset
-	}
-}
-
-func WithLimit(limit int) ListOption {
-	return func(opts *ListOptions) {
-		opts.Limit = limit
-	}
-}
-
 type Storage interface {
 	List(
 		ctx context.Context,
-		typ ResourceTypeID,
+		typ TypeID,
 		opts ListOptions,
 	) ([]RawResource, error)
 
 	Get(
 		ctx context.Context,
-		typ ResourceTypeID,
+		typ TypeID,
 		id BasicResourceID,
 		opts GetOptions,
 	) (RawResource, error)

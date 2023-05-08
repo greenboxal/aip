@@ -5,38 +5,31 @@ import {
     Resource,
     ListGuesser,
     DataProvider,
-    List,
-    Datagrid,
-    TextField,
-    DateField,
-    BooleanField,
     ShowGuesser,
     Layout,
     LayoutProps,
-    Menu,
-    SimpleShowLayout,
-    Show,
-    RichTextField,
-    ShowButton,
-    UrlField,
-    ImageField,
     defaultTheme,
     useResourceDefinitions,
     useGetResourceLabel,
     useCreatePath,
-    MenuItemLink,
-    MenuProps, TabbedShowLayout, ArrayField,
+    MenuProps,
+    TitlePortal,
+    AppBar,
+    LocalesMenuButton,
+    ToggleThemeButton,
+    RaThemeOptions,
 } from "react-admin"
 
-import { MarkdownField } from "@react-admin/ra-markdown"
+import buildGraphQLProvider from 'ra-data-graphql-simple';
+import {addSearchMethod, Search} from "@react-admin/ra-search";
 
 import { MultiLevelMenu, AppLocationContext, Breadcrumb} from '@react-admin/ra-navigation'
 import { ReactQueryDevtools } from "react-query/devtools"
 import {ImageList, ImageShow} from "./resources/Image";
+import {JobList, JobShow} from "./resources/Job";
 import {PageCreate, PageList, PageShow} from "./resources/Page";
 import DefaultIcon from '@mui/icons-material/ViewList'
 
-import buildGraphQLProvider, { buildQuery } from 'ra-data-graphql-simple';
 import { CREATE } from 'ra-core';
 
 export const ResourceMenuItem = ({ name }: { name: string }) => {
@@ -64,17 +57,39 @@ export const ResourceMenuItem = ({ name }: { name: string }) => {
     );
 };
 
+const darkTheme = {
+    ...defaultTheme,
+    palette: {
+        mode: 'dark',
+    },
+} as RaThemeOptions
+
+export const MyAppBar = () => (
+    <AppBar>
+        <TitlePortal />
+        <Search />
+        <ToggleThemeButton lightTheme={defaultTheme} darkTheme={darkTheme}  />
+        <LocalesMenuButton />
+    </AppBar>
+);
 
 const AppMenu: React.FC<MenuProps> = (props: MenuProps) => (
     <MultiLevelMenu {...props}>
-        <ResourceMenuItem name="Page" />
-        <ResourceMenuItem name="Image" />
+        <MultiLevelMenu.Item label="Content Management" name="content-management">
+            <ResourceMenuItem name="Page" />
+            <ResourceMenuItem name="Image" />
+        </MultiLevelMenu.Item>
+
+        <MultiLevelMenu.Item label="Infrastructure" name="infrastructure">
+            <ResourceMenuItem name="Job" />
+            <ResourceMenuItem name="Memory" />
+        </MultiLevelMenu.Item>
     </MultiLevelMenu>
 )
 
 const AppLayout: React.FC<LayoutProps> = ({ children, ...rest }) => (<>
     <AppLocationContext>
-        <Layout {...rest} menu={AppMenu}>
+        <Layout {...rest} menu={AppMenu} appBar={MyAppBar}>
             <Breadcrumb></Breadcrumb>
             {children}
         </Layout>
@@ -82,8 +97,14 @@ const AppLayout: React.FC<LayoutProps> = ({ children, ...rest }) => (<>
     <ReactQueryDevtools />
 </>)
 
+const Dashboard: React.FC = () => (
+    <main>
+
+    </main>
+)
+
 const App: React.FC = () => {
-    const [dataProvider, setDataProvider] = React.useState<DataProvider>(null)
+    const [baseDataProvider, setBaseDataProvider] = React.useState<DataProvider>(null)
 
     React.useEffect(() => {
         buildGraphQLProvider({
@@ -105,34 +126,52 @@ const App: React.FC = () => {
             },
         })
             .then(graphQlDataProvider => {
-                setDataProvider(() => graphQlDataProvider)
+                setBaseDataProvider(() => graphQlDataProvider)
             })
     }, [])
 
-    if (!dataProvider) {
+    if (!baseDataProvider) {
         return (<div>Loading</div>)
     }
 
-    const theme: any = {
-        ...defaultTheme,
-        palette: {
-            //mode: 'dark',
-        },
-    };
+    const dataProvider = addSearchMethod(baseDataProvider, [
+        "Image",
+        "Page",
+    ]);
 
     return (
-        <Admin layout={AppLayout} theme={theme} dataProvider={dataProvider}>
-            <Resource name="Image" list={ImageList} show={ImageShow} />
-            <Resource name="Page" list={PageList} show={PageShow} create={PageCreate} />
+        <Admin
+            layout={AppLayout}
+            dataProvider={dataProvider}
+            dashboard={Dashboard}
+        >
 
-            <Resource name="Agent" list={ListGuesser}/>
-            <Resource name="Profile" list={ListGuesser}/>
+            <Resource
+                name="Image"
+                list={ImageList}
+                show={ImageShow}
+                recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
+            />
 
-            <Resource name="Pipeline" list={ListGuesser}/>
-            <Resource name="Task" list={ListGuesser}/>
+            <Resource
+                name="Page"
+                list={PageList}
+                show={PageShow}
+                create={PageCreate}
+                recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
+            />
 
-            <Resource name="Memory" list={ListGuesser}/>
-            <Resource name="MemoryData" list={ListGuesser}/>
+            <Resource
+                name="Job"
+                list={JobList}
+                show={JobShow}
+            />
+
+            <Resource
+                name="Memory"
+                list={ListGuesser}
+                show={ShowGuesser}
+            />
         </Admin>
     )
 }

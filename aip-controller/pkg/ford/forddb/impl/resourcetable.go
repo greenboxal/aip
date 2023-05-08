@@ -16,13 +16,13 @@ type resourceTable struct {
 	m sync.RWMutex
 
 	db  *database
-	typ forddb.ResourceTypeID
+	typ forddb.TypeID
 
 	cache               *ristretto.Cache
 	persistentResources mapset.Set[forddb.BasicResourceID]
 }
 
-func newResourceTable(db *database, typ forddb.ResourceTypeID) (*resourceTable, error) {
+func newResourceTable(db *database, typ forddb.TypeID) (*resourceTable, error) {
 	rt := &resourceTable{
 		db:  db,
 		typ: typ,

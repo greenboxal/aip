@@ -15,8 +15,9 @@ import (
 )
 
 type basicTypeImpl struct {
-	ResourceBase[ResourceTypeID, BasicResourceType] `json:"metadata"`
+	ResourceBase[TypeID, BasicResourceType] `json:"metadata"`
 
+	name          string
 	kind          Kind
 	primitiveKind PrimitiveKind
 
@@ -43,9 +44,9 @@ func newBasicType(
 ) *basicTypeImpl {
 	t := &basicTypeImpl{}
 
-	t.ResourceBase.ID = NewStringID[ResourceTypeID](name)
-	t.ResourceBase.Name = name
+	t.ResourceBase.ID = NewStringID[TypeID](name)
 
+	t.name = name
 	t.kind = kind
 	t.primitiveKind = primitiveKind
 	t.typ = typ
@@ -57,8 +58,8 @@ func newBasicType(
 }
 
 func (bt *basicTypeImpl) TypeSystem() *ResourceTypeSystem    { return bt.universe }
-func (bt *basicTypeImpl) GetResourceID() ResourceTypeID      { return bt.ResourceBase.ID }
-func (bt *basicTypeImpl) Name() string                       { return bt.ResourceBase.Name }
+func (bt *basicTypeImpl) GetResourceID() TypeID              { return bt.ResourceBase.ID }
+func (bt *basicTypeImpl) Name() string                       { return bt.name }
 func (bt *basicTypeImpl) Kind() Kind                         { return bt.kind }
 func (bt *basicTypeImpl) PrimitiveKind() PrimitiveKind       { return bt.primitiveKind }
 func (bt *basicTypeImpl) RuntimeType() reflect.Type          { return bt.typ }

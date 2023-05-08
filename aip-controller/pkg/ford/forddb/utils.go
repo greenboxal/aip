@@ -12,8 +12,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func Put[T BasicResource](db Database, id T) (def T, _ error) {
-	resource, err := db.Put(context.TODO(), id)
+func Put[T BasicResource](ctx context.Context, db Database, id T) (def T, _ error) {
+	resource, err := db.Put(ctx, id)
 
 	if err != nil {
 		return def, err
@@ -42,7 +42,11 @@ func Get[T BasicResource](ctx context.Context, db Database, id ResourceID[T]) (d
 }
 
 func LookupTypeByName(name string) BasicResourceType {
-	return TypeSystem().LookupByID(NewStringID[ResourceTypeID](name))
+	return TypeSystem().LookupBySingularName(name)
+}
+
+func LookupTypeByNamePlural(name string) BasicResourceType {
+	return TypeSystem().LookupByPluralName(name)
 }
 
 func ImportPath(db Database, path string) error {

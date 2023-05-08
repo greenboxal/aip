@@ -1,8 +1,11 @@
 package forddb
 
 import (
+	"github.com/gertd/go-pluralize"
 	"github.com/stoewer/go-strcase"
 )
+
+var pluralizeClient = pluralize.NewClient()
 
 type ResourceTypeName struct {
 	Name   string
@@ -21,7 +24,7 @@ func ResourceTypeNameFromSingular(name string) ResourceTypeName {
 	name = strcase.UpperCamelCase(name)
 
 	return ResourceTypeName{
-		Name:   name,
-		Plural: name + "s",
+		Name:   pluralizeClient.Singular(name),
+		Plural: pluralizeClient.Plural(name),
 	}
 }

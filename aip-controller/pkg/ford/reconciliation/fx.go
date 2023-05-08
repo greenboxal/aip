@@ -13,8 +13,6 @@ func WithReconciler[R Reconciler](iface any) fx.Option {
 		fx.Provide(iface),
 
 		fx.Invoke(func(db forddb.Database, r R) {
-			db.AddListener(r.AsListener())
-
 			go r.Run(context.Background())
 		}),
 	)

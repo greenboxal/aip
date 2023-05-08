@@ -49,7 +49,7 @@ func NewStorage(
 	}
 }
 
-func (s *Storage) List(ctx context.Context, typ forddb2.ResourceTypeID) ([]forddb2.BasicResource, error) {
+func (s *Storage) List(ctx context.Context, typ forddb2.TypeID) ([]forddb2.BasicResource, error) {
 	var result []forddb2.BasicResource
 
 	tx := s.db.NewTransaction(false)
@@ -82,7 +82,7 @@ func (s *Storage) List(ctx context.Context, typ forddb2.ResourceTypeID) ([]fordd
 	return result, nil
 }
 
-func (s *Storage) Get(ctx context.Context, typ forddb2.ResourceTypeID, id forddb2.BasicResourceID) (forddb2.BasicResource, error) {
+func (s *Storage) Get(ctx context.Context, typ forddb2.TypeID, id forddb2.BasicResourceID) (forddb2.BasicResource, error) {
 	tx := s.db.NewTransaction(false)
 	defer tx.Discard()
 

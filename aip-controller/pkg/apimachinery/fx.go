@@ -13,17 +13,10 @@ var Module = fx.Module(
 	fx.Provide(NewRootMux),
 
 	utils.WithBindingRegistry[HttpServiceMount]("http-service-mounts"),
-	utils.WithBindingRegistry[RpcServiceBinding]("rpc-service-bindings"),
 
 	fx.Invoke(func(mux *RootMux, bindings utils.BindingRegistry[HttpServiceMount]) {
 		for _, m := range bindings.Bindings() {
 			m.Install(mux)
-		}
-	}),
-
-	fx.Invoke(func(rpcsrv *RpcService, bindings utils.BindingRegistry[RpcServiceBinding]) {
-		for _, m := range bindings.Bindings() {
-			m.Bind(rpcsrv)
 		}
 	}),
 )

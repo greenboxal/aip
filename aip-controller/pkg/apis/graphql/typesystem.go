@@ -2,29 +2,27 @@ package graphql
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"regexp"
 	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/ipfs/go-cid"
-	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
+var timeType = reflect.TypeOf((*time.Time)(nil)).Elem()
+var rawResourceType = reflect.TypeOf((*forddb.RawResource)(nil)).Elem()
+var cidType = reflect.TypeOf((*cid.Cid)(nil)).Elem()
 
 func (q *GraphQL) initializeTypeSystem() {
-	q.outputTypeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
-	q.inputTypeMap[reflect.TypeOf((*time.Time)(nil)).Elem()] = graphql.DateTime
-
-	q.outputTypeMap[reflect.TypeOf((*cid.Cid)(nil)).Elem()] = graphql.String
-	q.inputTypeMap[reflect.TypeOf((*cid.Cid)(nil)).Elem()] = graphql.String
-
-	// TODO: Freeze and use IPLD type system
-	ts := forddb.TypeSystem()
+	q.RegisterTypeMapping(timeType, graphql.DateTime, graphql.DateTime)
+	q.RegisterTypeMapping(cidType, graphql.String, graphql.String)
+	q.RegisterTypeMapping(rawResourceType, graphql.String, graphql.String)
 
 	q.rootQueryFields = graphql.Fields{}
 	q.rootQueryConfig = graphql.ObjectConfig{
@@ -36,20 +34,6 @@ func (q *GraphQL) initializeTypeSystem() {
 	q.rootMutationConfig = graphql.ObjectConfig{
 		Name:   "Mutations",
 		Fields: q.rootMutationFields,
-	}
-
-	resourceTypes := ts.ResourceTypes()
-
-	for _, typ := range resourceTypes {
-		if typ.Kind() != forddb.KindResource {
-			continue
-		}
-
-		if typ.IsRuntimeOnly() {
-			continue
-		}
-
-		q.compileResource(q.rootQueryFields, typ)
 	}
 }
 
@@ -95,163 +79,7 @@ func (q *GraphQL) buildTypeSystem() {
 	q.schema = schema
 }
 
-func (q *GraphQL) compileResource(fields graphql.Fields, typ forddb.BasicResourceType) {
-	name := typ.Name()
-	name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
-
-	gqlType := q.lookupOutputType(typ)
-
-	if gqlType == nil {
-		panic("no gql type for " + name)
-	}
-
-	getByIdName := typ.ResourceName().ToTitle()
-	allName := "all" + typ.ResourceName().ToTitlePlural()
-	allMetaName := "_all" + typ.ResourceName().ToTitlePlural() + "Meta"
-
-	fields[getByIdName] = &graphql.Field{
-		Type: gqlType,
-		Args: graphql.FieldConfigArgument{
-			"id": &graphql.ArgumentConfig{
-				Type: graphql.String,
-			},
-		},
-
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			idQuery, ok := p.Args["id"].(string)
-
-			if !ok {
-				return nil, nil
-			}
-
-			id := typ.CreateID(idQuery)
-			res, err := q.db.Get(p.Context, typ.GetResourceID(), id)
-
-			if err != nil {
-				return nil, err
-			}
-
-			raw, err := prepareResource(res)
-
-			if err != nil {
-				return nil, err
-			}
-
-			return raw, nil
-		},
-	}
-
-	filterType := graphql.NewInputObject(graphql.InputObjectConfig{
-		Name: typ.ResourceName().ToTitle() + "Filter",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"q": &graphql.InputObjectFieldConfig{
-				Type: graphql.String,
-			},
-			"id": &graphql.InputObjectFieldConfig{
-				Type: graphql.String,
-			},
-		},
-	})
-
-	fields[allName] = &graphql.Field{
-		Type: graphql.NewList(gqlType),
-
-		Args: graphql.FieldConfigArgument{
-			"page": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-			"perPage": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-			"sortField": &graphql.ArgumentConfig{
-				Type: graphql.String,
-			},
-			"sortOrder": &graphql.ArgumentConfig{
-				Type: graphql.String,
-			},
-			"filter": &graphql.ArgumentConfig{
-				Type: filterType,
-			},
-		},
-
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			pageIndex := 0
-			perPage := 10
-
-			if pageVal, ok := p.Args["page"]; ok {
-				pageIndex = pageVal.(int)
-			}
-
-			if perPageVal, ok := p.Args["perPage"]; ok {
-				perPage = perPageVal.(int)
-			}
-
-			results, err := q.db.List(
-				p.Context,
-				typ.GetResourceID(),
-				forddb.WithOffset(pageIndex*perPage),
-				forddb.WithLimit(perPage),
-			)
-
-			if err != nil {
-				return nil, err
-			}
-
-			return lo.Map(results, func(item forddb.BasicResource, _index int) forddb.RawResource {
-				raw, err := prepareResource(item)
-
-				if err != nil {
-					panic(err)
-				}
-
-				return raw
-			}), nil
-		},
-	}
-
-	fields[allMetaName] = &graphql.Field{
-		Type: graphql.NewObject(graphql.ObjectConfig{
-			Name: typ.ResourceName().Name + "ListMetadata",
-			Fields: graphql.Fields{
-				"count": &graphql.Field{
-					Type: graphql.Int,
-				},
-			},
-		}),
-
-		Args: graphql.FieldConfigArgument{
-			"page": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-			"perPage": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-			"sortField": &graphql.ArgumentConfig{
-				Type: graphql.String,
-			},
-			"sortOrder": &graphql.ArgumentConfig{
-				Type: graphql.String,
-			},
-			"filter": &graphql.ArgumentConfig{
-				Type: filterType,
-			},
-		},
-
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			res, err := q.db.List(p.Context, typ.GetResourceID())
-
-			if err != nil {
-				return nil, err
-			}
-
-			return map[string]interface{}{
-				"count": len(res),
-			}, nil
-		},
-	}
-}
-
-func (q *GraphQL) lookupInputType(typ forddb.BasicType) graphql.Input {
+func (q *GraphQL) LookupInputType(typ forddb.BasicType) graphql.Input {
 	var result graphql.Input
 
 	if typ == nil {
@@ -281,7 +109,7 @@ func (q *GraphQL) lookupInputType(typ forddb.BasicType) graphql.Input {
 
 		case forddb.PrimitiveKindList:
 			elemType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
-			elem := q.lookupInputType(elemType)
+			elem := q.LookupInputType(elemType)
 
 			return graphql.NewList(elem)
 
@@ -292,7 +120,7 @@ func (q *GraphQL) lookupInputType(typ forddb.BasicType) graphql.Input {
 				fieldType := field.BasicType()
 
 				f := &graphql.InputObjectFieldConfig{
-					Type: q.lookupInputType(fieldType),
+					Type: q.LookupInputType(fieldType),
 				}
 
 				fields[field.Name()] = f
@@ -332,7 +160,7 @@ func (q *GraphQL) lookupInputType(typ forddb.BasicType) graphql.Input {
 	return result
 }
 
-func (q *GraphQL) lookupOutputType(typ forddb.BasicType) graphql.Output {
+func (q *GraphQL) LookupOutputType(typ forddb.BasicType) graphql.Output {
 	var result graphql.Output
 
 	if existing, ok := q.outputTypeMap[typ.RuntimeType()]; ok {
@@ -356,9 +184,26 @@ func (q *GraphQL) lookupOutputType(typ forddb.BasicType) graphql.Output {
 		case forddb.PrimitiveKindUnsignedInt:
 			result = graphql.Int
 
+		case forddb.PrimitiveKindMap:
+			keyType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Key())
+			keyOutputType := q.LookupOutputType(keyType)
+
+			valueType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
+			valueOutputType := q.LookupOutputType(valueType)
+
+			kvType := graphql.NewObject(graphql.ObjectConfig{
+				Name: fmt.Sprintf("Map_%s_%s", keyType.Name(), valueType.Name()),
+				Fields: graphql.Fields{
+					"key":   &graphql.Field{Name: "key", Type: keyOutputType},
+					"value": &graphql.Field{Name: "value", Type: valueOutputType},
+				},
+			})
+
+			return graphql.NewList(kvType)
+
 		case forddb.PrimitiveKindList:
 			elemType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
-			elem := q.lookupOutputType(elemType)
+			elem := q.LookupOutputType(elemType)
 
 			return graphql.NewList(elem)
 
@@ -375,7 +220,7 @@ func (q *GraphQL) lookupOutputType(typ forddb.BasicType) graphql.Output {
 
 				f := &graphql.Field{
 					Name: field.Name(),
-					Type: q.lookupOutputType(fieldType),
+					Type: q.LookupOutputType(fieldType),
 				}
 
 				fields[f.Name] = f
@@ -409,4 +254,16 @@ func (q *GraphQL) lookupOutputType(typ forddb.BasicType) graphql.Output {
 	q.outputTypeMap[typ.RuntimeType()] = result
 
 	return result
+}
+
+func (q *GraphQL) RegisterQuery(fields ...*graphql.Field) {
+	for _, field := range fields {
+		q.rootQueryFields[field.Name] = field
+	}
+}
+
+func (q *GraphQL) RegisterMutation(fields ...*graphql.Field) {
+	for _, field := range fields {
+		q.rootMutationFields[field.Name] = field
+	}
 }

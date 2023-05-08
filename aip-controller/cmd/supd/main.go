@@ -18,6 +18,7 @@ import (
 	daemon "github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
@@ -38,6 +39,7 @@ func main() {
 		openai.Module,
 		comms.Module,
 		ford.Module,
+		jobs.Module,
 		daemon.Module,
 		wiki.Module,
 

@@ -11,7 +11,7 @@ var basicResourceType = reflect.TypeOf((*BasicResource)(nil)).Elem()
 var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
 var basicResourcePointerType = reflect.TypeOf((*BasicResourcePointer)(nil)).Elem()
 var basicResourceSlotType = reflect.TypeOf((*BasicResourceSlot)(nil)).Elem()
-var resourceBaseType = reflect.TypeOf((*ResourceBase[ResourceTypeID, BasicResourceType])(nil)).Elem()
+var resourceBaseType = reflect.TypeOf((*ResourceBase[TypeID, BasicResourceType])(nil)).Elem()
 var resourceBaseTypeName = utils.GetParsedTypeName(resourceBaseType)
 
 func IsBasicResource(t reflect.Type) bool {

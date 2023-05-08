@@ -214,7 +214,7 @@ func (s *Storage) GetMemory(ctx context.Context, id collective2.MemoryID) (*coll
 
 func (s *Storage) List(
 	ctx context.Context,
-	typ forddb.ResourceTypeID,
+	typ forddb.TypeID,
 	opts forddb.ListOptions,
 ) ([]forddb.RawResource, error) {
 	res, err := s.db.Query(
@@ -262,7 +262,7 @@ func (s *Storage) List(
 
 func (s *Storage) Get(
 	ctx context.Context,
-	typ forddb.ResourceTypeID,
+	typ forddb.TypeID,
 	id forddb.BasicResourceID,
 	opts forddb.GetOptions,
 ) (forddb.RawResource, error) {

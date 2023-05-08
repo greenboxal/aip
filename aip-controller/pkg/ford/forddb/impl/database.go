@@ -5,44 +5,30 @@ import (
 	"sync"
 
 	"github.com/jbenet/goprocess"
-	goprocessctx "github.com/jbenet/goprocess/context"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
 
 type database struct {
 	forddb.HasListenersBase
 
 	m       sync.RWMutex
-	log     logstore.LogStore
+	log     forddb.LogStore
 	storage forddb.Storage
 
-	resources map[forddb.ResourceTypeID]*resourceTable
-
-	objectIndexer        *objectIndexer
-	objectIndexerProcess goprocess.Process
+	resources map[forddb.TypeID]*resourceTable
 
 	objectFetcher      *objectFetcher
 	objectFetchProcess goprocess.Process
 }
 
-func NewDatabase(logStore logstore.LogStore, storage forddb.Storage) forddb.Database {
+func NewDatabase(logStore forddb.LogStore, storage forddb.Storage) forddb.Database {
 	db := &database{
 		log:     logStore,
 		storage: storage,
 
-		resources: make(map[forddb.ResourceTypeID]*resourceTable),
+		resources: make(map[forddb.TypeID]*resourceTable),
 	}
-
-	db.objectIndexer = newObjectIndexer(db)
-	db.objectIndexerProcess = goprocess.Go(func(proc goprocess.Process) {
-		ctx := goprocessctx.OnClosingContext(proc)
-
-		if err := db.objectIndexer.Run(ctx); err != nil {
-			panic(err)
-		}
-	})
 
 	db.objectFetcher = newObjectFetcher(db)
 	db.objectFetchProcess = goprocess.Go(db.objectFetcher.Run)
@@ -57,7 +43,11 @@ func NewDatabase(logStore logstore.LogStore, storage forddb.Storage) forddb.Data
 	return db
 }
 
-func (db *database) List(ctx context.Context, typ forddb.ResourceTypeID, options ...forddb.ListOption) ([]forddb.BasicResource, error) {
+func (db *database) LogStore() forddb.LogStore {
+	return db.log
+}
+
+func (db *database) List(ctx context.Context, typ forddb.TypeID, options ...forddb.ListOption) ([]forddb.BasicResource, error) {
 	opts := forddb.NewListOptions(options...)
 
 	rt := db.GetTable(typ, true)
@@ -69,7 +59,7 @@ func (db *database) List(ctx context.Context, typ forddb.ResourceTypeID, options
 	return rt.List(ctx, opts)
 }
 
-func (db *database) Get(ctx context.Context, typ forddb.ResourceTypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+func (db *database) Get(ctx context.Context, typ forddb.TypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
 	slot := db.GetSlot(typ, id, true)
 
 	if slot == nil {
@@ -100,7 +90,7 @@ func (db *database) Delete(ctx context.Context, resource forddb.BasicResource) (
 	return slot.Delete(ctx)
 }
 
-func (db *database) GetSlot(typ forddb.ResourceTypeID, id forddb.BasicResourceID, create bool) *resourceSlot {
+func (db *database) GetSlot(typ forddb.TypeID, id forddb.BasicResourceID, create bool) *resourceSlot {
 	tb := db.GetTable(typ, create)
 
 	if tb == nil {
@@ -116,7 +106,7 @@ func (db *database) GetSlot(typ forddb.ResourceTypeID, id forddb.BasicResourceID
 	return slot
 }
 
-func (db *database) GetTable(typ forddb.ResourceTypeID, create bool) *resourceTable {
+func (db *database) GetTable(typ forddb.TypeID, create bool) *resourceTable {
 	db.m.Lock()
 	defer db.m.Unlock()
 
@@ -143,10 +133,6 @@ func (db *database) Close() error {
 	db.m.Lock()
 	defer db.m.Unlock()
 
-	if err := db.objectIndexerProcess.Close(); err != nil {
-		return err
-	}
-
 	if err := db.storage.Close(); err != nil {
 		return err
 	}
@@ -159,8 +145,8 @@ func (db *database) Close() error {
 }
 
 func (db *database) notifyGet(rs *resourceSlot) {
-	db.objectFetcher.requestCh <- fetchResourceRequest{
-		storage: db.storage,
-		slot:    rs,
-	}
+	//db.objectFetcher.requestCh <- fetchResourceRequest{
+	//	storage: db.storage,
+	//	slot:    rs,
+	//}
 }

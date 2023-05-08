@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
 )
 
@@ -14,12 +14,12 @@ type TaskReconciler struct {
 	*reconciliation.ReconcilerBase[collective2.TaskID, *collective2.Task]
 
 	logger *zap.SugaredLogger
-	db     forddb2.Database
+	db     forddb.Database
 }
 
 func NewTaskReconciler(
 	logger *zap.SugaredLogger,
-	db forddb2.Database,
+	db forddb.Database,
 ) *TaskReconciler {
 	tr := &TaskReconciler{
 		logger: logger.Named("task-reconciler"),
@@ -29,6 +29,7 @@ func NewTaskReconciler(
 	tr.ReconcilerBase = reconciliation.NewReconciler(
 		tr.logger,
 		db,
+		"task-reconciler",
 		tr.Reconcile,
 	)
 
@@ -49,7 +50,7 @@ func (tr *TaskReconciler) Reconcile(
 
 	tr.logger.Info("entering reconciliation loop", "task_id", current.ID)
 
-	pipeline, err := forddb2.Get[*collective2.Pipeline](ctx, tr.db, current.Spec.PipelineID)
+	pipeline, err := forddb.Get[*collective2.Pipeline](ctx, tr.db, current.Spec.PipelineID)
 
 	if err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func (tr *TaskReconciler) Reconcile(
 		}
 	}
 
-	return forddb2.Put(tr.db, current)
+	return forddb.Put(ctx, tr.db, current)
 }
 
 func (tr *TaskReconciler) ReconcileStage(
@@ -116,7 +117,7 @@ func (tr *TaskReconciler) ReconcileStage(
 			Status: collective2.AgentStatus{},
 		}
 
-		agent, err := forddb2.Put(tr.db, agent)
+		agent, err := forddb.Put(ctx, tr.db, agent)
 
 		if err != nil {
 			return err

@@ -9,35 +9,10 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/nodebinder"
 )
 
-type Kind int
-
-const (
-	KindInvalid Kind = iota
-	KindId
-	KindResource
-	KindValue
-	KindPointer
-)
-
-type PrimitiveKind int
-
-const (
-	PrimitiveKindInvalid PrimitiveKind = iota
-	PrimitiveKindBoolean
-	PrimitiveKindBytes
-	PrimitiveKindString
-	PrimitiveKindInt
-	PrimitiveKindUnsignedInt
-	PrimitiveKindFloat
-	PrimitiveKindList
-	PrimitiveKindMap
-	PrimitiveKindStruct
-)
-
 type BasicType interface {
 	BasicResource
 
-	GetResourceID() ResourceTypeID
+	GetResourceID() TypeID
 	Name() string
 	Kind() Kind
 	PrimitiveKind() PrimitiveKind

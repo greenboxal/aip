@@ -5,6 +5,7 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/config"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/agent"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	forddbimpl2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/impl"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 	reconcilers2 "github.com/greenboxal/aip/aip-controller/pkg/ford/reconcilers"
@@ -18,19 +19,17 @@ var Module = fx.Module(
 	fx.Provide(NewManager),
 	fx.Provide(agent.NewManager),
 	fx.Provide(forddbimpl2.NewDatabase),
-	fx.Provide(forddbimpl2.NewFileLogStore),
+	fx.Provide(logstore.NewOldFileLogStore),
 
-	fx.Provide(func(rsm *config.ResourceManager) (logstore.LogStore, error) {
-		//path := rsm.GetDataDirectory("log")
-		//fss, err := forddbimpl.NewFileLogStore(path)
+	fx.Provide(func(rsm *config.ResourceManager) (forddb.LogStore, error) {
+		path := rsm.GetDataDirectory("log")
+		fss, err := logstore.NewFileLogStore(path)
 
-		//if err != nil {
-		//	return nil, err
-		//}
+		if err != nil {
+			return nil, err
+		}
 
-		//return fss, nil
-
-		return forddbimpl2.NewMemoryLogStore(), nil
+		return fss, nil
 	}),
 
 	fx.Provide(func(m *Manager) indexing.Index {

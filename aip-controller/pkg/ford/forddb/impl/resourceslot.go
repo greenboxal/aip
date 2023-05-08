@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
 
 type resourceSlot struct {
@@ -22,7 +21,7 @@ type resourceSlot struct {
 	isPinned bool
 	hasValue bool
 
-	lastRecord logstore.LogEntryRecord
+	lastRecord forddb.LogEntryRecord
 	encoded    forddb.RawResource
 	value      forddb.BasicResource
 	err        error
@@ -63,10 +62,10 @@ func (rs *resourceSlot) doGet(
 	wait bool,
 	decode bool,
 ) (raw forddb.RawResource, res forddb.BasicResource, err error) {
-	if !rs.table.typ.Type().IsRuntimeOnly() {
+	if wait && !rs.table.typ.Type().IsRuntimeOnly() {
 		res, err := rs.table.db.storage.Get(ctx, rs.table.typ, rs.id, forddb.GetOptions{})
 
-		if forddb.IsNotFound(err) {
+		if !forddb.IsNotFound(err) {
 			return nil, nil, err
 		}
 
@@ -90,6 +89,8 @@ func (rs *resourceSlot) doGet(
 				return rs.encoded, rs.value, err
 			}
 		}
+
+		wait = false
 	}
 
 	if lock {
@@ -98,9 +99,9 @@ func (rs *resourceSlot) doGet(
 	}
 
 	if wait && !rs.hasValue && rs.err == nil {
-		//rs.table.notifyGet(rs)
-
 		for !rs.hasValue && rs.err == nil {
+			//rs.table.notifyGet(rs)
+
 			rs.cond.Wait()
 		}
 	}
@@ -205,10 +206,10 @@ func (rs *resourceSlot) doUpdate(
 			return nil, nil, false, err
 		}
 
-		record, err := rs.table.db.log.Append(ctx, logstore.LogEntry{
-			Kind:           logstore.LogEntryKindSet,
+		record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
+			Kind:           forddb.LogEntryKindSet,
 			Type:           rs.table.typ,
-			ID:             rs.id,
+			ID:             rs.id.String(),
 			Version:        meta.Version,
 			CurrentCid:     nil,
 			PreviousCid:    nil,
@@ -253,10 +254,10 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, boo
 	}
 
 	if !rs.table.typ.Type().IsRuntimeOnly() {
-		_, err := rs.table.db.log.Append(ctx, logstore.LogEntry{
-			Kind:           logstore.LogEntryKindDelete,
+		_, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
+			Kind:           forddb.LogEntryKindDelete,
 			Type:           rs.table.typ,
-			ID:             rs.id,
+			ID:             rs.id.String(),
 			Version:        value.GetResourceVersion(),
 			CurrentCid:     nil,
 			PreviousCid:    nil,

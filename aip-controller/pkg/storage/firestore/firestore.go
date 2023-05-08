@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
+	"github.com/samber/lo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -56,14 +57,14 @@ func NewStorage(config *Config) (*Storage, error) {
 
 func (s *Storage) List(
 	ctx context.Context,
-	typ forddb.ResourceTypeID,
+	typ forddb.TypeID,
 	opts forddb.ListOptions,
 ) ([]forddb.RawResource, error) {
 	collection := typ.Name()
 
 	col := s.client.Collection(collection)
 
-	query := col.OrderBy("metadata.created_at", firestore.Desc)
+	query := col.Query
 
 	if opts.Offset > 0 {
 		query = col.Offset(opts.Offset)
@@ -73,7 +74,30 @@ func (s *Storage) List(
 		query = col.Limit(opts.Limit)
 	}
 
+	for _, item := range opts.SortFields {
+		itemPath := item.Path
+
+		if itemPath == "id" {
+			itemPath = "metadata.id"
+		}
+
+		if item.Order == forddb.Asc {
+			query = query.OrderBy(itemPath, firestore.Asc)
+		} else {
+			query = query.OrderBy(itemPath, firestore.Desc)
+		}
+	}
+
+	if len(opts.ResourceIDs) > 0 {
+		ids := lo.Map(opts.ResourceIDs, func(id forddb.BasicResourceID, _index int) string {
+			return id.String()
+		})
+
+		query = query.Where("metadata.id", "in", ids)
+	}
+
 	iterator := query.Documents(ctx)
+
 	all, err := iterator.GetAll()
 
 	if err != nil {
@@ -105,7 +129,7 @@ func (s *Storage) List(
 
 func (s *Storage) Get(
 	ctx context.Context,
-	typ forddb.ResourceTypeID,
+	typ forddb.TypeID,
 	id forddb.BasicResourceID,
 	opts forddb.GetOptions,
 ) (forddb.RawResource, error) {

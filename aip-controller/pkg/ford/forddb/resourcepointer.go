@@ -11,9 +11,9 @@ type BasicResourcePointer interface {
 type ResourcePointer[ID ResourceID[T], T Resource[ID]] struct {
 	BasicResourcePointer
 
-	TypeID ResourceTypeID `json:"type_id"`
-	ID     ID             `json:"resource_id"`
-	Link   ipld.Link      `json:"resource_link"`
+	TypeID TypeID    `json:"type_id"`
+	ID     ID        `json:"resource_id"`
+	Link   ipld.Link `json:"resource_link"`
 }
 
 func (rp *ResourcePointer[ID, T]) Type() ResourceType[ID, T]    { return rp.Type().(ResourceType[ID, T]) }

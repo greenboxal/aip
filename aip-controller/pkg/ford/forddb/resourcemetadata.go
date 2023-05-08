@@ -2,6 +2,7 @@ package forddb
 
 import (
 	"encoding/json"
+	"reflect"
 	"time"
 
 	"github.com/multiformats/go-multibase"
@@ -11,37 +12,43 @@ import (
 type ResourceMetadata interface {
 	GetResourceMetadata() *Metadata
 	GetResourceBasicID() BasicResourceID
-	GetResourceTypeID() ResourceTypeID
+	GetResourceTypeID() TypeID
 	GetResourceVersion() uint64
 }
 
 type Metadata struct {
-	Kind      ResourceTypeID `json:"kind"`
-	Namespace string         `json:"namespace"`
-	Name      string         `json:"name"`
-	Version   uint64         `json:"version"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	Kind      TypeID        `json:"kind"`
+	Scope     ResourceScope `json:"scope"`
+	Namespace string        `json:"namespace"`
+	Version   uint64        `json:"version"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
 }
 
 func (r *Metadata) GetResourceMetadata() *Metadata { return r }
+func (r *Metadata) GetResourceVersion() uint64     { return r.Version }
+func (r *Metadata) GetResourceTypeID() TypeID {
+	return r.Kind
+}
 
 type ResourceBase[ID ResourceID[T], T Resource[ID]] struct {
 	ID ID `json:"id"`
 	Metadata
 }
 
-func (r *ResourceBase[ID, T]) GetResourceMetadata() *Metadata      { return &r.Metadata }
 func (r *ResourceBase[ID, T]) GetResourceID() ID                   { return r.ID }
 func (r *ResourceBase[ID, T]) GetResourceBasicID() BasicResourceID { return r.ID }
-func (r *ResourceBase[ID, T]) GetResourceVersion() uint64          { return r.Version }
 
-func (r *ResourceBase[ID, T]) GetResourceTypeID() ResourceTypeID {
-	return r.ID.BasicResourceType().GetResourceID()
+func (r *ResourceBase[ID, T]) GetResourceTypeID() TypeID {
+	if r.Kind == "" {
+		r.Kind = r.ID.BasicResourceType().GetResourceID()
+	}
+
+	return r.Kind
 }
 
 func (r *ResourceBase[ID, T]) GetResourceType() ResourceType[ID, T] {
-	return r.ID.BasicResourceType().(ResourceType[ID, T])
+	return TypeSystem().LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem()).(ResourceType[ID, T])
 }
 
 func (r *ResourceBase[ID, T]) OnBeforeSave(self BasicResource) {

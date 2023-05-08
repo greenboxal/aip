@@ -33,7 +33,7 @@ func (pm *ContentCache) PutPage(ctx context.Context, page *models.Page) (*models
 	id := models.BuildPageID(page.Spec)
 	page.ResourceBase.ID = id
 
-	return forddb.Put(pm.db, page)
+	return forddb.Put(ctx, pm.db, page)
 }
 
 func (pm *ContentCache) GetImage(ctx context.Context, spec models.ImageSpec) (*models.Image, error) {
@@ -46,5 +46,5 @@ func (pm *ContentCache) PutImage(ctx context.Context, image *models.Image) (*mod
 	id := models.BuildImageID(image.Spec)
 	image.ID = id
 
-	return forddb.Put(pm.db, image)
+	return forddb.Put(ctx, pm.db, image)
 }

@@ -25,7 +25,7 @@ import {
     useGetResourceLabel,
     useCreatePath,
     MenuItemLink,
-    MenuProps, TabbedShowLayout, ArrayField,
+    MenuProps, TabbedShowLayout, ArrayField, WrapperField, SimpleForm, SingleFieldList, SelectColumnsButton, TopToolbar, DatagridConfigurable,
 } from "react-admin"
 
 import { MarkdownField } from "@react-admin/ra-markdown"
@@ -35,22 +35,23 @@ import { MultiLevelMenu, AppLocationContext, Breadcrumb} from '@react-admin/ra-n
 import DefaultIcon from '@mui/icons-material/ViewList'
 
 import { ReactQueryDevtools } from "react-query/devtools"
+import {Card} from "@mui/material";
+
+export const ImageListActions = () => (<TopToolbar>
+    <SelectColumnsButton />
+</TopToolbar>)
 
 export const ImageList = () => (
-    <List>
-        <Datagrid>
+    <List actions={<ImageListActions />}>
+        <DatagridConfigurable rowClick="show" size="small" preferenceKey="images.datagrid">
             <ImageField source="status.url" title="Thumbnail" label="" />
-
             <TextField source="id" label="ID" />
+            <TextField source="status.prompt" label="Prompt" />
 
             <TextField source="spec.path" label="Path" />
-            <TextField source="spec.prompt" label="Prompt" />
-            <UrlField source="status.url" label="URL" />
-
-            <ShowButton />
-        </Datagrid>
+        </DatagridConfigurable>
     </List>
-);
+)
 
 export const ImageShow = () => (
     <Show>
@@ -61,7 +62,7 @@ export const ImageShow = () => (
             <DateField source="metadata.updated_at" label="Updated At" />
 
             <TextField source="spec.path" label="Path" />
-            <TextField source="spec.prompt" label="Prompt" />
+            <TextField source="status.prompt" label="Prompt" />
             <UrlField source="status.url" label="URL" />
 
             <ImageField source="status.url" title="Preview" />
