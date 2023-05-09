@@ -28,6 +28,8 @@ import {
     MenuProps, TabbedShowLayout, ArrayField, WrapperField, SimpleForm, SingleFieldList, SelectColumnsButton, TopToolbar, DatagridConfigurable,
 } from "react-admin"
 
+import { ListLive } from '@react-admin/ra-realtime';
+
 import { MarkdownField } from "@react-admin/ra-markdown"
 
 import { MultiLevelMenu, AppLocationContext, Breadcrumb} from '@react-admin/ra-navigation'
@@ -42,13 +44,13 @@ export const JobListActions = () => (<TopToolbar>
 </TopToolbar>)
 
 export const JobList = () => (
-    <List actions={<JobListActions />}>
+    <ListLive actions={<JobListActions />}>
         <DatagridConfigurable rowClick="show" size="small" preferenceKey="images.datagrid">
             <TextField source="id" label="ID" />
             <TextField source="status.state" label="State" />
             <TextField source="spec.handler" label="Handler" />
         </DatagridConfigurable>
-    </List>
+    </ListLive>
 )
 
 export const JobShow = () => (

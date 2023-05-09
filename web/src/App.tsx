@@ -1,4 +1,6 @@
-import React, {createElement} from 'react'
+import React from 'react'
+
+import { ApolloClient, ApolloProvider } from '@apollo/client';
 
 import {
     Admin,
@@ -6,56 +8,20 @@ import {
     ListGuesser,
     DataProvider,
     ShowGuesser,
-    Layout,
-    LayoutProps,
     defaultTheme,
-    useResourceDefinitions,
-    useGetResourceLabel,
-    useCreatePath,
-    MenuProps,
-    TitlePortal,
-    AppBar,
-    LocalesMenuButton,
-    ToggleThemeButton,
-    RaThemeOptions,
+    RaThemeOptions, CustomRoutes,
 } from "react-admin"
 
-import buildGraphQLProvider from 'ra-data-graphql-simple';
-import {addSearchMethod, Search} from "@react-admin/ra-search";
-
-import { MultiLevelMenu, AppLocationContext, Breadcrumb} from '@react-admin/ra-navigation'
-import { ReactQueryDevtools } from "react-query/devtools"
 import {ImageList, ImageShow} from "./resources/Image";
 import {JobList, JobShow} from "./resources/Job";
 import {PageCreate, PageList, PageShow} from "./resources/Page";
-import DefaultIcon from '@mui/icons-material/ViewList'
 
-import { CREATE } from 'ra-core';
+import AppLayout from "./layout/AppLayout";
+import Dashboard from "./dashboard";
+import buildDataProvider from "./data";
+import ChatPage from "./chat";
+import {Route} from "react-router";
 
-export const ResourceMenuItem = ({ name }: { name: string }) => {
-    const resources = useResourceDefinitions();
-    const getResourceLabel = useGetResourceLabel();
-    const createPath = useCreatePath();
-    if (!resources || !resources[name]) return null;
-
-    return (
-        <MultiLevelMenu.Item
-            name={name}
-            to={createPath({
-                resource: name,
-                type: 'list',
-            })}
-            label={<>{getResourceLabel(name, 2)}</>}
-            icon={
-                resources[name].icon ? (
-                    createElement(resources[name].icon)
-                ) : (
-                    <DefaultIcon />
-                )
-            }
-        />
-    );
-};
 
 const darkTheme = {
     ...defaultTheme,
@@ -64,82 +30,27 @@ const darkTheme = {
     },
 } as RaThemeOptions
 
-export const MyAppBar = () => (
-    <AppBar>
-        <TitlePortal />
-        <Search />
-        <ToggleThemeButton lightTheme={defaultTheme} darkTheme={darkTheme}  />
-        <LocalesMenuButton />
-    </AppBar>
-);
-
-const AppMenu: React.FC<MenuProps> = (props: MenuProps) => (
-    <MultiLevelMenu {...props}>
-        <MultiLevelMenu.Item label="Content Management" name="content-management">
-            <ResourceMenuItem name="Page" />
-            <ResourceMenuItem name="Image" />
-        </MultiLevelMenu.Item>
-
-        <MultiLevelMenu.Item label="Infrastructure" name="infrastructure">
-            <ResourceMenuItem name="Job" />
-            <ResourceMenuItem name="Memory" />
-        </MultiLevelMenu.Item>
-    </MultiLevelMenu>
-)
-
-const AppLayout: React.FC<LayoutProps> = ({ children, ...rest }) => (<>
-    <AppLocationContext>
-        <Layout {...rest} menu={AppMenu} appBar={MyAppBar}>
-            <Breadcrumb></Breadcrumb>
-            {children}
-        </Layout>
-    </AppLocationContext>
-    <ReactQueryDevtools />
-</>)
-
-const Dashboard: React.FC = () => (
-    <main>
-
-    </main>
-)
-
 const App: React.FC = () => {
-    const [baseDataProvider, setBaseDataProvider] = React.useState<DataProvider>(null)
+    const [dataProviderAndClient, setDataProviderAndClient] = React.useState<{
+        client: ApolloClient<any>,
+        dataProvider: DataProvider,
+    }>(null)
 
     React.useEffect(() => {
-        buildGraphQLProvider({
-            introspection: {
-                operationNames: {
-                    [CREATE]: (type) => {
-                        switch (type.name) {
-                            case "Page": return "wikiPageManagerGetPage"
-                        }
-
-                        return undefined
-                    },
-                },
-            },
-
-            clientOptions: {
-                uri: 'http://localhost:30100/v1/graphql',
-                connectToDevTools: true,
-            },
-        })
-            .then(graphQlDataProvider => {
-                setBaseDataProvider(() => graphQlDataProvider)
+        buildDataProvider()
+            .then(result => {
+                setDataProviderAndClient(() => result)
             })
     }, [])
 
-    if (!baseDataProvider) {
+    if (!dataProviderAndClient) {
         return (<div>Loading</div>)
     }
 
-    const dataProvider = addSearchMethod(baseDataProvider, [
-        "Image",
-        "Page",
-    ]);
+    const { client, dataProvider } = dataProviderAndClient
 
     return (
+        <ApolloProvider client={client}>
         <Admin
             layout={AppLayout}
             dataProvider={dataProvider}
@@ -172,7 +83,12 @@ const App: React.FC = () => {
                 list={ListGuesser}
                 show={ShowGuesser}
             />
+
+            <CustomRoutes>
+                <Route path="/chat" element={<ChatPage />} />
+            </CustomRoutes>
         </Admin>
+        </ApolloProvider>
     )
 }
 
