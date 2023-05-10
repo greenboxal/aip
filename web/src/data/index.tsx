@@ -7,6 +7,8 @@ import {getMainDefinition} from "@apollo/client/utilities";
 import buildGraphQLProvider from "ra-data-graphql-simple";
 import {CREATE} from "ra-core";
 import {addSearchMethod} from "@react-admin/ra-search";
+import {setContext} from "@apollo/client/link/context";
+import {auth0} from "../authProvider";
 
 function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataProvider): DataProvider {
     let subscriptions: any = {};
@@ -37,16 +39,16 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
                     },
 
                     query: gql`
-                subscription Sub($resourceKind: String!) {
-                    resourceChanged(resourceType: $resourceKind) {
-                        type
-                        
-                        payload {
-                            ids
+                        subscription Sub($resourceKind: String!) {
+                            resourceChanged(resourceType: $resourceKind) {
+                                type
+
+                                payload {
+                                    ids
+                                }
+                            }
                         }
-                    }
-                }
-`
+                    `
                 })
 
                 sub.subscription = sub.observable.subscribe((data: any) => {
@@ -56,7 +58,7 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
 
             sub.callbacks.push(subscriptionCallback)
 
-            return Promise.resolve({ data: null });
+            return Promise.resolve({data: null});
         },
 
         unsubscribe: async (topic: string, subscriptionCallback: any) => {
@@ -76,7 +78,7 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
                 delete subscriptions[topic]
             }
 
-            return Promise.resolve({ data: null });
+            return Promise.resolve({data: null});
         },
 
         publish: (topic: string, event: any) => {
@@ -96,32 +98,48 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
 
             sub.callbacks.forEach((callback: any) => callback(event));
 
-            return Promise.resolve({ data: null });
+            return Promise.resolve({data: null});
         },
     }
 
     return dataProvider;
 }
 
-export default function buildDataProvider(): Promise<{client: ApolloClient<any>, dataProvider: DataProvider}> {
+export default function buildDataProvider(): Promise<{ client: ApolloClient<any>, dataProvider: DataProvider }> {
     const httpLink = new HttpLink({
         uri: 'http://localhost:30100/v1/graphql',
     })
 
     const wsLink = new GraphQLWsLink(createClient({
         url: 'ws://localhost:30100/v1/graphql/ws',
+        keepAlive: 10000,
+        connectionParams: {
+            reconnect: true,
+        }
     }))
 
+    const authLink = setContext((_, {headers}) => {
+        return auth0.getTokenSilently().then((token) => {
+            // return the headers to the context so httpLink can read them
+            return {
+                headers: {
+                    ...headers,
+                    authorization: token ? `Bearer ${token}` : "",
+                }
+            }
+        })
+    });
+
     const splitLink = split(
-        ({ query }) => {
+        ({query}) => {
             const definition = getMainDefinition(query);
             return (
                 definition.kind === 'OperationDefinition' &&
                 definition.operation === 'subscription'
             );
         },
-        wsLink,
-        httpLink,
+        authLink.concat(wsLink),
+        authLink.concat(httpLink),
     );
 
     const client = new ApolloClient({
@@ -138,7 +156,8 @@ export default function buildDataProvider(): Promise<{client: ApolloClient<any>,
             operationNames: {
                 [CREATE]: (type) => {
                     switch (type.name) {
-                        case "Page": return "wikiPageManagerGetPage"
+                        case "Page":
+                            return "wikiPageManagerGetPage"
                     }
 
                     return undefined

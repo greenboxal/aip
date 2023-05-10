@@ -3,7 +3,7 @@ import {MultiLevelMenu} from "@react-admin/ra-navigation";
 import React, {createElement} from "react";
 import DefaultIcon from "@mui/icons-material/ViewList";
 
-export const ResourceMenuItem = ({ name }: { name: string }) => {
+export const ResourceMenuItem = ({name}: { name: string }) => {
     const resources = useResourceDefinitions();
     const getResourceLabel = useGetResourceLabel();
     const createPath = useCreatePath();
@@ -21,7 +21,7 @@ export const ResourceMenuItem = ({ name }: { name: string }) => {
                 resources[name].icon ? (
                     createElement(resources[name].icon)
                 ) : (
-                    <DefaultIcon />
+                    <DefaultIcon/>
                 )
             }
         />

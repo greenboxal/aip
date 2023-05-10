@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "^3.7.13",
+    "@auth0/auth0-react": "^2.1.0",
     "@auth0/auth0-spa-js": "^2.0.4",
     "@babel/core": "^7.16.0",
     "@chakra-ui/icons": "^2.0.19",

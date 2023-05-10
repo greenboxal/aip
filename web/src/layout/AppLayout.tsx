@@ -5,14 +5,14 @@ import {ReactQueryDevtools} from "react-query/devtools";
 import AppBar from "./AppBar";
 import AppMenu from "./AppMenu";
 
-export const AppLayout: React.FC<LayoutProps> = ({ children, ...rest }) => (<>
+export const AppLayout: React.FC<LayoutProps> = ({children, ...rest}) => (<>
     <AppLocationContext>
         <Layout {...rest} menu={AppMenu} appBar={AppBar}>
             <Breadcrumb></Breadcrumb>
             {children}
         </Layout>
     </AppLocationContext>
-    <ReactQueryDevtools />
+    <ReactQueryDevtools/>
 </>)
 
 export default AppLayout;

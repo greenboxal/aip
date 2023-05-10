@@ -1,57 +1,37 @@
-import React, {createElement} from 'react'
+import React from 'react'
 
 import {
-    Admin,
-    Resource,
-    ListGuesser,
-    DataProvider,
-    List,
-    Datagrid,
-    TextField,
-    DateField,
-    BooleanField,
-    ShowGuesser,
-    Layout,
-    LayoutProps,
-    Menu,
-    SimpleShowLayout,
-    Show,
-    RichTextField,
-    ShowButton,
-    UrlField,
-    ImageField,
-    defaultTheme,
-    useResourceDefinitions,
-    useGetResourceLabel,
-    useCreatePath,
-    MenuItemLink,
-    MenuProps,
-    TabbedShowLayout,
     ArrayField,
-    Create,
-    SimpleForm,
-    TextInput,
-    WithRecord,
-    ReferenceField,
     ChipField,
-    SingleFieldList,
-    FunctionField,
+    Create,
+    CreateButton,
+    Datagrid,
+    DatagridConfigurable,
+    DateField,
+    List,
+    ReferenceField,
+    RichTextField,
     SelectColumnsButton,
+    Show,
+    SimpleForm,
+    TabbedShowLayout,
+    TextField,
+    TextInput,
     TopToolbar,
-    DatagridConfigurable, CreateButton,
+    WithRecord,
 } from "react-admin"
 
-import {CreateInDialogButton, EditDialog} from "@react-admin/ra-form-layout";
+import {CreateInDialogButton} from "@react-admin/ra-form-layout";
 
-import { MarkdownField } from "@react-admin/ra-markdown"
+import {MarkdownField} from "@react-admin/ra-markdown"
 
 export const PageListActions = () => (<TopToolbar>
-    <SelectColumnsButton />
-    <CreateButton />
+    <SelectColumnsButton/>
+    <CreateButton/>
 </TopToolbar>)
 
 export const PageList = () => (
-    <List actions={<PageListActions />}>
+    <List actions={<PageListActions/>}>
         <DatagridConfigurable rowClick="show" size="small" preferenceKey="pages.datagrid">
             <TextField source="spec.title" label="Title"/>
             <TextField source="spec.language" label="Language"/>
@@ -78,47 +58,47 @@ export const PageShow = () => (
                             voice: "",
                             language: "",
                         }}>
-                            <TextInput source="title" label="Title" />
-                            <TextInput source="voice" label="Voice" />
-                            <TextInput source="language" label="Language" />
+                            <TextInput source="title" label="Title"/>
+                            <TextInput source="voice" label="Voice"/>
+                            <TextInput source="language" label="Language"/>
                         </SimpleForm>
                     </CreateInDialogButton>
-                )} />
+                )}/>
 
-                <TextField source="id" label="ID" />
-                <TextField source="spec.base_page_id" label="Base Page ID" />
+                <TextField source="id" label="ID"/>
+                <TextField source="spec.base_page_id" label="Base Page ID"/>
 
                 <ReferenceField source="spec.base_page_id" reference="Page" label="Base Page">
-                    <ChipField source="spec.title" />
+                    <ChipField source="spec.title"/>
                 </ReferenceField>
 
-                <DateField source="metadata.created_at" label="Created At" />
-                <DateField source="metadata.updated_at" label="Updated At" />
+                <DateField source="metadata.created_at" label="Created At"/>
+                <DateField source="metadata.updated_at" label="Updated At"/>
 
-                <TextField source="spec.title" label="Title" />
-                <TextField source="spec.language" label="Language" />
-                <TextField source="spec.voice" label="Voice" />
+                <TextField source="spec.title" label="Title"/>
+                <TextField source="spec.language" label="Language"/>
+                <TextField source="spec.voice" label="Voice"/>
 
                 <ArrayField source="status.images" label="Images">
                     <Datagrid bulkActionButtons={false}>
-                        <TextField source="title" label="Title" />
-                        <TextField source="source" label="Source" />
+                        <TextField source="title" label="Title"/>
+                        <TextField source="source" label="Source"/>
                     </Datagrid>
                 </ArrayField>
 
                 <ArrayField source="status.links" label="Links">
                     <Datagrid bulkActionButtons={false}>
-                        <TextField source="title" label="Title" />
-                        <TextField source="to" label="To" />
+                        <TextField source="title" label="Title"/>
+                        <TextField source="to" label="To"/>
                     </Datagrid>
                 </ArrayField>
 
 
-                <MarkdownField source="status.markdown" label="Markdown Contents" />
+                <MarkdownField source="status.markdown" label="Markdown Contents"/>
             </TabbedShowLayout.Tab>
 
             <TabbedShowLayout.Tab label="HTML Preview">
-                <RichTextField source="status.html" label="HTML Contents" />
+                <RichTextField source="status.html" label="HTML Contents"/>
             </TabbedShowLayout.Tab>
         </TabbedShowLayout>
     </Show>
@@ -127,9 +107,9 @@ export const PageShow = () => (
 export const PageCreate = () => (
     <Create>
         <SimpleForm>
-            <TextInput source="title" label="Title" />
-            <TextInput source="voice" label="Voice" />
-            <TextInput source="language" label="Language" />
+            <TextInput source="title" label="Title"/>
+            <TextInput source="voice" label="Voice"/>
+            <TextInput source="language" label="Language"/>
         </SimpleForm>
     </Create>
 );

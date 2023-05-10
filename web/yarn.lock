@@ -78,6 +78,13 @@
   dependencies:
     node-fetch "^2.6.1"
 
+"@auth0/auth0-react@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@auth0/auth0-react/-/auth0-react-2.1.0.tgz#cadb561fb3994fd3e63040da1bfc714947ac07ea"
+  integrity sha512-+86qLx97BcSwL/ZwIzGq9jFa5SaV5z7goLU5gi+4R9KhzDg9vhmmZ+iQWW0GMiuwjJ8vcfX4hRTD6iF0DbGZWw==
+  dependencies:
+    "@auth0/auth0-spa-js" "^2.0.4"
+
 "@auth0/auth0-spa-js@^2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@auth0/auth0-spa-js/-/auth0-spa-js-2.0.4.tgz#81f6b5d9f72617ed30ee53cdf27dcd7a216bf2da"

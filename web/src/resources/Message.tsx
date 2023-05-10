@@ -1,57 +1,22 @@
-import React, {createElement} from 'react'
+import React from 'react'
 
-import {
-    Admin,
-    Resource,
-    ListGuesser,
-    DataProvider,
-    List,
-    Datagrid,
-    TextField,
-    DateField,
-    BooleanField,
-    ShowGuesser,
-    Layout,
-    LayoutProps,
-    Menu,
-    SimpleShowLayout,
-    Show,
-    RichTextField,
-    ShowButton,
-    UrlField,
-    ImageField,
-    defaultTheme,
-    useResourceDefinitions,
-    useGetResourceLabel,
-    useCreatePath,
-    MenuItemLink,
-    MenuProps, TabbedShowLayout, ArrayField, WrapperField, SimpleForm, SingleFieldList, SelectColumnsButton, TopToolbar, DatagridConfigurable,
-} from "react-admin"
+import {DatagridConfigurable, DateField, SelectColumnsButton, Show, SimpleShowLayout, TextField, TopToolbar,} from "react-admin"
 
-import { ListLive } from '@react-admin/ra-realtime';
-
-import { MarkdownField } from "@react-admin/ra-markdown"
-
-import { MultiLevelMenu, AppLocationContext, Breadcrumb} from '@react-admin/ra-navigation'
-
-import DefaultIcon from '@mui/icons-material/ViewList'
-
-import { ReactQueryDevtools } from "react-query/devtools"
-import {Card} from "@mui/material";
+import {ListLive} from '@react-admin/ra-realtime';
 
 export const MessageListActions = () => (<TopToolbar>
-    <SelectColumnsButton />
+    <SelectColumnsButton/>
 </TopToolbar>)
 
 export const MessageList = () => (
-    <ListLive actions={<MessageListActions />}>
+    <ListLive actions={<MessageListActions/>}>
         <DatagridConfigurable rowClick="show" size="small" preferenceKey="messages.datagrid">
-            <TextField source="id" label="ID" />
-            <TextField source="channel" label="Channel" />
-            <TextField source="from" label="From" />
-            <TextField source="text" label="Text" />
+            <TextField source="id" label="ID"/>
+            <TextField source="channel" label="Channel"/>
+            <TextField source="from" label="From"/>
+            <TextField source="text" label="Text"/>
 
-            <DateField source="metadata.created_at" label="Created At" />
+            <DateField source="metadata.created_at" label="Created At"/>
         </DatagridConfigurable>
     </ListLive>
 )
@@ -59,12 +24,12 @@ export const MessageList = () => (
 export const MessageShow = () => (
     <Show>
         <SimpleShowLayout>
-            <TextField source="id" label="ID" />
-            <TextField source="channel" label="Channel" />
-            <TextField source="from" label="From" />
-            <TextField source="text" label="Text" />
+            <TextField source="id" label="ID"/>
+            <TextField source="channel" label="Channel"/>
+            <TextField source="from" label="From"/>
+            <TextField source="text" label="Text"/>
 
-            <DateField source="metadata.created_at" label="Created At" />
+            <DateField source="metadata.created_at" label="Created At"/>
         </SimpleShowLayout>
     </Show>
 );

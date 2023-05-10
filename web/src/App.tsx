@@ -1,15 +1,8 @@
 import React from 'react'
 
-import { ApolloClient, ApolloProvider } from '@apollo/client';
+import {ApolloClient, ApolloProvider} from '@apollo/client';
 
-import {
-    Admin,
-    Resource,
-    ListGuesser,
-    DataProvider,
-    ShowGuesser,
-    CustomRoutes,
-} from "react-admin"
+import {Admin, CustomRoutes, DataProvider, ListGuesser, Resource, ShowGuesser,} from "react-admin"
 
 import {Route} from "react-router";
 
@@ -22,7 +15,7 @@ import ChatPage from "./chat";
 import {ImageList, ImageShow} from "./resources/Image";
 import {JobList, JobShow} from "./resources/Job";
 import {PageCreate, PageList, PageShow} from "./resources/Page";
-import authProvider from "./authProvider";
+import {authProvider} from "./authProvider";
 
 const App: React.FC = () => {
     const [dataProviderAndClient, setDataProviderAndClient] = React.useState<{
@@ -41,60 +34,60 @@ const App: React.FC = () => {
         return (<div>Loading</div>)
     }
 
-    const { client, dataProvider } = dataProviderAndClient
+    const {client, dataProvider} = dataProviderAndClient
 
     return (
         <ApolloProvider client={client}>
-        <Admin
-            layout={AppLayout}
-            dataProvider={dataProvider}
-            authProvider={authProvider}
-            dashboard={Dashboard}
-        >
+            <Admin
+                layout={AppLayout}
+                dataProvider={dataProvider}
+                authProvider={authProvider}
+                dashboard={Dashboard}
+            >
 
-            <Resource
-                name="Image"
-                list={ImageList}
-                show={ImageShow}
-                recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
-            />
+                <Resource
+                    name="Image"
+                    list={ImageList}
+                    show={ImageShow}
+                    recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
+                />
 
-            <Resource
-                name="Page"
-                list={PageList}
-                show={PageShow}
-                create={PageCreate}
-                recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
-            />
+                <Resource
+                    name="Page"
+                    list={PageList}
+                    show={PageShow}
+                    create={PageCreate}
+                    recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
+                />
 
-            <Resource
-                name="Job"
-                list={JobList}
-                show={JobShow}
-            />
+                <Resource
+                    name="Job"
+                    list={JobList}
+                    show={JobShow}
+                />
 
-            <Resource
-                name="Memory"
-                list={ListGuesser}
-                show={ShowGuesser}
-            />
+                <Resource
+                    name="Memory"
+                    list={ListGuesser}
+                    show={ShowGuesser}
+                />
 
-            <Resource
-                name="Channel"
-                list={ListGuesser}
-                show={ShowGuesser}
-            />
+                <Resource
+                    name="Channel"
+                    list={ListGuesser}
+                    show={ShowGuesser}
+                />
 
-            <Resource
-                name="Message"
-                list={ListGuesser}
-                show={ShowGuesser}
-            />
+                <Resource
+                    name="Message"
+                    list={ListGuesser}
+                    show={ShowGuesser}
+                />
 
-            <CustomRoutes>
-                <Route path="/chat" element={<ChatPage />} />
-            </CustomRoutes>
-        </Admin>
+                <CustomRoutes>
+                    <Route path="/chat" element={<ChatPage/>}/>
+                </CustomRoutes>
+            </Admin>
         </ApolloProvider>
     )
 }
