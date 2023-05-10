@@ -19,9 +19,6 @@ import (
 type GraphQL struct {
 	chi.Router
 
-	handler   *handler.Handler
-	wsHandler http.Handler
-
 	db forddb.Database
 
 	schema graphql.Schema
@@ -40,16 +37,6 @@ type GraphQL struct {
 	subscriptionFields graphql.Fields
 	subscriptionConfig graphql.ObjectConfig
 	subscription       *graphql.Object
-}
-
-func (q *GraphQL) RegisterTypeMapping(t reflect.Type, input graphql.Input, output graphql.Output) {
-	if input != nil {
-		q.inputTypeMap[t] = input
-	}
-
-	if output != nil {
-		q.outputTypeMap[t] = output
-	}
 }
 
 func NewGraphQL(
@@ -87,17 +74,15 @@ func NewGraphQL(
 		panic(err)
 	}
 
-	gql.wsHandler = wsHandler
-
-	gql.handler = handler.New(&handler.Config{
+	httpHandler := handler.New(&handler.Config{
 		Schema:     &gql.schema,
 		Pretty:     true,
 		GraphiQL:   true,
 		Playground: true,
 	})
 
-	gql.Mount("/ws", gql.wsHandler)
-	gql.Mount("/", gql.handler)
+	gql.Mount("/ws", wsHandler)
+	gql.Mount("/", httpHandler)
 
 	return gql
 }

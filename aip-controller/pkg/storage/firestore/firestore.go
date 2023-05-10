@@ -3,10 +3,14 @@ package firestore
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"strconv"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
+	"github.com/antonmedv/expr/ast"
 	"github.com/samber/lo"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -95,6 +99,19 @@ func (s *Storage) List(
 		query = query.Where("metadata.id", "in", ids)
 	}
 
+	if opts.FilterExpression != nil {
+		node := opts.FilterExpression.AsAst()
+		conditions, err := parseConditions(node)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, condition := range conditions {
+			query = query.WherePath(condition.Path, condition.Op, condition.Val)
+		}
+	}
+
 	iterator := query.Documents(ctx)
 
 	all, err := iterator.GetAll()
@@ -124,6 +141,162 @@ func (s *Storage) List(
 	}
 
 	return raws, nil
+}
+
+type parsedCondition struct {
+	Path firestore.FieldPath
+	Op   string
+	Val  interface{}
+}
+
+func parseConditions(node ast.Node) ([]parsedCondition, error) {
+	var walkExpression func(node ast.Node) error
+	var walkValue func(node ast.Node) (any, error)
+	var conditions []parsedCondition
+
+	walkPath := func(node ast.Node) (firestore.FieldPath, error) {
+		var path firestore.FieldPath
+
+		for node != nil {
+			switch n := node.(type) {
+			case *ast.IdentifierNode:
+				if n.Value == "resource" {
+					node = nil
+				} else {
+					return nil, errors.New("unsupported")
+				}
+
+			case *ast.MemberNode:
+				var name string
+
+				switch v := n.Property.(type) {
+				case *ast.IdentifierNode:
+					name = v.Value
+
+				case *ast.IntegerNode:
+					name = strconv.Itoa(v.Value)
+
+				case *ast.StringNode:
+					name = v.Value
+
+				default:
+					return nil, errors.New("unsupported")
+				}
+
+				path = slices.Insert(path, 0, name)
+
+				node = n.Node
+			}
+		}
+
+		return path, nil
+	}
+
+	walkValue = func(node ast.Node) (any, error) {
+		switch n := node.(type) {
+		case *ast.StringNode:
+			return n.Value, nil
+
+		case *ast.IntegerNode:
+			return n.Value, nil
+
+		case *ast.FloatNode:
+			return n.Value, nil
+
+		case *ast.BoolNode:
+			return n.Value, nil
+
+		case *ast.ArrayNode:
+			var values []any
+
+			for _, item := range n.Nodes {
+				value, err := walkValue(item)
+
+				if err != nil {
+					return nil, err
+				}
+
+				values = append(values, value)
+			}
+
+			return values, nil
+
+		case *ast.MapNode:
+			var values map[any]any
+
+			for i := 0; i < len(n.Pairs); i += 2 {
+				k, err := walkValue(n.Pairs[i])
+
+				if err != nil {
+					return nil, err
+				}
+
+				v, err := walkValue(n.Pairs[i+1])
+
+				if err != nil {
+					return nil, err
+				}
+
+				values[k] = v
+			}
+		}
+
+		return nil, errors.New("unsupported")
+	}
+
+	walkBinOp := func(node *ast.BinaryNode) error {
+		path, err := walkPath(node.Left)
+
+		if err != nil {
+			return err
+		}
+
+		value, err := walkValue(node.Right)
+
+		if err != nil {
+			return err
+		}
+
+		conditions = append(conditions, parsedCondition{
+			Path: path,
+			Op:   node.Operator,
+			Val:  value,
+		})
+
+		return nil
+	}
+
+	walkUnOp := func(node *ast.UnaryNode) error {
+		return errors.New("unsupported")
+	}
+
+	walkExpression = func(node ast.Node) error {
+		switch n := node.(type) {
+		case *ast.BinaryNode:
+			if n.Operator == "&&" {
+				if err := walkExpression(n.Left); err != nil {
+					return err
+				}
+
+				if err := walkExpression(n.Left); err != nil {
+					return err
+				}
+			} else {
+				return walkBinOp(n)
+			}
+
+		case *ast.UnaryNode:
+			return walkUnOp(n)
+		}
+
+		return errors.New("unsupported")
+	}
+
+	if err := walkExpression(node); err != nil {
+		return nil, err
+	}
+
+	return conditions, nil
 }
 
 func (s *Storage) Get(

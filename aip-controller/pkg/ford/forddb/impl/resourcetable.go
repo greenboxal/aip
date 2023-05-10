@@ -71,7 +71,7 @@ func newResourceTable(db *database, typ forddb.TypeID) (*resourceTable, error) {
 	return rt, nil
 }
 
-func (rt *resourceTable) ListKeys() ([]forddb.BasicResourceID, error) {
+func (rt *resourceTable) ListKeys(opts forddb.ListOptions) ([]forddb.BasicResourceID, error) {
 	rt.m.RLock()
 	defer rt.m.RUnlock()
 
@@ -109,7 +109,7 @@ func (rt *resourceTable) List(ctx context.Context, opts forddb.ListOptions) ([]f
 		return resources, nil
 	}
 
-	keys, err := rt.ListKeys()
+	keys, err := rt.ListKeys(opts)
 
 	if err != nil {
 		return nil, err

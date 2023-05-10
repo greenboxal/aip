@@ -49,8 +49,12 @@ func (db *database) LogStore() forddb.LogStore {
 	return db.log
 }
 
-func (db *database) List(ctx context.Context, typ forddb.TypeID, options ...forddb.ListOption) ([]forddb.BasicResource, error) {
-	opts := forddb.NewListOptions(options...)
+func (db *database) List(
+	ctx context.Context,
+	typ forddb.TypeID,
+	options ...forddb.ListOption,
+) ([]forddb.BasicResource, error) {
+	opts := forddb.NewListOptions(typ, options...)
 
 	rt := db.GetTable(typ, true)
 
@@ -61,17 +65,26 @@ func (db *database) List(ctx context.Context, typ forddb.TypeID, options ...ford
 	return rt.List(ctx, opts)
 }
 
-func (db *database) Get(ctx context.Context, typ forddb.TypeID, id forddb.BasicResourceID) (forddb.BasicResource, error) {
+func (db *database) Get(
+	ctx context.Context,
+	typ forddb.TypeID,
+	id forddb.BasicResourceID,
+	options ...forddb.GetOption,
+) (forddb.BasicResource, error) {
 	slot := db.GetSlot(typ, id, true)
 
 	if slot == nil {
 		return nil, forddb.ErrNotFound
 	}
 
-	return slot.Get(ctx)
+	return slot.Get(ctx, options...)
 }
 
-func (db *database) Put(ctx context.Context, resource forddb.BasicResource, options ...forddb.PutOption) (forddb.BasicResource, error) {
+func (db *database) Put(
+	ctx context.Context,
+	resource forddb.BasicResource,
+	options ...forddb.PutOption,
+) (forddb.BasicResource, error) {
 	resource.OnBeforeSave(resource)
 
 	raw, err := forddb.Encode(resource)
@@ -96,7 +109,11 @@ func (db *database) Put(ctx context.Context, resource forddb.BasicResource, opti
 	return forddb.Decode(result)
 }
 
-func (db *database) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
+func (db *database) Delete(
+	ctx context.Context,
+	resource forddb.BasicResource,
+	options ...forddb.DeleteOption,
+) (forddb.BasicResource, error) {
 	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
 	if slot == nil {

@@ -41,7 +41,7 @@ func newResourceSlot(table *resourceTable, id forddb.BasicResourceID) *resourceS
 	return rs
 }
 
-func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
+func (rs *resourceSlot) Get(ctx context.Context, options ...forddb.GetOption) (forddb.BasicResource, error) {
 	raw, err := rs.doGet(ctx, true, true)
 
 	if err != nil {

@@ -200,6 +200,7 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 
 			if filterVal, ok := p.Args["filter"]; ok {
 				var ids []forddb.BasicResourceID
+				var q string
 
 				filter := filterVal.(map[string]interface{})
 
@@ -211,6 +212,14 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 					for _, id := range stringIds.([]interface{}) {
 						ids = append(ids, typ.CreateID(id.(string)))
 					}
+				}
+
+				if qVal, ok := filter["q"]; ok {
+					q = qVal.(string)
+				}
+
+				if q != "" {
+					options = append(options, forddb.WithListQueryOptions(forddb.WithFilterExpression(q)))
 				}
 
 				if len(ids) > 0 {

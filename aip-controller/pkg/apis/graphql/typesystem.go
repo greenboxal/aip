@@ -79,6 +79,16 @@ func (q *GraphQL) buildTypeSystem() {
 	q.schema = schema
 }
 
+func (q *GraphQL) RegisterTypeMapping(t reflect.Type, input graphql.Input, output graphql.Output) {
+	if input != nil {
+		q.inputTypeMap[t] = input
+	}
+
+	if output != nil {
+		q.outputTypeMap[t] = output
+	}
+}
+
 func (q *GraphQL) LookupInputType(typ forddb.BasicType) graphql.Input {
 	var result graphql.Input
 

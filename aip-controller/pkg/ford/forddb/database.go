@@ -2,6 +2,10 @@ package forddb
 
 import (
 	"context"
+
+	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/ast"
+	"github.com/antonmedv/expr/vm"
 )
 
 type Database interface {
@@ -10,17 +14,31 @@ type Database interface {
 	LogStore() LogStore
 
 	List(ctx context.Context, typ TypeID, options ...ListOption) ([]BasicResource, error)
-	Get(ctx context.Context, typ TypeID, id BasicResourceID) (BasicResource, error)
+	Get(ctx context.Context, typ TypeID, id BasicResourceID, options ...GetOption) (BasicResource, error)
 	Put(ctx context.Context, resource BasicResource, options ...PutOption) (BasicResource, error)
-	Delete(ctx context.Context, resource BasicResource) (BasicResource, error)
+	Delete(ctx context.Context, resource BasicResource, options ...DeleteOption) (BasicResource, error)
+}
+
+type Filter interface {
+	AsExpr() *vm.Program
+	AsAst() ast.Node
+}
+
+type ProgramFilter struct{ *vm.Program }
+
+func (p ProgramFilter) AsExpr() *vm.Program {
+	return p.Program
+}
+
+func (p ProgramFilter) AsAst() ast.Node {
+	return p.Program.Node
 }
 
 type QueryOptions struct {
+	ResourceType    TypeID
 	ReadConsistency ReadConsistencyLevel
-}
 
-type GetOptions struct {
-	QueryOptions
+	FilterExpression Filter
 }
 
 type QueryOption func(opts *QueryOptions)
@@ -29,6 +47,22 @@ func WithReadConsistency(level ReadConsistencyLevel) QueryOption {
 	return func(opts *QueryOptions) {
 		opts.ReadConsistency = level
 	}
+}
+
+type GetOptions struct {
+	QueryOptions
+}
+
+func NewGetOptions(typ TypeID, opts ...GetOption) GetOptions {
+	var result GetOptions
+
+	result.ResourceType = typ
+
+	for _, opt := range opts {
+		opt(&result)
+	}
+
+	return result
 }
 
 type GetOption func(opts *GetOptions)
@@ -41,8 +75,22 @@ func WithGetQueryOptions(options ...QueryOption) GetOption {
 	}
 }
 
+func WithFilterExpression(q string) QueryOption {
+	return func(opts *QueryOptions) {
+		program, err := expr.Compile(q)
+
+		if err != nil {
+			panic(err)
+		}
+
+		opts.FilterExpression = ProgramFilter{program}
+	}
+}
+
 type DeleteOptions struct {
 }
+
+type DeleteOption func(opts *DeleteOptions)
 
 type SortField struct {
 	Path  string    `json:"field"`
@@ -59,8 +107,10 @@ type ListOptions struct {
 	ResourceIDs []BasicResourceID
 }
 
-func NewListOptions(opts ...ListOption) ListOptions {
+func NewListOptions(typ TypeID, opts ...ListOption) ListOptions {
 	var result ListOptions
+
+	result.ResourceType = typ
 
 	for _, opt := range opts {
 		opt(&result)
