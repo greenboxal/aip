@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective"
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type InMemoryDatabase struct {

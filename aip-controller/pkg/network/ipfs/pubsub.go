@@ -1,7 +1,7 @@
 package ipfs
 
 import (
-	context "context"
+	"context"
 	"sync"
 
 	iface "github.com/ipfs/boxo/coreiface"

@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type resourceSlot struct {

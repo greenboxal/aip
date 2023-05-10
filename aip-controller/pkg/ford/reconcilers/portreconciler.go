@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective"
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
 )
 

@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	time "time"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/ipfs/boxo/bitswap"
@@ -19,7 +19,7 @@ import (
 	pin "github.com/ipfs/boxo/pinning/pinner"
 	"github.com/ipfs/boxo/pinning/pinner/dspinner"
 	badger "github.com/ipfs/go-ds-badger"
-	graphsync "github.com/ipfs/go-graphsync"
+	"github.com/ipfs/go-graphsync"
 	gsimpl "github.com/ipfs/go-graphsync/impl"
 	gsnet "github.com/ipfs/go-graphsync/network"
 	"github.com/ipfs/go-graphsync/storeutil"

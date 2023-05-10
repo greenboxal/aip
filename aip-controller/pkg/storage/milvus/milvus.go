@@ -13,7 +13,7 @@ import (
 	"go.uber.org/fx"
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chunkers"
 	"github.com/greenboxal/aip/aip-controller/pkg/utils"
 )

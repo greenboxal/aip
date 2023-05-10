@@ -3,7 +3,7 @@ package forddbimpl
 import (
 	"context"
 
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 const eventDispatcherStreamID = "forddb/eventdispatcher"

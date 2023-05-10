@@ -1,7 +1,7 @@
 package chat
 
 import (
-	chain "github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 )
 
 const MemoryContextKey chain.ContextKey[Memory] = "MemoryKey"

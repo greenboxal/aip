@@ -9,10 +9,10 @@ import (
 	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
 
-	chain "github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
-	chat "github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
 	compressors2 "github.com/greenboxal/aip/aip-controller/pkg/llm/compressors"
-	openai "github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 )
 

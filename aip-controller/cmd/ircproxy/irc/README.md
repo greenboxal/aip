@@ -4,13 +4,16 @@
 [![Build Status](https://img.shields.io/github/workflow/status/go-irc/irc/CI.svg)](https://github.com/go-irc/irc/actions)
 [![Coverage Status](https://img.shields.io/coveralls/go-irc/irc.svg)](https://coveralls.io/github/go-irc/irc?branch=master)
 
-This package was originally created to only handle message parsing, but has since been expanded to include small abstractions around connections and a very general client type with some small conveniences.
+This package was originally created to only handle message parsing, but has since been expanded to include small abstractions around connections and a very general client type with
+some small conveniences.
 
-This library is not designed to hide any of the IRC elements from you. If you just want to build a simple chat bot and don't want to deal with IRC in particular, there are a number of other libraries which provide a more full featured client if that's what you're looking for.
+This library is not designed to hide any of the IRC elements from you. If you just want to build a simple chat bot and don't want to deal with IRC in particular, there are a number
+of other libraries which provide a more full featured client if that's what you're looking for.
 
 This library is meant to stay as simple as possible so it can be a building block for other packages.
 
-This library aims for API compatibility whenever possible. New functions and other additions will not result in a major version increase unless they break the API. This library aims to follow the semver recommendations mentioned on gopkg.in.
+This library aims for API compatibility whenever possible. New functions and other additions will not result in a major version increase unless they break the API. This library
+aims to follow the semver recommendations mentioned on gopkg.in.
 
 This packages uses newer error handling APIs so, only go 1.13+ is officially supported.
 

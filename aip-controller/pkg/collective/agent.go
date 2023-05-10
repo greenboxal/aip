@@ -1,7 +1,7 @@
 package collective
 
 import (
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type AgentID struct {

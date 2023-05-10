@@ -8,7 +8,7 @@ import (
 	"github.com/modern-go/reflect2"
 	"go.uber.org/zap"
 
-	forddb "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type Reconciler interface {

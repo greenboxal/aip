@@ -3,7 +3,7 @@ package ipfs
 import (
 	"context"
 
-	graphsync "github.com/ipfs/go-graphsync"
+	"github.com/ipfs/go-graphsync"
 	format "github.com/ipfs/go-ipld-format"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/libp2p/go-libp2p/core/peer"

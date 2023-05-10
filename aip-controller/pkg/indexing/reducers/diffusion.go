@@ -103,7 +103,7 @@ func (ctx *summaryDiffusionReducerContext) Reduce() (*collective2.MemorySegment,
 		segments := split.PartitionEven(factor)
 		memories := make([]collective2.Memory, len(segments))
 
-		for i, _ := range segments {
+		for i := range segments {
 			summary, err := s.Summarizer.Summarize(
 				ctx.Context,
 				"",

@@ -2,7 +2,7 @@ package daemon
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/comms"
-	supervisor "github.com/greenboxal/aip/aip-controller/pkg/collective/supervisor"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/supervisor"
 )
 
 type Daemon struct {
