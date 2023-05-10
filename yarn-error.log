@@ -1,0 +1,38 @@
+Arguments: 
+  /Users/jonathanlima/.nodenv/versions/18.13.0/bin/node /Users/jonathanlima/.nodenv/versions/18.13.0/bin/yarn start
+
+PATH: 
+  /Users/jonathanlima/.nodenv/versions/18.13.0/bin:/opt/homebrew/Cellar/nodenv/1.4.0/libexec:/opt/homebrew/Cellar/go/1.20.3/libexec/bin:/Users/jonathanlima/go/bin:/Users/jonathanlima/IdeaProjects/aip/venv/bin:/Users/jonathanlima/.wasmer/bin:/Users/jonathanlima/.pyenv/libexec/pyenv:/Users/jonathanlima/.pyenv/libexec:/Users/jonathanlima/.pyenv/shims:/Users/jonathanlima/.pyenv/bin:/Users/jonathanlima/.nodenv/shims:/opt/homebrew/bin:/opt/homebrew/opt/llvm/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/jonathanlima/IdeaProjects/aip/node_modules/.bin:/Users/jonathanlima/go/bin:/Users/jonathanlima/.rover/bin/rover:/Users/jonathanlima/.wasmer/globals/wapm_packages/.bin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  18.13.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  Error: Failed to replace env in config: ${NPM_TOKEN}
+      at /Users/jonathanlima/.nodenv/versions/18.13.0/lib/node_modules/yarn/lib/cli.js:94933:13
+      at String.replace (<anonymous>)
+      at envReplace (/Users/jonathanlima/.nodenv/versions/18.13.0/lib/node_modules/yarn/lib/cli.js:94928:16)
+      at Function.normalizeConfig (/Users/jonathanlima/.nodenv/versions/18.13.0/lib/node_modules/yarn/lib/cli.js:31938:69)
+      at NpmRegistry.<anonymous> (/Users/jonathanlima/.nodenv/versions/18.13.0/lib/node_modules/yarn/lib/cli.js:31968:34)
+      at Generator.next (<anonymous>)
+      at step (/Users/jonathanlima/.nodenv/versions/18.13.0/lib/node_modules/yarn/lib/cli.js:310:30)
+      at /Users/jonathanlima/.nodenv/versions/18.13.0/lib/node_modules/yarn/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "dependencies": {
+      "graphql-ws": "^5.12.1"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

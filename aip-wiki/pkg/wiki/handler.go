@@ -1,6 +1,7 @@
 package wiki
 
 import (
+	"html/template"
 	"net/http"
 	"net/url"
 	"path"
@@ -13,6 +14,7 @@ import (
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/templates"
 	"github.com/greenboxal/aip/aip-wiki/public"
 )
 
@@ -125,7 +127,7 @@ func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Location", imageUrl.Status.URL)
 		writer.WriteHeader(http.StatusMovedPermanently)
 	} else {
-		var pageContents *models.Page
+		var page *models.Page
 
 		isCanonicalPath := false
 		pathComponents := strings.Split(requestUrl.Path, "/")
@@ -134,18 +136,18 @@ func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
 			pageIdStr := pathComponents[1]
 			pageId := forddb.NewStringID[models.PageID](pageIdStr)
 
-			page, err := r.pm.GetPageByID(request.Context(), pageId)
+			p, err := r.pm.GetPageByID(request.Context(), pageId)
 
 			if err != nil {
 				panic(err)
 			}
 
-			pageContents = page
+			page = p
 			isCanonicalPath = true
 		}
 
-		if pageContents == nil {
-			pageContents, err = r.pm.GetPage(request.Context(), pageSpec)
+		if page == nil {
+			page, err = r.pm.GetPage(request.Context(), pageSpec)
 
 			if err != nil {
 				panic(err)
@@ -159,12 +161,19 @@ func (r *Router) handle(writer http.ResponseWriter, request *http.Request) {
 		if isCanonicalPath {
 			writer.WriteHeader(http.StatusOK)
 		} else {
-			canonicalPath := "/wiki/" + pageContents.ID.String() + "/" + url.PathEscape(pageContents.Spec.Title)
+			canonicalPath := "/wiki/" + page.ID.String() + "/" + url.PathEscape(page.Spec.Title)
 
 			writer.Header().Set("Location", canonicalPath)
 			writer.WriteHeader(http.StatusTemporaryRedirect)
 		}
 
-		writer.Write([]byte(pageContents.Status.HTML))
+		err = templates.Templates().ExecuteTemplate(writer, "index.tmpl.html", map[string]interface{}{
+			"Page":     page,
+			"PageHTML": template.HTML(page.Status.HTML),
+		})
+
+		if err != nil {
+			panic(err)
+		}
 	}
 }

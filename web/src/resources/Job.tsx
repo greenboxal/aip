@@ -1,19 +1,28 @@
 import React from 'react'
 
-import {DatagridConfigurable, SelectColumnsButton, Show, SimpleShowLayout, TextField, TopToolbar,} from "react-admin"
+import {DatagridConfigurable, DateField, FilterButton, SelectColumnsButton, Show, SimpleShowLayout, TextField, TopToolbar,} from "react-admin"
 
 import {ListLive} from '@react-admin/ra-realtime';
+import {StackedFilters, textFilter} from "@react-admin/ra-form-layout";
+
+const jobListFilters = {
+    "metadata.id": textFilter({ operators: ['eq', 'q'] }),
+    "status.state": textFilter({ operators: ['eq', 'q'] }),
+}
 
 export const JobListActions = () => (<TopToolbar>
     <SelectColumnsButton/>
 </TopToolbar>)
 
 export const JobList = () => (
-    <ListLive actions={<JobListActions/>}>
+    <ListLive actions={<JobListActions/>}  filters={<StackedFilters config={jobListFilters} />} >
         <DatagridConfigurable rowClick="show" size="small" preferenceKey="images.datagrid">
             <TextField source="id" label="ID"/>
             <TextField source="status.state" label="State"/>
             <TextField source="spec.handler" label="Handler"/>
+
+            <DateField source="metadata.created_at" label="Created At"/>
+            <DateField source="metadata.updated_at" label="Updated At"/>
         </DatagridConfigurable>
     </ListLive>
 )

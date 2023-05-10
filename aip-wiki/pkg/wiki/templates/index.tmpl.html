@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>{{ .Page.Spec.Title }}</title>
-    <link href="/static/css/styles.css" rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Uncyclo.ai" />
+    <title>Uncyclo.ai</title>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HV93GTHDM9"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-HV93GTHDM9');
+    </script>
 </head>
 <body>
-<header>
-    <h1>{{ .Page.Spec.Title }}</h1>
-    <nav>
-        <!-- Add your navigation items here -->
-    </nav>
-</header>
-<main>
-</main>
-<footer>
-    <!-- Add your footer content here -->
-</footer>
+{{ .PageHTML }}
 </body>
 </html>

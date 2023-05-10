@@ -53,6 +53,24 @@ export type ChannelListMetadata = {
   count?: Maybe<Scalars['Int']>;
 };
 
+export type Domain = {
+  __typename?: 'Domain';
+  id?: Maybe<Scalars['String']>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseDomainIdDomain>;
+  spec?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsDomainSpec>;
+};
+
+export type DomainFilter = {
+  id?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  q?: InputMaybe<Scalars['String']>;
+};
+
+export type DomainListMetadata = {
+  __typename?: 'DomainListMetadata';
+  count?: Maybe<Scalars['Int']>;
+};
+
 export type Endpoint = {
   __typename?: 'Endpoint';
   id?: Maybe<Scalars['String']>;
@@ -199,6 +217,24 @@ export type JobFilter = {
 
 export type JobListMetadata = {
   __typename?: 'JobListMetadata';
+  count?: Maybe<Scalars['Int']>;
+};
+
+export type Layout = {
+  __typename?: 'Layout';
+  id?: Maybe<Scalars['String']>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseLayoutIdLayout>;
+  spec?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsLayoutSpec>;
+};
+
+export type LayoutFilter = {
+  id?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  q?: InputMaybe<Scalars['String']>;
+};
+
+export type LayoutListMetadata = {
+  __typename?: 'LayoutListMetadata';
   count?: Maybe<Scalars['Int']>;
 };
 
@@ -545,9 +581,11 @@ export type RootQuery = {
   __typename?: 'RootQuery';
   Agent?: Maybe<Agent>;
   Channel?: Maybe<Channel>;
+  Domain?: Maybe<Domain>;
   Endpoint?: Maybe<Endpoint>;
   Image?: Maybe<Image>;
   Job?: Maybe<Job>;
+  Layout?: Maybe<Layout>;
   Memory?: Maybe<Memory>;
   MemoryDatum?: Maybe<MemoryDatum>;
   MemorySegment?: Maybe<MemorySegment>;
@@ -563,9 +601,11 @@ export type RootQuery = {
   Team?: Maybe<Team>;
   _allAgentsMeta?: Maybe<AgentListMetadata>;
   _allChannelsMeta?: Maybe<ChannelListMetadata>;
+  _allDomainsMeta?: Maybe<DomainListMetadata>;
   _allEndpointsMeta?: Maybe<EndpointListMetadata>;
   _allImagesMeta?: Maybe<ImageListMetadata>;
   _allJobsMeta?: Maybe<JobListMetadata>;
+  _allLayoutsMeta?: Maybe<LayoutListMetadata>;
   _allMemoriesMeta?: Maybe<MemoryListMetadata>;
   _allMemoryDataMeta?: Maybe<MemoryDatumListMetadata>;
   _allMemorySegmentsMeta?: Maybe<MemorySegmentListMetadata>;
@@ -580,9 +620,11 @@ export type RootQuery = {
   _allTeamsMeta?: Maybe<TeamListMetadata>;
   allAgents?: Maybe<Array<Maybe<Agent>>>;
   allChannels?: Maybe<Array<Maybe<Channel>>>;
+  allDomains?: Maybe<Array<Maybe<Domain>>>;
   allEndpoints?: Maybe<Array<Maybe<Endpoint>>>;
   allImages?: Maybe<Array<Maybe<Image>>>;
   allJobs?: Maybe<Array<Maybe<Job>>>;
+  allLayouts?: Maybe<Array<Maybe<Layout>>>;
   allMemories?: Maybe<Array<Maybe<Memory>>>;
   allMemoryData?: Maybe<Array<Maybe<MemoryDatum>>>;
   allMemorySegments?: Maybe<Array<Maybe<MemorySegment>>>;
@@ -609,6 +651,11 @@ export type RootQueryChannelArgs = {
 };
 
 
+export type RootQueryDomainArgs = {
+  id?: InputMaybe<Scalars['String']>;
+};
+
+
 export type RootQueryEndpointArgs = {
   id?: InputMaybe<Scalars['String']>;
 };
@@ -620,6 +667,11 @@ export type RootQueryImageArgs = {
 
 
 export type RootQueryJobArgs = {
+  id?: InputMaybe<Scalars['String']>;
+};
+
+
+export type RootQueryLayoutArgs = {
   id?: InputMaybe<Scalars['String']>;
 };
 
@@ -707,6 +759,15 @@ export type RootQuery_AllChannelsMetaArgs = {
 };
 
 
+export type RootQuery_AllDomainsMetaArgs = {
+  filter?: InputMaybe<DomainFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
 export type RootQuery_AllEndpointsMetaArgs = {
   filter?: InputMaybe<EndpointFilter>;
   page?: InputMaybe<Scalars['Int']>;
@@ -727,6 +788,15 @@ export type RootQuery_AllImagesMetaArgs = {
 
 export type RootQuery_AllJobsMetaArgs = {
   filter?: InputMaybe<JobFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
+export type RootQuery_AllLayoutsMetaArgs = {
+  filter?: InputMaybe<LayoutFilter>;
   page?: InputMaybe<Scalars['Int']>;
   perPage?: InputMaybe<Scalars['Int']>;
   sortField?: InputMaybe<Scalars['String']>;
@@ -860,6 +930,15 @@ export type RootQueryAllChannelsArgs = {
 };
 
 
+export type RootQueryAllDomainsArgs = {
+  filter?: InputMaybe<DomainFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
 export type RootQueryAllEndpointsArgs = {
   filter?: InputMaybe<EndpointFilter>;
   page?: InputMaybe<Scalars['Int']>;
@@ -880,6 +959,15 @@ export type RootQueryAllImagesArgs = {
 
 export type RootQueryAllJobsArgs = {
   filter?: InputMaybe<JobFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
+export type RootQueryAllLayoutsArgs = {
+  filter?: InputMaybe<LayoutFilter>;
   page?: InputMaybe<Scalars['Int']>;
   perPage?: InputMaybe<Scalars['Int']>;
   sortField?: InputMaybe<Scalars['String']>;
@@ -1273,6 +1361,17 @@ export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseChannelI
   version?: Maybe<Scalars['Int']>;
 };
 
+export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseDomainIdDomain = {
+  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseDomainIDDomain';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
 export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseEndpointIdEndpoint = {
   __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseEndpointIDEndpoint';
   created_at?: Maybe<Scalars['DateTime']>;
@@ -1286,6 +1385,17 @@ export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseEndpoint
 
 export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseJobIdJob = {
   __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseJobIDJob';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseLayoutIdLayout = {
+  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseLayoutIDLayout';
   created_at?: Maybe<Scalars['DateTime']>;
   id?: Maybe<Scalars['String']>;
   kind?: Maybe<Scalars['String']>;
@@ -1443,6 +1553,12 @@ export type GithubcomgreenboxalaipaipwikipkgwikicmsEmptyRequest = {
   id?: Maybe<Scalars['String']>;
 };
 
+export type GithubcomgreenboxalaipaipwikipkgwikimodelsDomainSpec = {
+  __typename?: 'githubcomgreenboxalaipaipwikipkgwikimodelsDomainSpec';
+  host?: Maybe<Scalars['String']>;
+  id?: Maybe<Scalars['String']>;
+};
+
 export type GithubcomgreenboxalaipaipwikipkgwikimodelsImageSpec = {
   __typename?: 'githubcomgreenboxalaipaipwikipkgwikimodelsImageSpec';
   id?: Maybe<Scalars['String']>;
@@ -1455,6 +1571,13 @@ export type GithubcomgreenboxalaipaipwikipkgwikimodelsImageStatus = {
   id?: Maybe<Scalars['String']>;
   prompt?: Maybe<Scalars['String']>;
   url?: Maybe<Scalars['String']>;
+};
+
+export type GithubcomgreenboxalaipaipwikipkgwikimodelsLayoutSpec = {
+  __typename?: 'githubcomgreenboxalaipaipwikipkgwikimodelsLayoutSpec';
+  host?: Maybe<Scalars['String']>;
+  id?: Maybe<Scalars['String']>;
+  layout?: Maybe<Scalars['String']>;
 };
 
 export type GithubcomgreenboxalaipaipwikipkgwikimodelsPageImage = {
