@@ -109,13 +109,16 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
     return dataProvider;
 }
 
+const API_HTTP_BASE_URL = process.env.REACT_APP_AIP_API_HTTP_BASE_URL || "http://localhost:30100/v1/graphql"
+const API_WS_BASE_URL = process.env.REACT_APP_AIP_API_WS_BASE_URL || "http://localhost:30100/v1/graphql/ws"
+
 export default function buildDataProvider(): Promise<{ client: ApolloClient<any>, dataProvider: DataProvider }> {
     const httpLink = new HttpLink({
-        uri: 'http://localhost:30100/v1/graphql',
+        uri: API_HTTP_BASE_URL,
     })
 
     const wsLink = new GraphQLWsLink(createClient({
-        url: 'ws://localhost:30100/v1/graphql/ws',
+        url: API_WS_BASE_URL,
         keepAlive: 10000,
         connectionParams: {
             reconnect: true,
