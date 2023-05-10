@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/fx"
 
-	openai "github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/indexer"
 )
