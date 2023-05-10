@@ -13,6 +13,7 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/memoryctx"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
@@ -54,6 +55,7 @@ func NewPageGenerator(client *openai.Client, cache *ContentCache) (*PageGenerato
 		chat.Predict(
 			w.model,
 			PageGeneratorPrompt,
+			chat.WithChatMemory(chat.MemoryContextKey),
 			chat.WithOutputParsers(
 				GeneratedHtmlParser(PageContentKey),
 			),
@@ -64,6 +66,7 @@ func NewPageGenerator(client *openai.Client, cache *ContentCache) (*PageGenerato
 		chat.Predict(
 			w.model,
 			PageEditorPrompt,
+			chat.WithChatMemory(chat.MemoryContextKey),
 			chat.WithOutputParsers(
 				GeneratedHtmlParser(PageContentKey),
 			),
@@ -77,13 +80,17 @@ func (pg *PageGenerator) GetPage(
 	ctx context.Context,
 	pageSettings models.PageSpec,
 ) ([]byte, error) {
+	siteSettings := SiteSettings{
+		BaseUrl: "http://127.0.0.1:30100",
+	}
+
+	chatMemory := memoryctx.GetMemory(ctx)
+
 	cctx := chain.NewChainContext(ctx)
 
-	cctx.SetInput(SiteSettingsKey, SiteSettings{
-		BaseUrl: "http://127.0.0.1:30100",
-	})
-
+	cctx.SetInput(SiteSettingsKey, siteSettings)
 	cctx.SetInput(PageSettingsKey, pageSettings)
+	cctx.SetInput(chat.MemoryContextKey, chatMemory)
 
 	if pageSettings.BasePage.IsEmpty() {
 		if err := pg.contentChain.Run(cctx); err != nil {

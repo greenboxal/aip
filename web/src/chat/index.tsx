@@ -1,13 +1,9 @@
 import React from "react";
-import {ChatList, Input, MessageList, MessageType} from "react-chat-elements";
-import {Container, Card, Stack} from "@mui/material";
-import Grid from "@mui/material/Unstable_Grid2";
-import {Button} from "react-admin";
+import {ChatList, IChatItemProps, Input, MessageList, MessageType} from "react-chat-elements";
+import {Button, InfiniteList, InfiniteListBase, ListBase, SimpleList, TextField, useRecordContext} from "react-admin";
 import { styled } from '@mui/material/styles';
 import clsx from 'clsx';
-import {useSubscription} from "@apollo/client";
 
-const chatMessageListRef = React.createRef()
 const inputReference = React.createRef()
 
 /*
@@ -24,71 +20,27 @@ subscription realTimeEvents($endpoint: String!) {
 }
 `*/
 
-const Topics = () => (
-    <ChatList
-        className="chat-list"
-        lazyLoadingImage=""
-        id="lol"
-        dataSource={[
-            {
-                id: 1,
-                avatar: 'https://avatars.githubusercontent.com/u/80540635?v=4',
-                alt: 'kursat_avatar',
-                title: 'Kursat',
-                subtitle: "Why don't we go to the No Way Home movie this weekend ?",
-                date: new Date(),
-                unread: 3,
-            }, {
-                id: 1,
-                avatar: 'https://avatars.githubusercontent.com/u/80540635?v=4',
-                alt: 'kursat_avatar',
-                title: 'Kursat',
-                subtitle: "Why don't we go to the No Way Home movie this weekend ?",
-                date: new Date(),
-                unread: 3,
-            }, {
-                id: 1,
-                avatar: 'https://avatars.githubusercontent.com/u/80540635?v=4',
-                alt: 'kursat_avatar',
-                title: 'Kursat',
-                subtitle: "Why don't we go to the No Way Home movie this weekend ?",
-                date: new Date(),
-                unread: 3,
-            }
-        ]}/>
-)
-
-
 const Messages = () => {
-    const { data } = useSubscription(GET_MESSAGES);
-
-    if (!data) {
-        return null;
-    }
-
-    const messageList = data
-
     return (
-        <MessageList referance={chatMessageListRef} dataSource={[
-            {
-                id: 1,
-                position: 'right',
-                avatar: 'https://avatars.githubusercontent.com/u/80540635?v=4',
-                type: 'text',
-                title: "Hello",
-                text: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit',
-                date: new Date(),
-            }, {
-                id: 1,
-                position: 'left',
-                avatar: 'https://avatars.githubusercontent.com/u/80540635?v=4',
-                type: 'text',
-                title: "Hello",
-                text: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit',
-                date: new Date(),
-            }] as MessageType[]} lockable={true}/>
+        <InfiniteList resource="Message" filter={{
+            q: 'resource.channel == "1"',
+        }} sort={{ field: 'metadata.created_at', order: 'DESC' }}>
+            <SimpleList
+                primaryText={record => record.from}
+                secondaryText={record => record.text}
+            />
+        </InfiniteList>
     )
 }
+
+const Topics = () => (
+    <InfiniteList resource="Channel" aside={<Messages />}>
+        <SimpleList
+            primaryText={record => record.id}
+            secondaryText={record => record.members}
+        />
+    </InfiniteList>
+)
 
 const MessageInput = () => (
     <Input
@@ -103,19 +55,7 @@ const MessageInput = () => (
 const ChatPage = () => {
     return (
         <Root className={clsx('chat-page')} >
-            <Grid container spacing={0}>
-                <Grid xs={4}>
-                    <Card>
-                        <Topics/>
-                    </Card>
-                </Grid>
-                <Grid xs={8}>
-                    <Stack>
-                        <Messages/>
-                        <MessageInput/>
-                    </Stack>
-                </Grid>
-            </Grid>
+            <Topics />
         </Root>
     );
 };

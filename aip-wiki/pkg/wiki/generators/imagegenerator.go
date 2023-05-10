@@ -3,8 +3,10 @@ package generators
 import (
 	"context"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/memoryctx"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
@@ -20,7 +22,7 @@ type ImageSettings struct {
 
 var ImageGeneratorPrompt = chat.ComposeTemplate(
 	chat.EntryTemplate(
-		chat.RoleSystem,
+		msn.RoleSystem,
 		chain.NewTemplatePrompt(`
 You are an AI assistant specialized in generating prompts for images for a Wiki-style satirical content in the voice of {{.PageSettings.Voice}}.
 Be as funny as possible but don't use any curse words or aggressive language.
@@ -32,14 +34,14 @@ Be as short as possible.
 	),
 
 	chat.EntryTemplate(
-		chat.RoleUser,
+		msn.RoleUser,
 		chain.NewTemplatePrompt(
 			`Generate a prompt for image for a Wiki style page about "{{.PageSettings.Title}}". The image is named {{.ImageSettings.Path}}.`,
 			chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey, ImageSettingsKey),
 		),
 	),
 
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )
 
 type ImageGenerator struct {
@@ -92,7 +94,7 @@ func (ig *ImageGenerator) GetImage(
 
 	cctx := chain.NewChainContext(ctx)
 
-	chatMemory := chat.NewInMemoryHistory(chat.ChatHistoryContextKey)
+	chatMemory := memoryctx.GetMemory(ctx)
 
 	cctx.SetInput(SiteSettingsKey, siteSettings)
 	cctx.SetInput(PageSettingsKey, pageSettings)

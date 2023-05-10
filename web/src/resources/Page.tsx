@@ -24,6 +24,7 @@ import {
 import {CreateInDialogButton} from "@react-admin/ra-form-layout";
 
 import {MarkdownField} from "@react-admin/ra-markdown"
+import {ListLive, ShowLive} from "@react-admin/ra-realtime";
 
 export const PageListActions = () => (<TopToolbar>
     <SelectColumnsButton/>
@@ -31,19 +32,22 @@ export const PageListActions = () => (<TopToolbar>
 </TopToolbar>)
 
 export const PageList = () => (
-    <List actions={<PageListActions/>}>
+    <ListLive actions={<PageListActions/>}  sort={{ field: 'metadata.created_at', order: 'DESC' }}>
         <DatagridConfigurable rowClick="show" size="small" preferenceKey="pages.datagrid">
             <TextField source="spec.title" label="Title"/>
             <TextField source="spec.language" label="Language"/>
             <TextField source="spec.voice" label="Voice"/>
 
             <TextField source="id" label="ID"/>
+
+            <DateField source="metadata.created_at" label="Created At"/>
+            <DateField source="metadata.updated_at" label="Updated At"/>
         </DatagridConfigurable>
-    </List>
+    </ListLive>
 )
 
 export const PageShow = () => (
-    <Show>
+    <ShowLive>
         <TabbedShowLayout>
             <TabbedShowLayout.Tab label="General">
                 <WithRecord render={record => (
@@ -58,9 +62,9 @@ export const PageShow = () => (
                             voice: "",
                             language: "",
                         }}>
-                            <TextInput source="title" label="Title"/>
-                            <TextInput source="voice" label="Voice"/>
-                            <TextInput source="language" label="Language"/>
+                            <TextInput source="title" label="Title" name="title" />
+                            <TextInput source="voice" label="Voice" name="voice" />
+                            <TextInput source="language" label="Language" name="language" />
                         </SimpleForm>
                     </CreateInDialogButton>
                 )}/>
@@ -68,7 +72,7 @@ export const PageShow = () => (
                 <TextField source="id" label="ID"/>
                 <TextField source="spec.base_page_id" label="Base Page ID"/>
 
-                <ReferenceField source="spec.base_page_id" reference="Page" label="Base Page">
+                <ReferenceField source="spec.base_page_id" reference="Page" label="Base Page" link="show">
                     <ChipField source="spec.title"/>
                 </ReferenceField>
 
@@ -101,7 +105,7 @@ export const PageShow = () => (
                 <RichTextField source="status.html" label="HTML Contents"/>
             </TabbedShowLayout.Tab>
         </TabbedShowLayout>
-    </Show>
+    </ShowLive>
 );
 
 export const PageCreate = () => (

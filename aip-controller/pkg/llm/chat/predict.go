@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 )
 
@@ -51,7 +52,7 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 	}
 
 	for _, output := range p.outputs {
-		err := output.Parse(ctx, result.Entries[0].Content)
+		err := output.Parse(ctx, result.Entries[0].Text)
 
 		if err != nil {
 			return err
@@ -63,7 +64,7 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 
 func CompletionMessageParser(key chain.ContextKey[Message]) chain.OutputParser {
 	return chain.OutputParserFunc(func(ctx chain.ChainContext, result string) error {
-		msg := Compose(Entry(RoleAI, result))
+		msg := Compose(Entry(msn.RoleAI, result))
 
 		ctx.SetOutput(key, msg)
 

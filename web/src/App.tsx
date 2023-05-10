@@ -16,6 +16,9 @@ import {ImageList, ImageShow} from "./resources/Image";
 import {JobList, JobShow} from "./resources/Job";
 import {PageCreate, PageList, PageShow} from "./resources/Page";
 import {authProvider} from "./authProvider";
+import {MessageList, MessageShow} from "./resources/Message";
+import {ChannelList, ChannelShow} from "./resources/Channel";
+import {EndpointList, EndpointShow} from "./resources/Endpoint";
 
 const App: React.FC = () => {
     const [dataProviderAndClient, setDataProviderAndClient] = React.useState<{
@@ -74,14 +77,20 @@ const App: React.FC = () => {
 
                 <Resource
                     name="Channel"
-                    list={ListGuesser}
-                    show={ShowGuesser}
+                    list={ChannelList}
+                    show={ChannelShow}
                 />
 
                 <Resource
                     name="Message"
-                    list={ListGuesser}
-                    show={ShowGuesser}
+                    list={MessageList}
+                    show={MessageShow}
+                />
+
+                <Resource
+                    name="Endpoint"
+                    list={EndpointShow}
+                    show={EndpointList}
                 />
 
                 <CustomRoutes>

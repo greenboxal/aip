@@ -11,8 +11,9 @@ export const AppMenu: React.FC<MenuProps> = (props: MenuProps) => (
         </MultiLevelMenu.Item>
 
         <MultiLevelMenu.Item label="Messaging" name="messaging">
-            <ResourceMenuItem name="Channel"/>
-            <ResourceMenuItem name="Message"/>
+            <ResourceMenuItem name="Channel" />
+            <ResourceMenuItem name="Endpoint" />
+            <ResourceMenuItem name="Message" />
         </MultiLevelMenu.Item>
 
         <MultiLevelMenu.Item label="Infrastructure" name="infrastructure">

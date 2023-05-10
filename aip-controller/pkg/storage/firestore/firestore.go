@@ -3,11 +3,13 @@ package firestore
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
+	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/ast"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
@@ -101,7 +103,7 @@ func (s *Storage) List(
 
 	if opts.FilterExpression != nil {
 		node := opts.FilterExpression.AsAst()
-		conditions, err := parseConditions(node)
+		conditions, err := parseConditions(node, opts.FilterParameters)
 
 		if err != nil {
 			return nil, err
@@ -149,21 +151,21 @@ type parsedCondition struct {
 	Val  interface{}
 }
 
-func parseConditions(node ast.Node) ([]parsedCondition, error) {
+func parseConditions(node ast.Node, args any) ([]parsedCondition, error) {
 	var walkExpression func(node ast.Node) error
 	var walkValue func(node ast.Node) (any, error)
 	var conditions []parsedCondition
 
-	walkPath := func(node ast.Node) (firestore.FieldPath, error) {
+	walkPath := func(node ast.Node, root string) (firestore.FieldPath, error) {
 		var path firestore.FieldPath
 
 		for node != nil {
 			switch n := node.(type) {
 			case *ast.IdentifierNode:
-				if n.Value == "resource" {
+				if n.Value == root {
 					node = nil
 				} else {
-					return nil, errors.New("unsupported")
+					return nil, fmt.Errorf("unsupported node: %#v", n)
 				}
 
 			case *ast.MemberNode:
@@ -180,7 +182,7 @@ func parseConditions(node ast.Node) ([]parsedCondition, error) {
 					name = v.Value
 
 				default:
-					return nil, errors.New("unsupported")
+					return nil, fmt.Errorf("unsupported node: %#v", n)
 				}
 
 				path = slices.Insert(path, 0, name)
@@ -194,6 +196,28 @@ func parseConditions(node ast.Node) ([]parsedCondition, error) {
 
 	walkValue = func(node ast.Node) (any, error) {
 		switch n := node.(type) {
+		case *ast.MemberNode:
+			path, err := walkPath(node, "args")
+
+			if err != nil {
+				return nil, err
+			}
+
+			s := strings.Join(path, ".")
+
+			return expr.Eval(s, args)
+
+		case *ast.IdentifierNode:
+			path, err := walkPath(node, "args")
+
+			if err != nil {
+				return nil, err
+			}
+
+			s := strings.Join(path, ".")
+
+			return expr.Eval(s, args)
+
 		case *ast.StringNode:
 			return n.Value, nil
 
@@ -241,11 +265,11 @@ func parseConditions(node ast.Node) ([]parsedCondition, error) {
 			}
 		}
 
-		return nil, errors.New("unsupported")
+		return nil, fmt.Errorf("unsupported node: %#v", node)
 	}
 
 	walkBinOp := func(node *ast.BinaryNode) error {
-		path, err := walkPath(node.Left)
+		path, err := walkPath(node.Left, "resource")
 
 		if err != nil {
 			return err
@@ -267,7 +291,7 @@ func parseConditions(node ast.Node) ([]parsedCondition, error) {
 	}
 
 	walkUnOp := func(node *ast.UnaryNode) error {
-		return errors.New("unsupported")
+		return fmt.Errorf("unsupported node: %#v", node)
 	}
 
 	walkExpression = func(node ast.Node) error {
@@ -289,7 +313,7 @@ func parseConditions(node ast.Node) ([]parsedCondition, error) {
 			return walkUnOp(n)
 		}
 
-		return errors.New("unsupported")
+		return fmt.Errorf("unsupported node: %#v", node)
 	}
 
 	if err := walkExpression(node); err != nil {

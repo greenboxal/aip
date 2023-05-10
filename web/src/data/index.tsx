@@ -31,16 +31,16 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
 
                 subscriptions[topic] = sub
 
-                const resourceKind = topic.replace(/^resource\//, '')
+                const resourceType = topic.replace(/^resource\//, '')
 
                 sub.observable = client.subscribe({
                     variables: {
-                        resourceKind: resourceKind,
+                        resourceType: resourceType,
                     },
 
                     query: gql`
-                        subscription Sub($resourceKind: String!) {
-                            resourceChanged(resourceType: $resourceKind) {
+                        subscription Sub($resourceType: String!) {
+                            resourceChanged(resourceType: $resourceType) {
                                 type
 
                                 payload {
@@ -52,7 +52,11 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
                 })
 
                 sub.subscription = sub.observable.subscribe((data: any) => {
-                    dataProvider.publish(topic, data)
+                    if (data.data.resourceChanged == null) {
+                        return
+                    }
+
+                    dataProvider.publish(topic, data.data.resourceChanged)
                 })
             }
 

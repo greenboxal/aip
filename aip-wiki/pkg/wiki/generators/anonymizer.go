@@ -1,13 +1,14 @@
 package generators
 
 import (
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
 )
 
 var AnonymizerPrompt = chat.ComposeTemplate(
 	chat.EntryTemplate(
-		chat.RoleSystem,
+		msn.RoleSystem,
 		chain.NewTemplatePrompt(`
 You are an AI assistant specialized in anonymizing generated content so it can pass the content guidelines for generating images.
 `,
@@ -16,7 +17,7 @@ You are an AI assistant specialized in anonymizing generated content so it can p
 	),
 
 	chat.EntryTemplate(
-		chat.RoleUser,
+		msn.RoleUser,
 		chain.NewTemplatePrompt(
 			`Anonymize the below content that was generated for a Wiki style page about "{{.PageSettings.Title}}
 {{.ImagePrompt}}"`,
@@ -24,5 +25,5 @@ You are an AI assistant specialized in anonymizing generated content so it can p
 		),
 	),
 
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )

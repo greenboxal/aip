@@ -15,6 +15,7 @@ var Module = fx.Module(
 	fx.Provide(NewRealTimeService),
 	fx.Provide(NewService),
 	fx.Provide(newEventDispatcher),
+	fx.Provide(newApi),
 
 	rpc.BindRpcService[*Service]("msn-router"),
 

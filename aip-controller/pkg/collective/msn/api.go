@@ -58,3 +58,15 @@ type API interface {
 	// SubscribeToEvents subscribes to a channel.
 	SubscribeToEvents(ctx context.Context, req *SubscribeToEventsRequest) (<-chan Event, error)
 }
+
+type api struct {
+	*Service
+	*RealTimeService
+}
+
+func newApi(svc *Service, rt *RealTimeService) API {
+	return &api{
+		Service:         svc,
+		RealTimeService: rt,
+	}
+}

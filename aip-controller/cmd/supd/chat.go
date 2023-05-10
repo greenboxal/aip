@@ -9,6 +9,7 @@ import (
 	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
 	compressors2 "github.com/greenboxal/aip/aip-controller/pkg/llm/compressors"
@@ -30,8 +31,8 @@ type ChatHandler struct {
 
 var ChatPrompt = chat.ComposeTemplate(
 	chat.HistoryFromContext(chat.ChatHistoryContextKey),
-	chat.EntryTemplate(chat.RoleUser, chain.TemplateFromContext(chat.ChatReplyContextKey)),
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleUser, chain.TemplateFromContext(chat.ChatReplyContextKey)),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )
 
 func NewChatHandler(client *openai.Client) (*ChatHandler, error) {
@@ -86,8 +87,8 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 		}
 
 		entry := chat.MessageEntry{
-			Role:    chat.RoleUser,
-			Content: "",
+			Role: msn.RoleUser,
+			Text: "",
 		}
 
 		_, err := fmt.Fprintf(ch.Output, "%s", entry)
@@ -96,7 +97,7 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 			panic(err)
 		}
 
-		entry.Content, err = inputStream.ReadString('\n')
+		entry.Text, err = inputStream.ReadString('\n')
 
 		if err != nil {
 			panic(err)

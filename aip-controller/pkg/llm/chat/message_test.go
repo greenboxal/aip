@@ -4,15 +4,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 func TestMessage_String(t *testing.T) {
 	msg := Compose(
-		Entry(RoleUser, "Hello"),
-		Entry(RoleAI, "Hi"),
-		Entry(RoleSystem, "Hello"),
-		Entry(RoleAI, "Hi"),
-		Entry(RoleAI, "Hi"),
+		Entry(msn.RoleUser, "Hello"),
+		Entry(msn.RoleAI, "Hi"),
+		Entry(msn.RoleSystem, "Hello"),
+		Entry(msn.RoleAI, "Hi"),
+		Entry(msn.RoleAI, "Hi"),
 	)
 
 	str := msg.String()

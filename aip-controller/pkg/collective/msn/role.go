@@ -1,4 +1,4 @@
-package chat
+package msn
 
 type Role string
 

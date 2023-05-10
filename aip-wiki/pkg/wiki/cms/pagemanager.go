@@ -10,8 +10,12 @@ import (
 
 	"github.com/multiformats/go-multihash"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/memoryctx"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
@@ -22,6 +26,7 @@ type PageManager struct {
 	fm    *FileManager
 	jm    *jobs.Manager
 	cache *generators.ContentCache
+	msn   msn.API
 
 	pageGenerator  *generators.PageGenerator
 	imageGenerator *generators.ImageGenerator
@@ -31,6 +36,7 @@ func NewPageManager(
 	db forddb.Database,
 	fm *FileManager,
 	jm *jobs.Manager,
+	messenger msn.API,
 	cache *generators.ContentCache,
 	pageGenerator *generators.PageGenerator,
 	imageGenerator *generators.ImageGenerator,
@@ -39,6 +45,7 @@ func NewPageManager(
 		db:             db,
 		fm:             fm,
 		jm:             jm,
+		msn:            messenger,
 		cache:          cache,
 		pageGenerator:  pageGenerator,
 		imageGenerator: imageGenerator,
@@ -53,6 +60,18 @@ func (pm *PageManager) GetPage(ctx context.Context, spec models.PageSpec) (*mode
 	page, err := pm.cache.GetPage(ctx, spec)
 
 	if forddb.IsNotFound(err) {
+		id := models.BuildPageID(spec)
+
+		mem := &memory.ChannelChatMemory{
+			ContextKey: chat.ChatHistoryContextKey,
+			Messenger:  pm.msn,
+			Database:   pm.db,
+			Endpoint:   forddb.NewStringID[msn.EndpointID]("bot:" + spec.Voice),
+			Channel:    forddb.NewStringID[msn.ChannelID](id.String()),
+		}
+
+		ctx = memoryctx.WithMemory(ctx, mem)
+
 		job, err := jobs.DispatchJob(
 			ctx,
 			pm.jm,
@@ -86,6 +105,16 @@ func (pm *PageManager) GetImage(ctx context.Context, spec models.ImageSpec) (*mo
 
 func (pm *PageManager) GenerateImage(ctx context.Context, spec models.ImageSpec) (*models.Image, error) {
 	id := models.BuildImageID(spec)
+
+	mem := &memory.ChannelChatMemory{
+		ContextKey: chat.ChatHistoryContextKey,
+		Messenger:  pm.msn,
+		Database:   pm.db,
+		Endpoint:   forddb.NewStringID[msn.EndpointID]("bot:dalle"),
+		Channel:    forddb.NewStringID[msn.ChannelID](id.String()),
+	}
+
+	ctx = memoryctx.WithMemory(ctx, mem)
 
 	status, err := pm.imageGenerator.GetImage(ctx, spec)
 

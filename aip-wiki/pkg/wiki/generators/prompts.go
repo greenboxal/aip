@@ -3,6 +3,7 @@ package generators
 import (
 	"html/template"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
@@ -31,7 +32,7 @@ type PageSettings struct {
 }
 
 var PageGeneratorHeader = chat.EntryTemplate(
-	chat.RoleSystem,
+	msn.RoleSystem,
 	chain.NewTemplatePrompt(`
 You are an AI assistant specialized in generating Wiki-style satirical content in the voice of {{.PageSettings.Voice}}.
 Be as expressive as possible. Use as many curse words as you can. Be as funny as you can.
@@ -62,21 +63,21 @@ var PageGeneratorPrompt = chat.ComposeTemplate(
 		),*/
 
 	chat.EntryTemplate(
-		chat.RoleUser,
+		msn.RoleUser,
 		chain.NewTemplatePrompt(
 			`Generate a Wiki style page about "{{.PageSettings.Title}}".`,
 			chain.WithRequiredInput(PageSettingsKey),
 		),
 	),
 
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )
 
 var PageEditorPrompt = chat.ComposeTemplate(
 	PageGeneratorHeader,
 
 	chat.EntryTemplate(
-		chat.RoleSystem,
+		msn.RoleSystem,
 		chain.NewTemplatePrompt(
 			`You are gonna be asked to perform a task based on the following Wiki page: {{.BasePage.Status.Markdown}}`,
 			chain.WithRequiredInput(PageSettingsKey, BasePageKey),
@@ -84,7 +85,7 @@ var PageEditorPrompt = chat.ComposeTemplate(
 	),
 
 	chat.EntryTemplate(
-		chat.RoleUser,
+		msn.RoleUser,
 		chain.NewTemplatePrompt(
 			`Improve the Wiki page by expanding the topic about "{{.PageSettings.Title}}, and correcting anything you believe is wrong.
 Remember to leave notes at the bottom of the page explaining what you did and why. Write everything in {{.PageSettings.Language}}.`,
@@ -92,12 +93,12 @@ Remember to leave notes at the bottom of the page explaining what you did and wh
 		),
 	),
 
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )
 
 var LinkEnricherPrompt = chat.ComposeTemplate(
 	chat.EntryTemplate(
-		chat.RoleSystem,
+		msn.RoleSystem,
 		chain.NewTemplatePrompt(`
 You are an AI assistant specialized in analyzing the most relevant topics in an article and adding links to the HTML page for the article.
 Return the full HTML page with links added.
@@ -107,7 +108,7 @@ Return the full HTML page with links added.
 	),
 
 	chat.EntryTemplate(
-		chat.RoleUser,
+		msn.RoleUser,
 		chain.NewTemplatePrompt(
 			`Insert links in the HTML below that was generated for a Wiki style page about "{{.PageSettings.Title}}"
 {{.PageContent}}"`,
@@ -115,5 +116,5 @@ Return the full HTML page with links added.
 		),
 	),
 
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )

@@ -14,5 +14,7 @@ type Message struct {
 
 	Channel ChannelID  `json:"channel"`
 	From    EndpointID `json:"from"`
+	Name    string     `json:"username"`
+	Role    Role       `json:"role"`
 	Text    string     `json:"text"`
 }

@@ -13,7 +13,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
-    "\n                        subscription Sub($resourceKind: String!) {\n                            resourceChanged(resourceType: $resourceKind) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    ": types.SubDocument,
+    "\n                        subscription Sub($resourceType: String!) {\n                            resourceChanged(resourceType: $resourceType) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    ": types.SubDocument,
 };
 
 /**
@@ -33,7 +33,7 @@ export function gql(source: string): unknown;
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n                        subscription Sub($resourceKind: String!) {\n                            resourceChanged(resourceType: $resourceKind) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    "): (typeof documents)["\n                        subscription Sub($resourceKind: String!) {\n                            resourceChanged(resourceType: $resourceKind) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    "];
+export function gql(source: "\n                        subscription Sub($resourceType: String!) {\n                            resourceChanged(resourceType: $resourceType) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    "): (typeof documents)["\n                        subscription Sub($resourceType: String!) {\n                            resourceChanged(resourceType: $resourceType) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    "];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

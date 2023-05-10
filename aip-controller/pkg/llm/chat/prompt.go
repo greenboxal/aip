@@ -3,6 +3,7 @@ package chat
 import (
 	"fmt"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	chain2 "github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 )
@@ -24,7 +25,7 @@ func ComposeTemplate(entries ...Prompt) Prompt {
 	}
 }
 
-func EntryTemplate(role Role, template chain2.Prompt) *SingleEntryTemplate {
+func EntryTemplate(role msn.Role, template chain2.Prompt) *SingleEntryTemplate {
 	return &SingleEntryTemplate{
 		Name:     "",
 		Role:     role,
@@ -86,7 +87,7 @@ func (p *historyPromptTemplate) Build(ctx chain2.ChainContext) (string, error) {
 
 type SingleEntryTemplate struct {
 	Name     string
-	Role     Role
+	Role     msn.Role
 	Template chain2.Prompt
 
 	hasEmptyTokenCount bool

@@ -20,8 +20,12 @@ type Database interface {
 }
 
 type Filter interface {
+	Evaluate(value any, args any) (bool, error)
+
 	AsExpr() *vm.Program
 	AsAst() ast.Node
+
+	String() string
 }
 
 type ProgramFilter struct{ *vm.Program }
@@ -34,11 +38,31 @@ func (p ProgramFilter) AsAst() ast.Node {
 	return p.Program.Node
 }
 
+func (p ProgramFilter) String() string {
+	return p.Program.Disassemble()
+}
+
+func (p ProgramFilter) Evaluate(value any, args any) (bool, error) {
+	env := map[string]interface{}{
+		"resource": value,
+		"args":     args,
+	}
+
+	result, err := expr.Run(p.Program, env)
+
+	if err != nil {
+		return false, err
+	}
+
+	return result.(bool), nil
+}
+
 type QueryOptions struct {
 	ResourceType    TypeID
 	ReadConsistency ReadConsistencyLevel
 
 	FilterExpression Filter
+	FilterParameters map[string]interface{}
 }
 
 type QueryOption func(opts *QueryOptions)
@@ -73,6 +97,24 @@ func WithGetQueryOptions(options ...QueryOption) GetOption {
 			opt(&opts.QueryOptions)
 		}
 	}
+}
+
+func WithFilterParameters(parameters map[string]interface{}) QueryOption {
+	return func(opts *QueryOptions) {
+		if opts.FilterParameters == nil {
+			opts.FilterParameters = map[string]interface{}{}
+		}
+
+		for k, v := range parameters {
+			opts.FilterParameters[k] = v
+		}
+	}
+}
+
+func WithFilterParameter(name string, value any) QueryOption {
+	return WithFilterParameters(map[string]interface{}{
+		name: value,
+	})
 }
 
 func WithFilterExpression(q string) QueryOption {

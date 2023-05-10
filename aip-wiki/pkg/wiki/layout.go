@@ -1,13 +1,14 @@
 package wiki
 
 import (
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
 )
 
 var LayoutGeneratorPrompt = chat.ComposeTemplate(
 	chat.EntryTemplate(
-		chat.RoleSystem,
+		msn.RoleSystem,
 		chain.Static(`
 You are an AI assistant specialized in generating reproducible layouts for web pages.
 
@@ -27,5 +28,5 @@ Output ONLY the HTML for the layout.
 `),
 	),
 
-	chat.EntryTemplate(chat.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )

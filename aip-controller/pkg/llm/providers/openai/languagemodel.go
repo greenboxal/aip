@@ -5,8 +5,9 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm"
-	chat2 "github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	chat "github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
 )
 
 type LanguageModel struct {
@@ -38,18 +39,18 @@ func (lm *LanguageModel) Predict(ctx context.Context, prompt string, options ...
 	return result.Choices[0].Text, nil
 }
 
-func (lm *LanguageModel) PredictChat(ctx context.Context, msg chat2.Message, options ...llm.PredictOption) (chat2.Message, error) {
+func (lm *LanguageModel) PredictChat(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.Message, error) {
 	result, err := lm.Predict(ctx, msg.String(), options...)
 
 	if err != nil {
-		return chat2.Message{}, err
+		return chat.Message{}, err
 	}
 
-	return chat2.Message{
-		Entries: []chat2.MessageEntry{
+	return chat.Message{
+		Entries: []chat.MessageEntry{
 			{
-				Role:    chat2.RoleAI,
-				Content: result,
+				Role: msn.RoleAI,
+				Text: result,
 			},
 		},
 	}, nil
@@ -68,9 +69,9 @@ func (lm *ChatLanguageModel) MaxTokens() int {
 }
 
 func (lm *ChatLanguageModel) Predict(ctx context.Context, prompt string, options ...llm.PredictOption) (string, error) {
-	msg := chat2.Compose(
-		chat2.Entry(chat2.RoleUser, prompt),
-		chat2.Entry(chat2.RoleAI, ""),
+	msg := chat.Compose(
+		chat.Entry(msn.RoleUser, prompt),
+		chat.Entry(msn.RoleAI, ""),
 	)
 
 	result, err := lm.PredictChat(ctx, msg, options...)
@@ -79,10 +80,10 @@ func (lm *ChatLanguageModel) Predict(ctx context.Context, prompt string, options
 		return "", nil
 	}
 
-	return result.Entries[0].Content, nil
+	return result.Entries[0].Text, nil
 }
 
-func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat2.Message, options ...llm.PredictOption) (chat2.Message, error) {
+func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.Message, error) {
 	opts := llm.NewPredictOptions(options...)
 	messages := make([]openai.ChatCompletionMessage, len(msg.Entries))
 
@@ -90,11 +91,11 @@ func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat2.Message,
 		var role string
 
 		switch m.Role {
-		case chat2.RoleSystem:
+		case msn.RoleSystem:
 			role = "system"
-		case chat2.RoleUser:
+		case msn.RoleUser:
 			role = "user"
-		case chat2.RoleAI:
+		case msn.RoleAI:
 			role = "assistant"
 		default:
 			panic("unknown role")
@@ -102,7 +103,7 @@ func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat2.Message,
 
 		messages[i] = openai.ChatCompletionMessage{
 			Role:    role,
-			Content: m.Content,
+			Content: m.Text,
 		}
 	}
 
@@ -114,31 +115,31 @@ func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat2.Message,
 	})
 
 	if err != nil {
-		return chat2.Message{}, nil
+		return chat.Message{}, nil
 	}
 
-	entries := make([]chat2.MessageEntry, len(result.Choices))
+	entries := make([]chat.MessageEntry, len(result.Choices))
 
 	for i, c := range result.Choices {
-		var role chat2.Role
+		var role msn.Role
 
 		switch c.Message.Role {
 		case "system":
-			role = chat2.RoleSystem
+			role = msn.RoleSystem
 		case "user":
-			role = chat2.RoleUser
+			role = msn.RoleUser
 		case "assistant":
-			role = chat2.RoleAI
+			role = msn.RoleAI
 		default:
 			panic("unknown role")
 		}
 
-		entries[i] = chat2.MessageEntry{
-			Role:    role,
-			Name:    c.Message.Name,
-			Content: c.Message.Content,
+		entries[i] = chat.MessageEntry{
+			Role: role,
+			Name: c.Message.Name,
+			Text: c.Message.Content,
 		}
 	}
 
-	return chat2.Compose(entries...), nil
+	return chat.Compose(entries...), nil
 }
