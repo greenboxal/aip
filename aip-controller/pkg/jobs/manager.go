@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jbenet/goprocess"
-	goprocessctx "github.com/jbenet/goprocess/context"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -59,11 +58,7 @@ func (m *Manager) DispatchEphemeral(ctx context.Context, spec JobSpec) (JobHandl
 }
 
 func (m *Manager) Start(ctx context.Context) error {
-	goprocess.Go(func(proc goprocess.Process) {
-		ctx := goprocessctx.OnClosingContext(proc)
-
-		m.reconciler.Run(ctx)
-	})
+	goprocess.Go(m.reconciler.Run)
 
 	return nil
 }

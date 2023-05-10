@@ -177,21 +177,33 @@ func (rts *ResourceTypeSystem) LookupByType(typ reflect.Type) (result BasicType)
 		return existing
 	}
 
-	name := utils.GetParsedTypeName(typ).NormalizedFullNameWithArguments()
+	metadata := AnnotationFromType(typ)
 
-	kind := KindValue
-
-	if IsBasicResourceId(typ) {
-		kind = KindId
+	if metadata == nil {
+		metadata = &TypeMetadata{}
 	}
 
-	result = newBasicType(
-		kind,
-		getTypePrimitiveKind(typ),
-		name,
-		typ,
-		false,
-	)
+	if metadata.Name == "" {
+		name := utils.GetParsedTypeName(typ).NormalizedFullNameWithArguments()
+
+		metadata.Name = name
+	}
+
+	if metadata.Kind == KindInvalid {
+		kind := KindValue
+
+		if IsBasicResourceId(typ) {
+			kind = KindId
+		}
+
+		metadata.Kind = kind
+	}
+
+	if metadata.PrimitiveKind == PrimitiveKindInvalid {
+		metadata.PrimitiveKind = getTypePrimitiveKind(typ)
+	}
+
+	result = newBasicType(typ, *metadata)
 
 	isNew = true
 

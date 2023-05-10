@@ -3,18 +3,16 @@ package forddb
 import (
 	"reflect"
 	"sync"
-
-	"golang.org/x/exp/slices"
 )
 
 type Listener interface {
 	OnResourceChanged(id BasicResourceID, previous, current BasicResource)
 }
 
-type ListenerFunc func(resource BasicResource)
+type ListenerFunc func(id BasicResourceID, previous, current BasicResource)
 
-func (f ListenerFunc) OnResourceChanged(resource BasicResource) {
-	f(resource)
+func (f ListenerFunc) OnResourceChanged(id BasicResourceID, previous, current BasicResource) {
+	f(id, previous, current)
 }
 
 type TypedListenerFunc[ID ResourceID[T], T Resource[ID]] func(id ID, previous, current T)
@@ -45,16 +43,16 @@ func (t TypedListenerFunc[ID, T]) OnResourceChanged(id BasicResourceID, previous
 }
 
 type HasListeners interface {
-	AddListener(listener Listener)
-	RemoveListener(listener Listener)
+	Subscribe(listener Listener) func()
 }
 
 type HasListenersBase struct {
 	listeners ListenerSet
 }
 
-func (h *HasListenersBase) AddListener(listener Listener)    { h.listeners.AddListener(listener) }
-func (h *HasListenersBase) RemoveListener(listener Listener) { h.listeners.RemoveListener(listener) }
+func (h *HasListenersBase) Subscribe(listener Listener) func() {
+	return h.listeners.Subscribe(listener)
+}
 
 func FireListeners(hlb *HasListenersBase, id BasicResourceID, previous, current BasicResource) {
 	hlb.listeners.OnResourceChanged(id, previous, current)
@@ -62,38 +60,39 @@ func FireListeners(hlb *HasListenersBase, id BasicResourceID, previous, current 
 
 type ListenerSet struct {
 	m         sync.RWMutex
-	listeners []Listener
+	listeners map[uint64]Listener
+	counter   uint64
 }
 
-func (l *ListenerSet) AddListener(listener Listener) {
+func (l *ListenerSet) Subscribe(listener Listener) func() {
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	index := slices.Index(l.listeners, listener)
+	l.counter++
 
-	if index != -1 {
-		return
+	id := l.counter
+
+	if l.listeners == nil {
+		l.listeners = map[uint64]Listener{}
 	}
 
-	l.listeners = append(l.listeners, listener)
-}
+	l.listeners[id] = listener
 
-func (l *ListenerSet) RemoveListener(listener Listener) {
-	l.m.Lock()
-	defer l.m.Unlock()
+	return func() {
+		l.m.Lock()
+		defer l.m.Unlock()
 
-	index := slices.Index(l.listeners, listener)
-
-	if index == -1 {
-		return
+		delete(l.listeners, id)
 	}
-
-	l.listeners = slices.Delete(l.listeners, index, index+1)
 }
 
 func (l *ListenerSet) OnResourceChanged(id BasicResourceID, previous, current BasicResource) {
 	l.m.RLock()
 	defer l.m.RUnlock()
+
+	if l.listeners == nil {
+		return
+	}
 
 	for _, l := range l.listeners {
 		l.OnResourceChanged(id, previous, current)

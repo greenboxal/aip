@@ -16,20 +16,23 @@ import (
 var Module = fx.Module(
 	"ford",
 
+	reconciliation.Module,
+
 	fx.Provide(NewManager),
 	fx.Provide(agent.NewManager),
 	fx.Provide(forddbimpl2.NewDatabase),
-	fx.Provide(logstore.NewOldFileLogStore),
 
 	fx.Provide(func(rsm *config.ResourceManager) (forddb.LogStore, error) {
-		path := rsm.GetDataDirectory("log")
-		fss, err := logstore.NewFileLogStore(path)
+		//path := rsm.GetDataDirectory("log")
+		//fss, err := logstore.NewOldFileLogStore(path)
 
-		if err != nil {
-			return nil, err
-		}
+		//if err != nil {
+		//	return nil, err
+		//}
 
-		return fss, nil
+		//return fss, nil
+
+		return logstore.NewMemoryLogStore(), nil
 	}),
 
 	fx.Provide(func(m *Manager) indexing.Index {

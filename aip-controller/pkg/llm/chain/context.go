@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/documents"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
 )
 
 const DefaultInput ContextKey[string] = "completion_input"
@@ -37,7 +36,6 @@ type ChainOutput struct {
 type ChainContext interface {
 	Context() context.Context
 	Documents() documents.Store
-	Attention() memory.AttentionContext
 
 	NumIn() int
 	NumOut() int
@@ -67,8 +65,7 @@ func NewChainContext(ctx context.Context) ChainContext {
 }
 
 type chainContext struct {
-	ctx          context.Context
-	attentionCtx memory.AttentionContext
+	ctx context.Context
 
 	documentStore documents.Store
 
@@ -76,10 +73,6 @@ type chainContext struct {
 	outputs map[BasicContextKey]ChainOutput
 
 	opts SubChainOptions
-}
-
-func (cctx *chainContext) Attention() memory.AttentionContext {
-	return cctx.attentionCtx
 }
 
 func (cctx *chainContext) Context() context.Context                 { return cctx.ctx }

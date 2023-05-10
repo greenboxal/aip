@@ -8,7 +8,7 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 type Transport struct {
@@ -16,7 +16,7 @@ type Transport struct {
 
 	m          sync.Mutex
 	topics     map[string]*pubsub.Topic
-	incomingCh chan collective.Message
+	incomingCh chan msn.Message
 }
 
 func NewTransport(ps *pubsub.PubSub) *Transport {
@@ -24,7 +24,7 @@ func NewTransport(ps *pubsub.PubSub) *Transport {
 		ps: ps,
 
 		topics:     map[string]*pubsub.Topic{},
-		incomingCh: make(chan collective.Message, 16),
+		incomingCh: make(chan msn.Message, 16),
 	}
 }
 
@@ -63,12 +63,12 @@ func (t *Transport) Subscribe(channel string) error {
 	return nil
 }
 
-func (t *Transport) Incoming() <-chan collective.Message {
+func (t *Transport) Incoming() <-chan msn.Message {
 	return t.incomingCh
 }
 
-func (t *Transport) RouteMessage(ctx context.Context, msg collective.Message) error {
-	topic, err := t.getTopic(msg.Channel, false)
+func (t *Transport) RouteMessage(ctx context.Context, msg msn.Message) error {
+	topic, err := t.getTopic(msg.Channel.String(), false)
 
 	if err != nil {
 		return err

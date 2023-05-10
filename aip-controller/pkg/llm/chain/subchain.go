@@ -2,7 +2,6 @@ package chain
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/documents"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
 )
 
 type MappedIO struct {
@@ -16,8 +15,7 @@ type MappedIO struct {
 type SubChainOptions struct {
 	IOMap map[IOAddress]MappedIO
 
-	DocumentStore    documents.Store
-	AttentionContext memory.AttentionContext
+	DocumentStore documents.Store
 }
 
 type SubChainOption func(options *SubChainOptions)
@@ -41,12 +39,6 @@ func WithSubChainOptions(options SubChainOptions) SubChainOption {
 func WithSubChainDocumentStore(store documents.Store) SubChainOption {
 	return func(options *SubChainOptions) {
 		options.DocumentStore = store
-	}
-}
-
-func WithSubChainAttentionContext(ctx memory.AttentionContext) SubChainOption {
-	return func(options *SubChainOptions) {
-		options.AttentionContext = ctx
 	}
 }
 

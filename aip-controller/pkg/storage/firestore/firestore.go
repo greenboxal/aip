@@ -3,7 +3,6 @@ package firestore
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
@@ -168,6 +167,7 @@ func (s *Storage) Put(
 	resource forddb.RawResource,
 	opts forddb.PutOptions,
 ) (forddb.RawResource, error) {
+	var result *firestore.WriteResult
 	var fields map[string]interface{}
 	var preconditions []firestore.Precondition
 
@@ -185,36 +185,51 @@ func (s *Storage) Put(
 	col := s.client.Collection(collection)
 	doc := col.Doc(resource.GetResourceBasicID().String())
 
-	switch opts.OnConflict {
-	case forddb.OnConflictReplace:
-		if _, err := doc.Set(ctx, fields); err != nil {
+	metaValue := resource["metadata"].(map[string]interface{})
+	version := metaValue["version"].(uint64)
+
+	if version >= 0 {
+		if r, err := doc.Set(ctx, fields); err != nil {
 			return nil, err
+		} else {
+			result = r
 		}
+	} else {
+		switch opts.OnConflict {
+		case forddb.OnConflictReplace:
+			if r, err := doc.Set(ctx, fields); err != nil {
+				return nil, err
+			} else {
+				result = r
+			}
 
-	default:
-		metadata := resource.GetResourceMetadata()
-		updates := make([]firestore.Update, 0, len(fields))
+		default:
+			updates := make([]firestore.Update, 0, len(fields))
 
-		for k, v := range fields {
-			updates = append(updates, firestore.Update{
-				Path:  k,
-				Value: v,
-			})
-		}
+			for k, v := range fields {
+				updates = append(updates, firestore.Update{
+					Path:  k,
+					Value: v,
+				})
+			}
 
-		updatedAt := metadata.UpdatedAt
-		epoch := time.Unix(0, 0)
+			/*if !metadata.UpdatedAt.IsZero() && metadata.Version > 1 {
+				preconditions = append(preconditions, firestore.LastUpdateTime(metadata.UpdatedAt))
+			}*/
 
-		if updatedAt.Before(epoch) {
-			metadata.UpdatedAt = epoch
-		}
-
-		preconditions = append(preconditions, firestore.LastUpdateTime(metadata.UpdatedAt))
-
-		if _, err := doc.Update(ctx, updates, preconditions...); err != nil {
-			return nil, err
+			if r, err := doc.Update(ctx, updates, preconditions...); err != nil {
+				return nil, err
+			} else {
+				result = r
+			}
 		}
 	}
+
+	if metaValue["created_at"] == metaValue["updated_at"] {
+		metaValue["created_at"] = result.UpdateTime
+	}
+
+	metaValue["updated_at"] = result.UpdateTime
 
 	return resource, nil
 }

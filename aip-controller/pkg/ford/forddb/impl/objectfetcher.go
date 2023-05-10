@@ -51,14 +51,7 @@ func (of *objectFetcher) runWorker(proc goprocess.Process) {
 			if raw, err := of.fetchResource(ctx, req.storage, req.slot.id); err != nil {
 				req.slot.setError(err)
 			} else {
-				res, err := forddb.Decode(raw)
-
-				if err != nil {
-					req.slot.setError(err)
-					continue
-				}
-
-				_, err = req.slot.Update(ctx, res, forddb.PutOptions{
+				_, err = req.slot.Update(ctx, raw, forddb.PutOptions{
 					OnConflict: forddb.OnConflictLatestWins,
 				})
 

@@ -85,6 +85,9 @@ func (r *RpcResourceBinding) compileRpcMutation(ctx BindingContext, binding rpc.
 			outType = reflect.TypeOf(struct{}{})
 		}
 
+		inTypePtr := inType
+		outTypePtr := inType
+
 		for inType.Kind() == reflect.Ptr {
 			inType = inType.Elem()
 		}
@@ -155,9 +158,9 @@ func (r *RpcResourceBinding) compileRpcMutation(ctx BindingContext, binding rpc.
 
 				inputVal := reflect.ValueOf(input)
 
-				if inType.Kind() == reflect.Ptr && inputVal.Kind() != reflect.Ptr {
+				if inTypePtr.Kind() == reflect.Ptr && inputVal.Kind() != reflect.Ptr {
 					inputVal = inputVal.Addr()
-				} else if inType.Kind() != reflect.Ptr && inputVal.Kind() == reflect.Ptr {
+				} else if inTypePtr.Kind() != reflect.Ptr && inputVal.Kind() == reflect.Ptr {
 					for inputVal.Kind() == reflect.Ptr {
 						inputVal = inputVal.Elem()
 					}
@@ -181,7 +184,7 @@ func (r *RpcResourceBinding) compileRpcMutation(ctx BindingContext, binding rpc.
 				}
 
 				if len(result) > 0 {
-					if outType == errorType {
+					if outTypePtr == errorType {
 						if result[0].IsNil() {
 							return nil, nil
 						}
@@ -191,8 +194,8 @@ func (r *RpcResourceBinding) compileRpcMutation(ctx BindingContext, binding rpc.
 						v := result[0]
 
 						if v.IsValid() {
-							if v.Type().ConvertibleTo(outType) {
-								v = v.Convert(outType)
+							if v.Type().ConvertibleTo(outTypePtr) {
+								v = v.Convert(outTypePtr)
 							}
 
 							if forddb.IsBasicResource(v.Type()) {

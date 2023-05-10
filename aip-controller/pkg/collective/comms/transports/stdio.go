@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 type StdioTransport struct {
@@ -16,11 +16,11 @@ func (t *StdioTransport) Subscribe(channel string) error {
 	return nil
 }
 
-func (t *StdioTransport) Incoming() <-chan collective.Message {
+func (t *StdioTransport) Incoming() <-chan msn.Message {
 	return nil
 }
 
-func (s *StdioTransport) RouteMessage(ctx context.Context, msg collective.Message) error {
+func (s *StdioTransport) RouteMessage(ctx context.Context, msg msn.Message) error {
 	_, err := fmt.Fprintf(s.Stdout, "[%s] %s: %s\n", msg.Channel, msg.From, msg.Text)
 
 	return err

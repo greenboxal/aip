@@ -17,9 +17,7 @@ import (
 type basicTypeImpl struct {
 	ResourceBase[TypeID, BasicResourceType] `json:"metadata"`
 
-	name          string
-	kind          Kind
-	primitiveKind PrimitiveKind
+	metadata TypeMetadata
 
 	fields   []BasicField
 	fieldMap map[string]BasicField
@@ -28,42 +26,34 @@ type basicTypeImpl struct {
 	schemaType  schema.Type
 	schemaProto schema.TypedPrototype
 
-	isRuntimeOnly bool
-
 	universe *ResourceTypeSystem
 }
 
 var _ BasicType = (*basicTypeImpl)(nil)
 
 func newBasicType(
-	kind Kind,
-	primitiveKind PrimitiveKind,
-	name string,
 	typ reflect.Type,
-	isRuntimeOnly bool,
+	metadata TypeMetadata,
 ) *basicTypeImpl {
 	t := &basicTypeImpl{}
 
-	t.ResourceBase.ID = NewStringID[TypeID](name)
-
-	t.name = name
-	t.kind = kind
-	t.primitiveKind = primitiveKind
+	metadata.ID = TypeID(metadata.Name)
+	t.ID = metadata.ID
 	t.typ = typ
 	t.fieldMap = make(map[string]BasicField, 32)
-
-	t.isRuntimeOnly = isRuntimeOnly
+	t.metadata = metadata
 
 	return t
 }
 
 func (bt *basicTypeImpl) TypeSystem() *ResourceTypeSystem    { return bt.universe }
 func (bt *basicTypeImpl) GetResourceID() TypeID              { return bt.ResourceBase.ID }
-func (bt *basicTypeImpl) Name() string                       { return bt.name }
-func (bt *basicTypeImpl) Kind() Kind                         { return bt.kind }
-func (bt *basicTypeImpl) PrimitiveKind() PrimitiveKind       { return bt.primitiveKind }
+func (bt *basicTypeImpl) Name() string                       { return bt.metadata.Name }
+func (bt *basicTypeImpl) Kind() Kind                         { return bt.metadata.Kind }
+func (bt *basicTypeImpl) PrimitiveKind() PrimitiveKind       { return bt.metadata.PrimitiveKind }
 func (bt *basicTypeImpl) RuntimeType() reflect.Type          { return bt.typ }
-func (bt *basicTypeImpl) IsRuntimeOnly() bool                { return bt.isRuntimeOnly }
+func (bt *basicTypeImpl) Metadata() TypeMetadata             { return bt.metadata }
+func (bt *basicTypeImpl) IsRuntimeOnly() bool                { return bt.metadata.IsRuntimeOnly }
 func (bt *basicTypeImpl) CreateInstance() any                { return reflect.New(bt.typ).Interface() }
 func (bt *basicTypeImpl) NumFields() int                     { return len(bt.fields) }
 func (bt *basicTypeImpl) Fields() []BasicField               { return bt.fields }
@@ -77,7 +67,7 @@ func (bt *basicTypeImpl) FieldByIndex(index int) BasicField {
 	return bt.fields[index]
 }
 func (bt *basicTypeImpl) SchemaType() schema.Type {
-	if bt.isRuntimeOnly {
+	if bt.metadata.IsRuntimeOnly {
 		return nil
 	}
 
@@ -85,7 +75,7 @@ func (bt *basicTypeImpl) SchemaType() schema.Type {
 }
 
 func (bt *basicTypeImpl) SchemaPrototype() schema.TypedPrototype {
-	if bt.isRuntimeOnly {
+	if bt.metadata.IsRuntimeOnly {
 		return nil
 	}
 

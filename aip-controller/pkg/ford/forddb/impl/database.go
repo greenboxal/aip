@@ -20,9 +20,15 @@ type database struct {
 
 	objectFetcher      *objectFetcher
 	objectFetchProcess goprocess.Process
+
+	eventDispatcher        *eventDispatcher
+	eventDispatcherProcess goprocess.Process
 }
 
-func NewDatabase(logStore forddb.LogStore, storage forddb.Storage) forddb.Database {
+func NewDatabase(
+	logStore forddb.LogStore,
+	storage forddb.Storage,
+) forddb.Database {
 	db := &database{
 		log:     logStore,
 		storage: storage,
@@ -33,12 +39,8 @@ func NewDatabase(logStore forddb.LogStore, storage forddb.Storage) forddb.Databa
 	db.objectFetcher = newObjectFetcher(db)
 	db.objectFetchProcess = goprocess.Go(db.objectFetcher.Run)
 
-	// Index all resource types
-	for _, typ := range forddb.TypeSystem().ResourceTypes() {
-		if _, err := db.Put(context.Background(), typ); err != nil {
-			panic(err)
-		}
-	}
+	db.eventDispatcher = newEventDispatcher(db)
+	db.eventDispatcherProcess = goprocess.Go(db.eventDispatcher.Run)
 
 	return db
 }
@@ -70,14 +72,28 @@ func (db *database) Get(ctx context.Context, typ forddb.TypeID, id forddb.BasicR
 }
 
 func (db *database) Put(ctx context.Context, resource forddb.BasicResource, options ...forddb.PutOption) (forddb.BasicResource, error) {
+	resource.OnBeforeSave(resource)
+
+	raw, err := forddb.Encode(resource)
+
+	if err != nil {
+		return nil, err
+	}
+
 	opts := forddb.NewPutOptions(options...)
 	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
-	if slot == nil {
-		return nil, forddb.ErrNotFound
+	result, err := slot.Update(ctx, raw, opts)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return slot.Update(ctx, resource, opts)
+	if result == nil {
+		return nil, nil
+	}
+
+	return forddb.Decode(result)
 }
 
 func (db *database) Delete(ctx context.Context, resource forddb.BasicResource) (forddb.BasicResource, error) {
@@ -87,7 +103,17 @@ func (db *database) Delete(ctx context.Context, resource forddb.BasicResource) (
 		return nil, forddb.ErrNotFound
 	}
 
-	return slot.Delete(ctx)
+	result, err := slot.Delete(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	return forddb.Decode(result)
 }
 
 func (db *database) GetSlot(typ forddb.TypeID, id forddb.BasicResourceID, create bool) *resourceSlot {

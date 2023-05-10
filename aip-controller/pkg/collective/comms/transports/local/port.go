@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 const SeenMessageTimeout = 60 * time.Second
@@ -16,14 +16,14 @@ type Port struct {
 
 	name     string
 	local    *Transport
-	incoming chan collective.Message
+	incoming chan msn.Message
 }
 
 func NewPort(local *Transport, name string) *Port {
 	return &Port{
 		name:     name,
 		local:    local,
-		incoming: make(chan collective.Message, 16),
+		incoming: make(chan msn.Message, 16),
 		seenSet:  map[string]time.Time{},
 	}
 }
@@ -32,11 +32,11 @@ func (p *Port) Subscribe(channel string) error {
 	return p.local.subscribeLocal(p, channel)
 }
 
-func (p *Port) Incoming() <-chan collective.Message {
+func (p *Port) Incoming() <-chan msn.Message {
 	return p.incoming
 }
 
-func (p *Port) Send(ctx context.Context, msg collective.Message) error {
+func (p *Port) Send(ctx context.Context, msg msn.Message) error {
 	return p.local.RouteMessage(ctx, msg)
 }
 
@@ -49,7 +49,7 @@ func (p *Port) Close() error {
 	return nil
 }
 
-func (p *Port) routeMessage(ctx context.Context, msg collective.Message) {
+func (p *Port) routeMessage(ctx context.Context, msg msn.Message) {
 	if !p.isMessageVisible(msg) {
 		return
 	}
@@ -57,19 +57,19 @@ func (p *Port) routeMessage(ctx context.Context, msg collective.Message) {
 	p.incoming <- msg
 }
 
-func (p *Port) isMessageVisible(msg collective.Message) bool {
+func (p *Port) isMessageVisible(msg msn.Message) bool {
 	defer p.cleanSeenSet()
 
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	_, ok := p.seenSet[msg.ID]
+	_, ok := p.seenSet[msg.ID.String()]
 
 	if ok {
 		return false
 	}
 
-	p.seenSet[msg.ID] = time.Now()
+	p.seenSet[msg.ID.String()] = time.Now()
 
 	return true
 }

@@ -69,10 +69,6 @@ type LogEntry struct {
 
 	Previous RawResource `json:"previous,omitempty"`
 	Current  RawResource `json:"current,omitempty"`
-
-	// Runtime only
-	CachedPrevious BasicResource `json:"-"`
-	CachedCurrent  BasicResource `json:"-"`
 }
 
 type LogEntryRecord struct {

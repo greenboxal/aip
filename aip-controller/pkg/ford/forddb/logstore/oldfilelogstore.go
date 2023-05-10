@@ -16,11 +16,13 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
-const FileEventSegmentMagic = 0x46534547 // "FSEG"
-const FileEventSegmentHeaderSize = 64    // "FSEG"
+const FileSegmentHeaderMagic = 0x46534547 // "FSEG"
+const FileSegmentHeaderSize = 64          // "FSEG"
+const FileSegmentBaseSeekToHead = 0xFFFFFFFFFFFFFFFF
 
 type OldFileLogStore struct {
-	m sync.RWMutex
+	m    sync.RWMutex
+	cond *sync.Cond
 
 	logDir string
 
@@ -57,12 +59,14 @@ func NewOldFileLogStore(baseDir string) (*OldFileLogStore, error) {
 		logDir: baseDir,
 	}
 
-	s, err := fls.openSegment(forddb.MakeLSN(0, time.Now()), false, false)
+	head := forddb.MakeLSN(FileSegmentBaseSeekToHead, time.Now())
+	s, err := fls.openSegment(head, false, false)
 
 	if err != nil {
 		return nil, err
 	}
 
+	fls.cond = sync.NewCond(&fls.m)
 	fls.currentSegment = s
 
 	return fls, nil
@@ -76,6 +80,8 @@ func (fls *OldFileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fo
 	if err := fls.currentSegment.Append(&record); err != nil {
 		return record, nil
 	}
+
+	fls.cond.Broadcast()
 
 	return record, nil
 }
@@ -140,7 +146,7 @@ type fileStoreSegment struct {
 	tail   forddb.LSN
 	offset uint64
 
-	header [FileEventSegmentHeaderSize]byte
+	header [FileSegmentHeaderSize]byte
 }
 
 func newFileStoreSegment(f *os.File, base forddb.LSN, readOnly bool) (*fileStoreSegment, error) {
@@ -157,10 +163,14 @@ func newFileStoreSegment(f *os.File, base forddb.LSN, readOnly bool) (*fileStore
 	}
 
 	if size > 0 {
-		_, err := f.ReadAt(fss.header[:], 0)
+		n, err := f.ReadAt(fss.header[:], 0)
 
 		if err != nil {
 			return nil, err
+		}
+
+		if n == 0 {
+			return nil, errors.New("empty segment file")
 		}
 
 		magic := binary.LittleEndian.Uint32(fss.header[0:])
@@ -169,14 +179,12 @@ func newFileStoreSegment(f *os.File, base forddb.LSN, readOnly bool) (*fileStore
 		tailClock := binary.LittleEndian.Uint64(fss.header[24:])
 		tailTs := binary.LittleEndian.Uint64(fss.header[32:])
 
-		if magic != FileEventSegmentMagic {
+		if magic != FileSegmentHeaderMagic {
 			return nil, fmt.Errorf("invalid segment header magic")
 		}
 
-		if base.Clock != baseClock || base.TS.UnixMilli() != int64(baseTs) {
-			return nil, fmt.Errorf("invalid segment header base pointers")
-		}
-
+		fss.head.Clock = baseClock
+		fss.head.TS = time.Unix(0, int64(baseTs))
 		fss.tail.Clock = tailClock
 		fss.tail.TS = time.Unix(0, int64(tailTs))
 	} else if !readOnly {
@@ -262,7 +270,7 @@ func (fss *fileStoreSegment) updateHeader(lastOffset uint64, tail forddb.LSN) er
 		return errors.New("segment is read only")
 	}
 
-	binary.LittleEndian.PutUint32(fss.header[0:], uint32(FileEventSegmentMagic))
+	binary.LittleEndian.PutUint32(fss.header[0:], uint32(FileSegmentHeaderMagic))
 	binary.LittleEndian.PutUint64(fss.header[8:], fss.head.Clock)
 	binary.LittleEndian.PutUint64(fss.header[16:], uint64(fss.head.TS.UnixMilli()))
 	binary.LittleEndian.PutUint64(fss.header[24:], tail.Clock)

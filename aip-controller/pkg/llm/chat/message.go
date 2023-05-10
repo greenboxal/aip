@@ -6,7 +6,6 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/documents"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 )
 
@@ -34,8 +33,6 @@ func Append(msg Message, entries ...MessageEntry) Message {
 }
 
 type Message struct {
-	documents.DocumentBase[*Message]
-
 	Entries []MessageEntry
 }
 
@@ -68,8 +65,8 @@ func (m Message) String() string {
 }
 
 type MessageEntry struct {
-	Role Role
-	Name string
+	Role    Role
+	Name    string
 	Content string
 }
 

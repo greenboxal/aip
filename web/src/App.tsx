@@ -8,27 +8,21 @@ import {
     ListGuesser,
     DataProvider,
     ShowGuesser,
-    defaultTheme,
-    RaThemeOptions, CustomRoutes,
+    CustomRoutes,
 } from "react-admin"
+
+import {Route} from "react-router";
+
+import buildDataProvider from "./data";
+
+import AppLayout from "./layout/AppLayout";
+import Dashboard from "./dashboard";
+import ChatPage from "./chat";
 
 import {ImageList, ImageShow} from "./resources/Image";
 import {JobList, JobShow} from "./resources/Job";
 import {PageCreate, PageList, PageShow} from "./resources/Page";
-
-import AppLayout from "./layout/AppLayout";
-import Dashboard from "./dashboard";
-import buildDataProvider from "./data";
-import ChatPage from "./chat";
-import {Route} from "react-router";
-
-
-const darkTheme = {
-    ...defaultTheme,
-    palette: {
-        mode: 'dark',
-    },
-} as RaThemeOptions
+import authProvider from "./authProvider";
 
 const App: React.FC = () => {
     const [dataProviderAndClient, setDataProviderAndClient] = React.useState<{
@@ -54,6 +48,7 @@ const App: React.FC = () => {
         <Admin
             layout={AppLayout}
             dataProvider={dataProvider}
+            authProvider={authProvider}
             dashboard={Dashboard}
         >
 
@@ -80,6 +75,18 @@ const App: React.FC = () => {
 
             <Resource
                 name="Memory"
+                list={ListGuesser}
+                show={ShowGuesser}
+            />
+
+            <Resource
+                name="Channel"
+                list={ListGuesser}
+                show={ShowGuesser}
+            />
+
+            <Resource
+                name="Message"
                 list={ListGuesser}
                 show={ShowGuesser}
             />

@@ -189,22 +189,23 @@ func (r *runningJob) run(proc goprocess.Process) {
 
 	ctx := goprocessctx.OnClosingContext(proc)
 
-	r.updateState(ctx, JobStateScheduled)
+	if r.job.Status.State == JobStatePending {
+		r.updateState(ctx, JobStateScheduled)
+		return
+	} else if r.job.Status.State == JobStateScheduled {
+		r.proc = proc.Go(func(proc goprocess.Process) {
+			r.ctx = goprocessctx.OnClosingContext(proc)
 
-	r.proc = proc.Go(func(proc goprocess.Process) {
-		r.ctx = goprocessctx.OnClosingContext(proc)
+			r.updateState(r.ctx, JobStateRunning)
 
-		r.updateState(r.ctx, JobStateRunning)
+			r.err = r.handler.Run(r)
+		})
 
-		r.err = r.handler.Run(r)
-	})
+		if err := r.proc.Err(); err != nil {
+			r.err = multierror.Append(r.err, err)
+		}
 
-	if err := r.proc.Err(); err != nil {
-		r.err = multierror.Append(r.err, err)
-	}
-
-	if r.job.Status.State == JobStateRunning {
-		r.setCompleted(r.ctx, r.err)
+		r.setCompleted(ctx, r.err)
 	}
 }
 

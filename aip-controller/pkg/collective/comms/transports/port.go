@@ -3,15 +3,15 @@ package transports
 import (
 	"context"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 type Port interface {
 	Subscribe(channel string) error
 
-	Incoming() <-chan collective.Message
+	Incoming() <-chan msn.Message
 
-	Send(ctx context.Context, msg collective.Message) error
+	Send(ctx context.Context, msg msn.Message) error
 
 	Close() error
 }

@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "^3.7.13",
+    "@auth0/auth0-spa-js": "^2.0.4",
     "@babel/core": "^7.16.0",
     "@chakra-ui/icons": "^2.0.19",
     "@chakra-ui/react": "^2.6.0",
@@ -70,6 +71,7 @@
     "postcss-normalize": "^10.0.1",
     "postcss-preset-env": "^7.0.1",
     "prompts": "^2.4.2",
+    "ra-auth-auth0": "^1.0.0",
     "ra-data-graphql": "^4.10.1",
     "ra-data-graphql-simple": "^4.10.1",
     "ra-data-json-server": "^4.10.2",
@@ -180,5 +182,8 @@
   },
   "devDependencies": {
     "@types/styled-components": "^5.1.26"
+  },
+  "overrides": {
+    "react": "^18.2.0"
   }
 }

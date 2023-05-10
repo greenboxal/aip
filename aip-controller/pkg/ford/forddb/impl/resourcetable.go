@@ -13,6 +13,8 @@ import (
 )
 
 type resourceTable struct {
+	forddb.HasListenersBase
+
 	m sync.RWMutex
 
 	db  *database
@@ -116,26 +118,15 @@ func (rt *resourceTable) List(ctx context.Context, opts forddb.ListOptions) ([]f
 	resources := make([]forddb.BasicResource, 0, len(keys))
 
 	for _, key := range keys {
-		v := rt.GetSlot(key, false)
-
-		if v == nil {
-			continue
-		}
-
-		if !v.hasValue {
-			continue
-		}
-
-		_, value, err := v.doGet(ctx, false, false, true)
+		rs := rt.GetSlot(key, true)
+		resource, err := rs.Get(ctx)
 
 		if forddb.IsNotFound(err) {
-			continue
-		} else if err != nil {
 			merr = multierror.Append(merr, err)
 			continue
 		}
 
-		resources = append(resources, value)
+		resources = append(resources, resource)
 	}
 
 	return resources, nil

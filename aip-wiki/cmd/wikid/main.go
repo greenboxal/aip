@@ -15,6 +15,7 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/apimachinery"
 	"github.com/greenboxal/aip/aip-controller/pkg/apis"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/comms"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/config"
 	"github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
@@ -45,6 +46,7 @@ func main() {
 		daemon.Module,
 		jobs.Module,
 		comms.Module,
+		msn.Module,
 		ford.Module,
 		wiki.Module,
 

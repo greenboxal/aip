@@ -51,11 +51,23 @@ func NewPageGenerator(client *openai.Client, cache *ContentCache) (*PageGenerato
 	}
 
 	w.contentChain = chain.Compose(
-		chat.Predict(w.model, PageGeneratorPrompt, GeneratedHtmlParser(PageContentKey)),
+		chat.Predict(
+			w.model,
+			PageGeneratorPrompt,
+			chat.WithOutputParsers(
+				GeneratedHtmlParser(PageContentKey),
+			),
+		),
 	)
 
 	w.editorChain = chain.Compose(
-		chat.Predict(w.model, PageEditorPrompt, GeneratedHtmlParser(PageContentKey)),
+		chat.Predict(
+			w.model,
+			PageEditorPrompt,
+			chat.WithOutputParsers(
+				GeneratedHtmlParser(PageContentKey),
+			),
+		),
 	)
 
 	return w, nil

@@ -1,19 +1,24 @@
 package reconciliation
 
 import (
-	"context"
-
+	"github.com/jbenet/goprocess"
 	"go.uber.org/fx"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/apis/graphql"
+)
+
+var Module = fx.Module(
+	"reconciliation",
+
+	graphql.ProvideBinding[*reconcilersApi](newReconcilersApi),
 )
 
 func WithReconciler[R Reconciler](iface any) fx.Option {
 	return fx.Options(
 		fx.Provide(iface),
 
-		fx.Invoke(func(db forddb.Database, r R) {
-			go r.Run(context.Background())
+		fx.Invoke(func(r R) {
+			goprocess.Go(r.Run)
 		}),
 	)
 }

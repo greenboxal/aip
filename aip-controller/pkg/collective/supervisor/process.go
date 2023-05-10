@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 type Process struct {
@@ -25,14 +25,14 @@ type Process struct {
 	stdoutReader io.ReadCloser
 
 	procStartedCh chan struct{}
-	outgoingCh    chan collective.Message
+	outgoingCh    chan msn.Message
 
-	handler func(m collective.Message)
+	handler func(m msn.Message)
 }
 
 func NewProcess(
 	logger *zap.SugaredLogger,
-	handler func(m collective.Message),
+	handler func(m msn.Message),
 	program string,
 	args ...string,
 ) (*Process, error) {
@@ -43,11 +43,11 @@ func NewProcess(
 		args:    args,
 
 		procStartedCh: make(chan struct{}),
-		outgoingCh:    make(chan collective.Message, 128),
+		outgoingCh:    make(chan msn.Message, 128),
 	}, nil
 }
 
-func (p *Process) Send(msg collective.Message) error {
+func (p *Process) Send(msg msn.Message) error {
 	p.outgoingCh <- msg
 
 	return nil
@@ -116,7 +116,7 @@ func (p *Process) Run(ctx context.Context) error {
 	})
 
 	wg.Go(func() error {
-		var msg collective.Message
+		var msg msn.Message
 
 		reader := bufio.NewReader(p.stdoutReader)
 

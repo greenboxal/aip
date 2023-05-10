@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/tidwall/wal"
+
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
@@ -93,7 +95,13 @@ func (l *fileLogIterator) invalidate(ctx context.Context) error {
 		return err
 	}
 
-	if index > head {
+	data, err := l.ls.log.Read(index)
+
+	if err != nil && err != wal.ErrNotFound && err != wal.ErrOutOfRange {
+		return err
+	}
+
+	if index > head || data == nil || err == wal.ErrOutOfRange || err == wal.ErrNotFound {
 		index = head + 1
 
 		if l.options.Block {
@@ -117,12 +125,6 @@ func (l *fileLogIterator) invalidate(ctx context.Context) error {
 				}
 			}
 		}
-	}
-
-	data, err := l.ls.log.Read(index)
-
-	if err != nil {
-		return err
 	}
 
 	if err := json.Unmarshal(data, &record); err != nil {

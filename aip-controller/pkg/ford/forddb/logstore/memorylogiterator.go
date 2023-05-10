@@ -113,7 +113,7 @@ func (mls *memoryLogStoreIterator) invalidate(ctx context.Context) error {
 		mls.currentLsn.Clock = head
 	}
 
-	index := mls.currentLsn.Clock - 1
+	index := mls.currentLsn.Clock
 
 	mls.current = nil
 
@@ -122,8 +122,9 @@ func (mls *memoryLogStoreIterator) invalidate(ctx context.Context) error {
 			mls.ls.cond.L.Lock()
 			defer mls.ls.cond.L.Unlock()
 
+			index = head
+
 			for index >= head {
-				index = head
 
 				select {
 				case <-ctx.Done():

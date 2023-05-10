@@ -14,6 +14,8 @@ import (
 var Module = fx.Module(
 	"apis/graphql",
 
+	fx.Provide(NewSubscriptionManager),
+
 	apimachinery.ProvideHttpService[*GraphQL](NewGraphQL, "/v1/graphql"),
 
 	utils.WithBindingRegistry[ResourceBinding]("graphql-resource-bindings"),
@@ -27,6 +29,7 @@ type BindingContext interface {
 
 	RegisterQuery(field ...*graphql.Field)
 	RegisterMutation(field ...*graphql.Field)
+	RegisterSubscription(fields ...*graphql.Field)
 
 	LookupInputType(typ forddb.BasicType) graphql.Input
 	LookupOutputType(typ forddb.BasicType) graphql.Output

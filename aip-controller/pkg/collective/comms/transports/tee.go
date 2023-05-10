@@ -8,7 +8,7 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/exp/slices"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 func Tee(transports ...Transport) *TeeTransport {
@@ -20,7 +20,7 @@ func Tee(transports ...Transport) *TeeTransport {
 type TeeTransport struct {
 	m          sync.Mutex
 	targets    []Transport
-	incomingCh chan collective.Message
+	incomingCh chan msn.Message
 }
 
 func (t *TeeTransport) Subscribe(channel string) error {
@@ -35,7 +35,7 @@ func (t *TeeTransport) Subscribe(channel string) error {
 	return merr
 }
 
-func (t *TeeTransport) Incoming() <-chan collective.Message {
+func (t *TeeTransport) Incoming() <-chan msn.Message {
 	if t.incomingCh == nil {
 		t.m.Lock()
 		defer t.m.Unlock()
@@ -44,7 +44,7 @@ func (t *TeeTransport) Incoming() <-chan collective.Message {
 			return t.incomingCh
 		}
 
-		t.incomingCh = make(chan collective.Message, 16)
+		t.incomingCh = make(chan msn.Message, 16)
 
 		go func() {
 			cases := make([]reflect.SelectCase, 0, len(t.targets))
@@ -70,7 +70,7 @@ func (t *TeeTransport) Incoming() <-chan collective.Message {
 					continue
 				}
 
-				t.incomingCh <- value.Interface().(collective.Message)
+				t.incomingCh <- value.Interface().(msn.Message)
 			}
 		}()
 	}
@@ -78,7 +78,7 @@ func (t *TeeTransport) Incoming() <-chan collective.Message {
 	return t.incomingCh
 }
 
-func (t *TeeTransport) RouteMessage(ctx context.Context, msg collective.Message) error {
+func (t *TeeTransport) RouteMessage(ctx context.Context, msg msn.Message) error {
 	var merr error
 
 	for _, target := range t.targets {

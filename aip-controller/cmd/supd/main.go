@@ -14,6 +14,7 @@ import (
 	apimachinery "github.com/greenboxal/aip/aip-controller/pkg/apimachinery"
 	"github.com/greenboxal/aip/aip-controller/pkg/apis"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/comms"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/config"
 	daemon "github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
@@ -38,6 +39,7 @@ func main() {
 		ipfs.Module,
 		openai.Module,
 		comms.Module,
+		msn.Module,
 		ford.Module,
 		jobs.Module,
 		daemon.Module,

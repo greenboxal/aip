@@ -5,8 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
 	transports2 "github.com/greenboxal/aip/aip-controller/pkg/collective/comms/transports"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 type Transport struct {
@@ -42,7 +42,7 @@ func (t *Transport) Subscribe(channel string) error {
 	return t.defaultGateway.Subscribe(channel)
 }
 
-func (t *Transport) Incoming() <-chan collective.Message {
+func (t *Transport) Incoming() <-chan msn.Message {
 	return nil
 }
 
@@ -61,7 +61,7 @@ func (t *Transport) AddPort(name string) (transports2.Port, error) {
 	return p, nil
 }
 
-func (t *Transport) RouteMessage(ctx context.Context, msg collective.Message) error {
+func (t *Transport) RouteMessage(ctx context.Context, msg msn.Message) error {
 	return t.routeMessage(ctx, msg, true)
 }
 
@@ -69,11 +69,11 @@ func (t *Transport) Close() error {
 	return nil
 }
 
-func (t *Transport) routeMessage(ctx context.Context, msg collective.Message, allowExternal bool) error {
+func (t *Transport) routeMessage(ctx context.Context, msg msn.Message, allowExternal bool) error {
 	t.routeSubscriptions(ctx, msg)
 
-	if msg.Channel != msg.From {
-		p := t.getPort(msg.Channel)
+	if msg.Channel.String() != msg.From.String() {
+		p := t.getPort(msg.Channel.String())
 
 		if p != nil {
 			p.routeMessage(ctx, msg)
@@ -123,18 +123,18 @@ func (t *Transport) subscribeLocal(p *Port, channel string) error {
 	return t.Subscribe(channel)
 }
 
-func (t *Transport) routeSubscriptions(ctx context.Context, msg collective.Message) {
+func (t *Transport) routeSubscriptions(ctx context.Context, msg msn.Message) {
 	t.m.RLock()
 	defer t.m.RUnlock()
 
-	subs := t.subscriptions[msg.Channel]
+	subs := t.subscriptions[msg.Channel.String()]
 
 	if subs == nil {
 		return
 	}
 
 	for key := range subs {
-		if key == msg.From {
+		if key == msg.From.String() {
 			continue
 		}
 

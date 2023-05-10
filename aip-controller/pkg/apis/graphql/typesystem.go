@@ -35,6 +35,12 @@ func (q *GraphQL) initializeTypeSystem() {
 		Name:   "Mutations",
 		Fields: q.rootMutationFields,
 	}
+
+	q.subscriptionFields = graphql.Fields{}
+	q.subscriptionConfig = graphql.ObjectConfig{
+		Name:   "Subscriptions",
+		Fields: q.subscriptionFields,
+	}
 }
 
 func (q *GraphQL) buildTypeSystem() {
@@ -44,33 +50,27 @@ func (q *GraphQL) buildTypeSystem() {
 		types = append(types, typ)
 	}
 
-	if len(q.rootMutationFields) == 0 {
-		q.rootMutationFields["noop"] = &graphql.Field{
-			Type: graphql.Boolean,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return true, nil
-			},
-		}
-	}
-
-	if len(q.rootQueryFields) == 0 {
-		q.rootQueryFields["noop"] = &graphql.Field{
-			Type: graphql.Boolean,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return true, nil
-			},
-		}
-	}
-
 	q.rootQuery = graphql.NewObject(q.rootQueryConfig)
 	q.rootMutation = graphql.NewObject(q.rootMutationConfig)
+	q.subscription = graphql.NewObject(q.subscriptionConfig)
 
-	schema, err := graphql.NewSchema(graphql.SchemaConfig{
+	schemaConfig := graphql.SchemaConfig{
 		Types: types,
+	}
 
-		Query:    q.rootQuery,
-		Mutation: q.rootMutation,
-	})
+	if len(q.rootMutationFields) > 0 {
+		schemaConfig.Mutation = q.rootMutation
+	}
+
+	if len(q.rootQueryFields) > 0 {
+		schemaConfig.Query = q.rootQuery
+	}
+
+	if len(q.subscriptionFields) > 0 {
+		schemaConfig.Subscription = q.subscription
+	}
+
+	schema, err := graphql.NewSchema(schemaConfig)
 
 	if err != nil {
 		panic(err)
@@ -265,5 +265,11 @@ func (q *GraphQL) RegisterQuery(fields ...*graphql.Field) {
 func (q *GraphQL) RegisterMutation(fields ...*graphql.Field) {
 	for _, field := range fields {
 		q.rootMutationFields[field.Name] = field
+	}
+}
+
+func (q *GraphQL) RegisterSubscription(fields ...*graphql.Field) {
+	for _, field := range fields {
+		q.subscriptionFields[field.Name] = field
 	}
 }

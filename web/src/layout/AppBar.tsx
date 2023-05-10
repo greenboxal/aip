@@ -11,10 +11,9 @@ const darkTheme = {
 
 export const MyAppBar = () => (
     <AppBar>
-        <TitlePortal />
-        <Search />
-        <ToggleThemeButton lightTheme={defaultTheme} darkTheme={darkTheme}  />
-        <LocalesMenuButton />
+        <TitlePortal key="title" />
+        <Search key="search" />
+        <ToggleThemeButton key="themes" lightTheme={defaultTheme} darkTheme={darkTheme}  />
     </AppBar>
 );
 

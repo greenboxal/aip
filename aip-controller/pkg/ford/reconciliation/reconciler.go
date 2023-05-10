@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/jbenet/goprocess"
 	"github.com/modern-go/reflect2"
 	"go.uber.org/zap"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type Reconciler interface {
-	Run(ctx context.Context)
+	Run(proc goprocess.Process)
 	Close() error
 }
 
@@ -48,53 +49,50 @@ func NewReconciler[ID forddb.ResourceID[T], T forddb.Resource[ID]](
 	return r
 }
 
-func (r *ReconcilerBase[ID, T]) Run(ctx context.Context) {
+func (r *ReconcilerBase[ID, T]) Run(proc goprocess.Process) {
 	consumer := &forddb.LogConsumer{
 		LogStore: r.db.LogStore(),
 		StreamID: r.id,
 		Handler: func(ctx context.Context, record *forddb.LogEntryRecord) error {
+			var previous, current T
+
 			if record.Type != r.resourceType {
 				return nil
 			}
 
-			id := forddb.NewStringID[ID](record.ID)
-			previous := r.cache[id.String()]
+			if record.Current != nil {
+				value, err := forddb.Decode(record.Current)
 
-			current, err := forddb.Get[T](ctx, r.db, id)
+				if err != nil {
+					return err
+				}
 
-			if err != nil {
-				return err
+				current = value.(T)
+			}
+
+			if record.Previous != nil {
+				value, err := forddb.Decode(record.Previous)
+
+				if err != nil {
+					return err
+				}
+
+				previous = value.(T)
 			}
 
 			if reflect2.IsNil(previous) || reflect2.IsNil(current) || current.GetResourceVersion() > previous.GetResourceVersion() {
-				encoded, err := forddb.Encode(current)
-
-				if err != nil {
-					return err
-				}
-
-				decoded, err := forddb.Decode(encoded)
-
-				if err != nil {
-					return err
-				}
-
-				_, err = r.handler(ctx, id, previous, decoded.(T))
+				_, err := r.handler(ctx, current.GetResourceBasicID().(ID), previous, current)
 
 				if err != nil {
 					r.logger.Error(err)
 				}
 			}
 
-			r.cache[id.String()] = current
-
 			return nil
 		},
 	}
 
-	if err := consumer.Run(ctx); err != nil {
-		panic(err)
-	}
+	consumer.Run(proc)
 }
 
 func (r *ReconcilerBase[ID, T]) Close() error {

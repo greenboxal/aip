@@ -27,7 +27,7 @@ func Put[T BasicResource](ctx context.Context, db Database, id T) (def T, _ erro
 }
 
 func Get[T BasicResource](ctx context.Context, db Database, id ResourceID[T]) (def T, _ error) {
-	typ := TypeSystem().LookupByIDType(reflect.TypeOf(id))
+	typ := id.BasicResourceType()
 	resource, err := db.Get(ctx, typ.GetResourceID(), id)
 
 	if err != nil {
@@ -39,6 +39,10 @@ func Get[T BasicResource](ctx context.Context, db Database, id ResourceID[T]) (d
 	}
 
 	return resource.(T), nil
+}
+
+func TypeOf(val any) BasicType {
+	return TypeSystem().LookupByType(reflect.TypeOf(val))
 }
 
 func LookupTypeByName(name string) BasicResourceType {

@@ -1,23 +1,53 @@
 package graphql
 
 import (
+	"context"
 	"regexp"
+	"sync"
+	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/jbenet/goprocess"
+	goprocessctx "github.com/jbenet/goprocess/context"
 	"github.com/samber/lo"
+	"go.uber.org/fx"
+	"golang.org/x/exp/slices"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 )
+
+type ResourceEventType string
+
+const (
+	ResourceEventTypeInvalid ResourceEventType = ""
+	ResourceEventTypeCreated ResourceEventType = "created"
+	ResourceEventTypeUpdated ResourceEventType = "updated"
+	ResourceEventTypeDeleted ResourceEventType = "deleted"
+)
+
+type ResourceEvent struct {
+	Type ResourceEventType `json:"type"`
+
+	Payload ResourceEventPayload `json:"payload"`
+}
+
+type ResourceEventPayload struct {
+	IDs []string `json:"ids"`
+}
 
 type DatabaseResourceBinding struct {
 	db forddb.Database
+	sm *SubscriptionManager
 }
 
 func NewDatabaseResourceBinding(
 	db forddb.Database,
+	sm *SubscriptionManager,
 ) *DatabaseResourceBinding {
 	return &DatabaseResourceBinding{
 		db: db,
+		sm: sm,
 	}
 }
 
@@ -36,6 +66,26 @@ func (r *DatabaseResourceBinding) BindResource(ctx BindingContext) {
 
 		r.compileResource(ctx, typ)
 	}
+
+	resourceChangedEventType := ctx.LookupOutputType(forddb.TypeOf(&ResourceEvent{}))
+
+	ctx.RegisterSubscription(&graphql.Field{
+		Name: "resourceChanged",
+		Type: resourceChangedEventType,
+
+		Args: graphql.FieldConfigArgument{
+			"resourceType": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+
+		Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
+			resourceTypeName := p.Args["resourceType"].(string)
+			resourceType := forddb.LookupTypeByName(resourceTypeName)
+
+			return r.sm.Subscribe(p.Context, resourceType)
+		},
+	})
 }
 
 func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb.BasicResourceType) {
@@ -70,7 +120,7 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 			}
 
 			id := typ.CreateID(idQuery)
-			res, err := r.db.Get(p.Context, typ.GetResourceTypeID(), id)
+			res, err := r.db.Get(p.Context, id.BasicResourceType().GetResourceID(), id)
 
 			if err != nil {
 				return nil, err
@@ -241,4 +291,152 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 	}
 
 	ctx.RegisterQuery(getById, getAll, getAllMeta)
+}
+
+type SubscriptionManager struct {
+	db forddb.Database
+
+	m             sync.RWMutex
+	subscriptions map[forddb.BasicResourceType][]chan ResourceEvent
+}
+
+func NewSubscriptionManager(
+	lc fx.Lifecycle,
+	db forddb.Database,
+) *SubscriptionManager {
+	sm := &SubscriptionManager{
+		db:            db,
+		subscriptions: map[forddb.BasicResourceType][]chan ResourceEvent{},
+	}
+
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			goprocess.Go(sm.Run)
+
+			return nil
+		},
+	})
+
+	return sm
+}
+
+func (sm *SubscriptionManager) Run(proc goprocess.Process) {
+	ctx := goprocessctx.OnClosingContext(proc)
+
+	iterator := sm.db.LogStore().Iterator(forddb.WithBlockingIterator())
+
+	for {
+		if !iterator.Next(ctx) {
+			if err := iterator.SetLSN(ctx, forddb.MakeLSN(logstore.FileSegmentBaseSeekToHead, time.Now())); err != nil {
+				return
+			}
+			continue
+		}
+
+		err := iterator.Error()
+
+		if err != nil {
+			panic(iterator.Error())
+		}
+
+		record := iterator.Record()
+
+		sm.dispatch(record)
+	}
+}
+
+func (sm *SubscriptionManager) Subscribe(
+	ctx context.Context,
+	typ forddb.BasicResourceType,
+) (<-chan ResourceEvent, error) {
+	ch := make(chan ResourceEvent, 128)
+
+	sm.addSubscription(typ, ch)
+
+	go func() {
+		//defer close(ch)
+		//defer sm.removeSubscription(typ, ch)
+
+		<-ctx.Done()
+	}()
+
+	return ch, nil
+}
+
+func (sm *SubscriptionManager) addSubscription(typ forddb.BasicResourceType, ch chan ResourceEvent) {
+	sm.m.Lock()
+	defer sm.m.Unlock()
+
+	subs := sm.subscriptions[typ]
+
+	index := slices.Index(subs, ch)
+
+	if index != -1 {
+		return
+	}
+
+	index = slices.Index(subs, nil)
+
+	if index != -1 {
+		subs[index] = ch
+	} else {
+		subs = append(subs, ch)
+	}
+
+	sm.subscriptions[typ] = subs
+}
+
+func (sm *SubscriptionManager) removeSubscription(typ forddb.BasicResourceType, ch chan ResourceEvent) {
+	sm.m.Lock()
+	defer sm.m.Unlock()
+
+	subs := sm.subscriptions[typ]
+
+	if len(subs) == 0 {
+		return
+	}
+
+	index := slices.Index(subs, ch)
+
+	if index == -1 {
+		return
+	}
+
+	subs = slices.Delete(subs, index, index+1)
+
+	sm.subscriptions[typ] = subs
+}
+
+func (sm *SubscriptionManager) dispatch(record *forddb.LogEntryRecord) {
+	event := ResourceEvent{}
+
+	switch record.Kind {
+	case forddb.LogEntryKindSet:
+		if record.Previous == nil {
+			event.Type = ResourceEventTypeCreated
+		} else {
+			event.Type = ResourceEventTypeUpdated
+		}
+	case forddb.LogEntryKindDelete:
+		event.Type = ResourceEventTypeDeleted
+	}
+
+	event.Payload.IDs = []string{record.ID}
+
+	sm.m.RLock()
+	defer sm.m.RUnlock()
+
+	subs := sm.subscriptions[record.Type.Type()]
+
+	if len(subs) == 0 {
+		return
+	}
+
+	for _, sub := range subs {
+		if sub == nil {
+			continue
+		}
+
+		sub <- event
+	}
 }

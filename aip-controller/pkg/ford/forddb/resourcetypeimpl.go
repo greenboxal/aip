@@ -17,21 +17,20 @@ func newResourceType[ID ResourceID[T], T Resource[ID]](name string) *resourceTyp
 
 	rt.name = ResourceTypeNameFromSingular(name)
 
-	rt.idType = newBasicType(
-		KindId,
-		idTemplate.PrimitiveKind(),
-		name+"ID",
-		idTyp,
-		false,
-	)
+	idTypeMetadata := TypeMetadata{
+		Kind:          KindId,
+		PrimitiveKind: idTemplate.PrimitiveKind(),
+		Name:          name + "ID",
+	}
 
-	rt.basicTypeImpl = newBasicType(
-		KindResource,
-		PrimitiveKindStruct,
-		name,
-		resourceTyp,
-		false,
-	)
+	typeMetadata := TypeMetadata{
+		Kind:          KindResource,
+		PrimitiveKind: PrimitiveKindStruct,
+		Name:          name,
+	}
+
+	rt.idType = newBasicType(idTyp, idTypeMetadata)
+	rt.basicTypeImpl = newBasicType(resourceTyp, typeMetadata)
 
 	return rt
 }
@@ -68,5 +67,5 @@ func (rt *resourceTypeImpl[ID, T]) ResourceType() BasicType {
 }
 
 func (rt *resourceTypeImpl[ID, T]) SetRuntimeOnly() {
-	rt.isRuntimeOnly = true
+	rt.metadata.IsRuntimeOnly = true
 }

@@ -10,7 +10,8 @@ import (
 	"github.com/slack-go/slack"
 	"go.uber.org/fx"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
+	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
 
 type Transport struct {
@@ -25,7 +26,7 @@ type Transport struct {
 	channelNameCache map[string]string
 	userNameCache    map[string]string
 
-	incoming chan collective.Message
+	incoming chan msn.Message
 }
 
 var messageHeaderRegex = regexp.MustCompile(":thread: (?P<thread_id>[^ ]+) \\[(?P<reply_to_id>[^]]+)]: (?P<text>.*)")
@@ -40,7 +41,7 @@ func NewTransport(lc fx.Lifecycle) *Transport {
 		channelNameCache: map[string]string{},
 		userNameCache:    map[string]string{},
 
-		incoming: make(chan collective.Message, 16),
+		incoming: make(chan msn.Message, 16),
 	}
 
 	botToken := os.Getenv("SLACK_BOT_USER_TOKEN")
@@ -65,17 +66,17 @@ func (t *Transport) Subscribe(channel string) error {
 	return nil
 }
 
-func (t *Transport) Incoming() <-chan collective.Message {
+func (t *Transport) Incoming() <-chan msn.Message {
 	return t.incoming
 }
 
-func (t *Transport) RouteMessage(ctx context.Context, msg collective.Message) error {
+func (t *Transport) RouteMessage(ctx context.Context, msg msn.Message) error {
 	var options []slack.MsgOption
 
 	options = append(
 		options,
 		slack.MsgOptionText(msg.Text, false),
-		slack.MsgOptionUsername(msg.From),
+		slack.MsgOptionUsername(msg.From.String()),
 		slack.MsgOptionMetadata(slack.SlackMetadata{
 			EventType: "aip_say",
 			EventPayload: map[string]interface{}{
@@ -91,7 +92,7 @@ func (t *Transport) RouteMessage(ctx context.Context, msg collective.Message) er
 		options = append(options, slack.MsgOptionTS(msg.ThreadID))
 	}
 
-	_, _, err := t.rtm.PostMessage(msg.Channel, options...)
+	_, _, err := t.rtm.PostMessage(msg.Channel.String(), options...)
 
 	return err
 }
@@ -166,20 +167,21 @@ func (t *Transport) Start(ctx context.Context) error {
 			case *slack.MessageEvent:
 				slackMsg := (*slack.Message)(evt)
 
-				msg := collective.Message{
-					ID:       slackMsg.Timestamp,
+				msg := msn.Message{
 					ThreadID: slackMsg.ThreadTimestamp,
-					Channel:  t.resolveChannel(slackMsg),
-					From:     t.resolveUser(slackMsg),
+					Channel:  forddb.NewStringID[msn.ChannelID](t.resolveChannel(slackMsg)),
+					From:     forddb.NewStringID[msn.EndpointID](t.resolveUser(slackMsg)),
 					Text:     evt.Text,
 				}
+
+				msg.ID = forddb.NewStringID[msn.MessageID](slackMsg.Timestamp)
 
 				if slackMsg.Metadata.EventType == "aip_say" {
 					if slackMsg.Metadata.EventPayload != nil {
 						msg.ReplyToID = slackMsg.Metadata.EventPayload["reply_to_id"].(string)
 						msg.ThreadID = slackMsg.Metadata.EventPayload["thread_id"].(string)
-						msg.ID = slackMsg.Metadata.EventPayload["id"].(string)
-						msg.From = slackMsg.Metadata.EventPayload["from"].(string)
+						msg.ID = forddb.NewStringID[msn.MessageID](slackMsg.Metadata.EventPayload["id"].(string))
+						msg.From = forddb.NewStringID[msn.EndpointID](slackMsg.Metadata.EventPayload["from"].(string))
 					}
 
 					groups := messageHeaderRegex.FindStringSubmatch(slackMsg.Text)

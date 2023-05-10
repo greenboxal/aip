@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 )
 
 type Supervisor struct {
@@ -32,7 +32,7 @@ func NewSupervisor(logger *zap.SugaredLogger, config *Config) (*Supervisor, erro
 
 	args = append(args, config.Args...)
 
-	proc, err := NewProcess(logger, func(m collective.Message) {
+	proc, err := NewProcess(logger, func(m msn.Message) {
 		if err := config.Port.Send(context.Background(), m); err != nil {
 			logger.Error(err)
 		}
@@ -63,7 +63,7 @@ func (s *Supervisor) Run(proc goprocess.Process) error {
 				return gctx.Err()
 
 			case msg := <-s.Config.Port.Incoming():
-				if msg.From == s.Config.ID {
+				if msg.From.String() == s.Config.ID {
 					continue
 				}
 

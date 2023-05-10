@@ -3,6 +3,9 @@ package forddb
 import (
 	"context"
 	"errors"
+
+	"github.com/jbenet/goprocess"
+	goprocessctx "github.com/jbenet/goprocess/context"
 )
 
 type LogStreamHandler func(ctx context.Context, record *LogEntryRecord) error
@@ -13,36 +16,41 @@ type LogConsumer struct {
 	Handler  LogStreamHandler
 }
 
-func (lc *LogConsumer) Run(ctx context.Context) error {
+func (lc *LogConsumer) Run(proc goprocess.Process) {
+	ctx := goprocessctx.OnClosingContext(proc)
 	stream, err := lc.LogStore.OpenStream(lc.StreamID)
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
+	shouldRetry := false
+
 	for true {
-		if !stream.Next(ctx) {
+		if !shouldRetry && !stream.Next(ctx) {
 			if stream.Error() != nil {
-				return stream.Error()
+				panic(stream.Error())
 			}
 
 			break
 		}
 
+		if shouldRetry {
+			shouldRetry = false
+		}
+
 		record := stream.Record()
 
 		if record.Kind == LogEntryKindInvalid {
-			return errors.New("invalid log entry kind")
+			panic(errors.New("invalid log entry kind"))
 		}
 
 		if err := lc.Handler(ctx, record); err != nil {
-			return err
+			shouldRetry = true
 		}
 
 		if err := stream.SaveCheckpoint(); err != nil {
-			return err
+			panic(err)
 		}
 	}
-
-	return nil
 }

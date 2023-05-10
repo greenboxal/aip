@@ -1,11 +1,22 @@
 package forddb
 
-import "github.com/mashingan/smapping"
+import (
+	"time"
+
+	"github.com/mashingan/smapping"
+)
 
 type RawResource smapping.Mapped
 
 func (r RawResource) GetResourceMetadata() *Metadata {
 	var result Metadata
+	var fakeMetadata struct {
+		Kind      string    `json:"kind"`
+		Namespace string    `json:"namespace"`
+		Version   uint64    `json:"version"`
+		UpdatedAt time.Time `json:"updated_at"`
+		CreatedAt time.Time `json:"created_at"`
+	}
 
 	metadata := r["metadata"]
 
@@ -19,9 +30,15 @@ func (r RawResource) GetResourceMetadata() *Metadata {
 		return nil
 	}
 
-	if err := smapping.FillStruct(&result, metadataMapped); err != nil {
+	if err := smapping.FillStructByTags(&fakeMetadata, metadataMapped, "json"); err != nil {
 		panic(err)
 	}
+
+	result.Kind = NewStringID[TypeID](fakeMetadata.Kind)
+	result.UpdatedAt = fakeMetadata.UpdatedAt
+	result.CreatedAt = fakeMetadata.CreatedAt
+	result.Version = fakeMetadata.Version
+	result.Namespace = fakeMetadata.Namespace
 
 	return &result
 }

@@ -17,6 +17,8 @@ type BasicType interface {
 	Kind() Kind
 	PrimitiveKind() PrimitiveKind
 
+	Metadata() TypeMetadata
+
 	RuntimeType() reflect.Type
 	IsRuntimeOnly() bool
 

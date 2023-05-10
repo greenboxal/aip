@@ -3,6 +3,9 @@ package forddb
 type BasicResource interface {
 	ResourceMetadata
 
+	GetResourceNode() ResourceNode
+	setResourceNode(node ResourceNode)
+
 	OnBeforeSave(self BasicResource)
 }
 

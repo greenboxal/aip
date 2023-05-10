@@ -69,7 +69,14 @@ func NewImageGenerator(client *openai.Client) (*ImageGenerator, error) {
 	}
 
 	w.imageChain = chain.Compose(
-		chat.Predict(w.model, ImageGeneratorPrompt, GeneratedHtmlParser(ImagePromptKey)),
+		chat.Predict(
+			w.model,
+			ImageGeneratorPrompt,
+			chat.WithChatMemory(chat.MemoryContextKey),
+			chat.WithOutputParsers(
+				GeneratedHtmlParser(ImagePromptKey),
+			),
+		),
 	)
 
 	return w, nil
@@ -85,9 +92,12 @@ func (ig *ImageGenerator) GetImage(
 
 	cctx := chain.NewChainContext(ctx)
 
+	chatMemory := chat.NewInMemoryHistory(chat.ChatHistoryContextKey)
+
 	cctx.SetInput(SiteSettingsKey, siteSettings)
 	cctx.SetInput(PageSettingsKey, pageSettings)
 	cctx.SetInput(ImageSettingsKey, imageSettings)
+	cctx.SetInput(chat.MemoryContextKey, chatMemory)
 
 	if err := ig.imageChain.Run(cctx); err != nil {
 		return models.ImageStatus{}, err

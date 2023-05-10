@@ -2,7 +2,6 @@ package logstore
 
 import (
 	"context"
-	"errors"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 )
@@ -42,25 +41,22 @@ func (l *oldFileLogIterator) CurrentLsn() forddb.LSN {
 }
 
 func (l *oldFileLogIterator) SetLSN(ctx context.Context, lsn forddb.LSN) error {
+	if lsn.Clock == FileSegmentBaseSeekToHead {
+		lsn = l.ls.currentSegment.tail
+	}
+
 	l.currentLsn = lsn
 
 	return l.invalidate(ctx)
 }
 
 func (l *oldFileLogIterator) SeekRelative(ctx context.Context, offset int64) error {
-	return errors.New("not implemented")
+	l.currentLsn.Clock += uint64(offset)
+
+	return l.invalidate(ctx)
 }
 
 func (l *oldFileLogIterator) Next(ctx context.Context) bool {
-	if l.current == nil {
-		if err := l.invalidate(ctx); err != nil {
-			l.err = err
-			return false
-		}
-
-		return l.current != nil
-	}
-
 	if err := l.SeekRelative(ctx, 1); err != nil {
 		l.err = err
 		return false
@@ -70,15 +66,6 @@ func (l *oldFileLogIterator) Next(ctx context.Context) bool {
 }
 
 func (l *oldFileLogIterator) Previous(ctx context.Context) bool {
-	if l.current == nil {
-		if err := l.invalidate(ctx); err != nil {
-			l.err = err
-			return false
-		}
-
-		return l.current != nil
-	}
-
 	if err := l.SeekRelative(ctx, -1); err != nil {
 		l.err = err
 		return false
@@ -101,7 +88,7 @@ func (l *oldFileLogIterator) invalidate(ctx context.Context) error {
 		return nil
 	}
 
-	if l.currentSegment == nil || !l.currentLsn.IsBetween(l.currentSegment.head, l.currentSegment.tail) {
+	if l.currentSegment == nil {
 		if l.currentSegment != nil {
 			if err := l.currentSegment.Close(); err != nil {
 				return err
@@ -115,6 +102,31 @@ func (l *oldFileLogIterator) invalidate(ctx context.Context) error {
 		}
 
 		l.currentSegment = segment
+	}
+
+	index := l.currentLsn.Clock
+	head := l.currentSegment.tail.Clock
+
+	if index > head {
+		index = head + 1
+
+		if l.options.Block {
+			l.ls.cond.L.Lock()
+			defer l.ls.cond.L.Unlock()
+
+			for index > head {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+
+				default:
+				}
+
+				l.ls.cond.Wait()
+
+				head = l.currentSegment.tail.Clock
+			}
+		}
 	}
 
 	if err := l.currentSegment.Seek(l.currentLsn); err != nil {

@@ -21,8 +21,8 @@ type FileLogStore struct {
 
 	logDir string
 
-	log       *wal.Log
-	lastClock uint64
+	log     *wal.Log
+	lastLsn forddb.LSN
 }
 
 func NewFileLogStore(baseDir string) (*FileLogStore, error) {
@@ -45,7 +45,7 @@ func NewFileLogStore(baseDir string) (*FileLogStore, error) {
 	}
 
 	fls.log = log
-	fls.lastClock = last
+	fls.lastLsn.Clock = last
 	fls.cond = sync.NewCond(&fls.m)
 
 	return fls, nil
@@ -88,7 +88,7 @@ func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fordd
 	defer fls.m.Unlock()
 
 	record.LogEntry = log
-	record.LSN.Clock = fls.lastClock + 1
+	record.LSN.Clock = fls.lastLsn.Clock + 1
 	record.LSN.TS = time.Now()
 
 	data, err := json.Marshal(record)
@@ -101,7 +101,11 @@ func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fordd
 		return forddb.LogEntryRecord{}, err
 	}
 
-	fls.lastClock = record.LSN.Clock
+	if err := fls.log.Sync(); err != nil {
+		return forddb.LogEntryRecord{}, err
+	}
+
+	fls.lastLsn.Clock = record.LSN.Clock
 
 	fls.cond.Broadcast()
 
@@ -109,7 +113,13 @@ func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fordd
 }
 
 func (fls *FileLogStore) Iterator(options ...forddb.LogIteratorOption) forddb.LogIterator {
-	return newFileLogIterator(fls, forddb.NewLogIteratorOptions(options...))
+	iterator := newFileLogIterator(fls, forddb.NewLogIteratorOptions(options...))
+
+	if err := iterator.SetLSN(context.Background(), fls.lastLsn); err != nil {
+		panic(err)
+	}
+
+	return iterator
 }
 
 func (fls *FileLogStore) Close() error {

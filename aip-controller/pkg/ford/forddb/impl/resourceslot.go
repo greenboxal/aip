@@ -12,10 +12,13 @@ import (
 )
 
 type resourceSlot struct {
+	forddb.HasListenersBase
+
 	m    sync.RWMutex
 	cond *sync.Cond
 
 	table *resourceTable
+	node  *resourceNode
 	id    forddb.BasicResourceID
 
 	isPinned bool
@@ -23,7 +26,6 @@ type resourceSlot struct {
 
 	lastRecord forddb.LogEntryRecord
 	encoded    forddb.RawResource
-	value      forddb.BasicResource
 	err        error
 }
 
@@ -34,64 +36,63 @@ func newResourceSlot(table *resourceTable, id forddb.BasicResourceID) *resourceS
 	}
 
 	rs.cond = sync.NewCond(&rs.m)
+	rs.node = newResourceNode(rs)
 
 	return rs
 }
 
 func (rs *resourceSlot) Get(ctx context.Context) (forddb.BasicResource, error) {
-	raw, res, err := rs.doGet(ctx, true, true, false)
+	raw, err := rs.doGet(ctx, true, true)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get resource")
-	}
-
-	if res != nil {
-		return res, nil
 	}
 
 	if raw == nil {
 		return nil, errors.Wrap(forddb.ErrNotFound, "failed to get resource")
 	}
 
-	return forddb.Decode(raw)
+	result, err := forddb.Decode(raw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	forddb.GetOrCreateResourceNode(result, func(resource forddb.BasicResource) forddb.ResourceNode {
+		return rs.node
+	})
+
+	return result, nil
 }
 
 func (rs *resourceSlot) doGet(
 	ctx context.Context,
 	lock bool,
 	wait bool,
-	decode bool,
-) (raw forddb.RawResource, res forddb.BasicResource, err error) {
-	if wait && !rs.table.typ.Type().IsRuntimeOnly() {
-		res, err := rs.table.db.storage.Get(ctx, rs.table.typ, rs.id, forddb.GetOptions{})
+) (raw forddb.RawResource, err error) {
+	res, err := rs.table.db.storage.Get(ctx, rs.table.typ, rs.id, forddb.GetOptions{})
 
-		if !forddb.IsNotFound(err) {
-			return nil, nil, err
-		}
-
-		if err == nil {
-			if lock {
-				rs.m.Lock()
-				defer rs.m.Unlock()
-
-				lock = false
-			}
-
-			if rs.lastRecord.Version < res.GetResourceVersion() {
-				rs.hasValue = true
-				rs.encoded = res
-				rs.value, err = forddb.Decode(rs.encoded)
-
-				if err != nil {
-					return nil, nil, err
-				}
-
-				return rs.encoded, rs.value, err
-			}
-		}
-
-		wait = false
+	if err != nil && !forddb.IsNotFound(err) {
+		return nil, err
 	}
+
+	if err == nil {
+		if lock {
+			rs.m.Lock()
+			defer rs.m.Unlock()
+
+			lock = false
+		}
+
+		if rs.lastRecord.Version < res.GetResourceVersion() {
+			rs.hasValue = true
+			rs.encoded = res
+
+			return rs.encoded, err
+		}
+	}
+
+	wait = false
 
 	if lock {
 		rs.m.Lock()
@@ -100,42 +101,30 @@ func (rs *resourceSlot) doGet(
 
 	if wait && !rs.hasValue && rs.err == nil {
 		for !rs.hasValue && rs.err == nil {
-			//rs.table.notifyGet(rs)
+			rs.table.notifyGet(rs)
 
 			rs.cond.Wait()
 		}
 	}
 
 	if rs.err != nil {
-		return nil, nil, rs.err
+		return nil, rs.err
 	}
 
 	if !rs.hasValue {
-		return nil, nil, forddb.ErrNotFound
+		return nil, forddb.ErrNotFound
 	}
 
-	if rs.table.typ.Type().IsRuntimeOnly() {
-		res = rs.value
-	} else {
-		raw = rs.encoded
-
-		if decode {
-			res, err = forddb.Decode(rs.encoded)
-
-			if err != nil {
-				return
-			}
-		}
-	}
+	raw = rs.encoded
 
 	return
 }
 
 func (rs *resourceSlot) Update(
 	ctx context.Context,
-	resource forddb.BasicResource,
+	resource forddb.RawResource,
 	opts forddb.PutOptions,
-) (forddb.BasicResource, error) {
+) (forddb.RawResource, error) {
 	_, current, changed, err := rs.doUpdate(ctx, resource, opts)
 
 	if err != nil {
@@ -151,15 +140,14 @@ func (rs *resourceSlot) Update(
 
 func (rs *resourceSlot) doUpdate(
 	ctx context.Context,
-	resource forddb.BasicResource,
+	resource forddb.RawResource,
 	opts forddb.PutOptions,
-) (forddb.BasicResource, forddb.BasicResource, bool, error) {
-	resource.OnBeforeSave(resource)
+) (forddb.RawResource, forddb.RawResource, bool, error) {
 
-	rs.cond.L.Lock()
-	defer rs.cond.L.Unlock()
+	rs.m.Lock()
+	defer rs.m.Unlock()
 
-	_, current, err := rs.doGet(ctx, false, false, true)
+	current, err := rs.doGet(ctx, false, false)
 
 	if forddb.IsNotFound(err) {
 		current = nil
@@ -188,44 +176,45 @@ func (rs *resourceSlot) doUpdate(
 		}
 	}
 
-	meta := resource.GetResourceMetadata()
+	metadataValue := resource["metadata"]
 
-	meta.Version += 1
-	meta.UpdatedAt = time.Now()
+	if metadataValue == nil {
+		metadataValue = map[string]interface{}{}
+		resource["metadata"] = metadataValue
+	}
+
+	metadata := metadataValue.(map[string]interface{})
+
+	metadata["version"] = resource.GetResourceVersion() + 1
+	metadata["updated_at"] = time.Now()
 
 	if !rs.hasValue {
-		meta.CreatedAt = meta.UpdatedAt
+		metadata["created_at"] = metadata["updated_at"]
 	}
 
-	if rs.table.typ.Type().IsRuntimeOnly() {
-		rs.value = resource
-	} else {
-		encoded, err := forddb.Encode(resource)
+	record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
+		Kind:        forddb.LogEntryKindSet,
+		Type:        rs.table.typ,
+		ID:          rs.id.String(),
+		Version:     metadata["version"].(uint64),
+		CurrentCid:  nil,
+		PreviousCid: nil,
+		Previous:    rs.encoded,
+		Current:     resource,
+	})
 
-		if err != nil {
-			return nil, nil, false, err
-		}
-
-		record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
-			Kind:           forddb.LogEntryKindSet,
-			Type:           rs.table.typ,
-			ID:             rs.id.String(),
-			Version:        meta.Version,
-			CurrentCid:     nil,
-			PreviousCid:    nil,
-			Previous:       rs.encoded,
-			Current:        encoded,
-			CachedPrevious: current,
-			CachedCurrent:  resource,
-		})
-
-		if err != nil {
-			return nil, nil, false, err
-		}
-
-		rs.lastRecord = record
-		rs.encoded = encoded
+	if err != nil {
+		return nil, nil, false, err
 	}
+
+	_, err = rs.table.db.storage.Put(ctx, resource, opts)
+
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	rs.lastRecord = record
+	rs.encoded = resource
 
 	rs.hasValue = true
 	rs.err = nil
@@ -233,7 +222,7 @@ func (rs *resourceSlot) doUpdate(
 	return current, resource, true, nil
 }
 
-func (rs *resourceSlot) Delete(ctx context.Context) (forddb.BasicResource, error) {
+func (rs *resourceSlot) Delete(ctx context.Context) (forddb.RawResource, error) {
 	previous, _, err := rs.doDelete(ctx)
 
 	if err != nil {
@@ -243,11 +232,11 @@ func (rs *resourceSlot) Delete(ctx context.Context) (forddb.BasicResource, error
 	return previous, nil
 }
 
-func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, bool, error) {
+func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.RawResource, bool, error) {
 	rs.cond.L.Lock()
 	defer rs.cond.L.Unlock()
 
-	raw, value, err := rs.doGet(ctx, false, false, true)
+	value, err := rs.doGet(ctx, false, false)
 
 	if err != nil {
 		return nil, false, err
@@ -255,16 +244,14 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, boo
 
 	if !rs.table.typ.Type().IsRuntimeOnly() {
 		_, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
-			Kind:           forddb.LogEntryKindDelete,
-			Type:           rs.table.typ,
-			ID:             rs.id.String(),
-			Version:        value.GetResourceVersion(),
-			CurrentCid:     nil,
-			PreviousCid:    nil,
-			Previous:       raw,
-			Current:        nil,
-			CachedPrevious: value,
-			CachedCurrent:  nil,
+			Kind:        forddb.LogEntryKindDelete,
+			Type:        rs.table.typ,
+			ID:          rs.id.String(),
+			Version:     value.GetResourceVersion(),
+			CurrentCid:  nil,
+			PreviousCid: nil,
+			Previous:    value,
+			Current:     nil,
 		})
 
 		if err != nil {
@@ -273,7 +260,6 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.BasicResource, boo
 	}
 
 	rs.encoded = nil
-	rs.value = nil
 	rs.hasValue = false
 
 	return value, true, nil
