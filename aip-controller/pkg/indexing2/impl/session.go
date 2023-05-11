@@ -6,7 +6,7 @@ import (
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing"
+	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing2"
 )
 
 type Session struct {

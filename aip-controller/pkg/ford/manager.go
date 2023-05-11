@@ -6,8 +6,8 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 
-	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing"
-	"github.com/greenboxal/aip/aip-controller/pkg/indexing/impl"
+	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing2"
+	"github.com/greenboxal/aip/aip-controller/pkg/indexing2/impl"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/summarizers"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 )

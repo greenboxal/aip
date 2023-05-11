@@ -2,7 +2,7 @@ package summarizers
 
 import (
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
-	"github.com/greenboxal/aip/aip-controller/pkg/indexing"
+	"github.com/greenboxal/aip/aip-controller/pkg/indexing2"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chunkers"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
 )
@@ -17,7 +17,7 @@ type MipMapSummarizer struct {
 }
 
 type mipMapSummarizerContext struct {
-	*indexing.ReducerContext
+	*indexing2.ReducerContext
 
 	MipMapSummarizer
 
@@ -110,7 +110,7 @@ func (ctx *mipMapSummarizerContext) Reduce() (*collective2.MemorySegment, error)
 	return ctx.currentSegment, nil
 }
 
-func (m *MipMapSummarizer) ReduceSegment(ctx *indexing.ReducerContext) (*collective2.MemorySegment, error) {
+func (m *MipMapSummarizer) ReduceSegment(ctx *indexing2.ReducerContext) (*collective2.MemorySegment, error) {
 	sctx := &mipMapSummarizerContext{
 		ReducerContext:   ctx,
 		MipMapSummarizer: *m,

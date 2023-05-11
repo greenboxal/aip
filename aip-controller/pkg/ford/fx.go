@@ -10,7 +10,7 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb/logstore"
 	reconcilers2 "github.com/greenboxal/aip/aip-controller/pkg/ford/reconcilers"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
-	"github.com/greenboxal/aip/aip-controller/pkg/indexing"
+	"github.com/greenboxal/aip/aip-controller/pkg/indexing2"
 )
 
 var Module = fx.Module(
@@ -35,7 +35,7 @@ var Module = fx.Module(
 		return logstore.NewMemoryLogStore(), nil
 	}),
 
-	fx.Provide(func(m *Manager) indexing.Index {
+	fx.Provide(func(m *Manager) indexing2.Index {
 		return m.Index()
 	}),
 

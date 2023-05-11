@@ -3,6 +3,7 @@ package wiki
 import (
 	"context"
 
+	"github.com/jbenet/goprocess"
 	"go.uber.org/fx"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
@@ -51,6 +52,7 @@ type Wiki struct {
 }
 
 func (w *Wiki) Start(ctx context.Context) error {
+	goprocess.Go(w.pageIndexer.Run)
 
 	return nil
 }

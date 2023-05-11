@@ -1,4 +1,4 @@
-package indexing
+package indexing2
 
 import (
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"

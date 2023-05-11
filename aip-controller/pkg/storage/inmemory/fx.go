@@ -4,7 +4,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/indexing"
+	"github.com/greenboxal/aip/aip-controller/pkg/indexing2"
 )
 
 var Module = fx.Module(
@@ -17,7 +17,7 @@ func WithInIndexingMemoryDatabase() fx.Option {
 	return fx.Options(
 		Module,
 
-		fx.Provide(func(db *InMemoryDatabase) indexing.MemoryStorage {
+		fx.Provide(func(db *InMemoryDatabase) indexing2.MemoryStorage {
 			return db
 		}),
 	)
@@ -31,7 +31,7 @@ func WithInMemoryDatabase() fx.Option {
 			return db
 		}),
 
-		fx.Provide(func(db *InMemoryDatabase) indexing.MemoryStorage {
+		fx.Provide(func(db *InMemoryDatabase) indexing2.MemoryStorage {
 			return db
 		}),
 	)

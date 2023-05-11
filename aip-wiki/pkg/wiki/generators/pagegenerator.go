@@ -11,8 +11,10 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 
+	"github.com/greenboxal/aip/aip-controller/pkg/indexing"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/memoryctx"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
@@ -33,7 +35,12 @@ type PageGenerator struct {
 	editorChain  chain.Chain
 }
 
-func NewPageGenerator(client *openai.Client, cache *ContentCache) (*PageGenerator, error) {
+func NewPageGenerator(
+	client *openai.Client,
+	cache *ContentCache,
+	index indexing.Provider,
+	oai *openai.Client,
+) (*PageGenerator, error) {
 	var err error
 
 	w := &PageGenerator{}
@@ -51,7 +58,26 @@ func NewPageGenerator(client *openai.Client, cache *ContentCache) (*PageGenerato
 		return nil, err
 	}
 
+	contextualMemory := &memory.ContextualMemory{
+		HistoryKey: chat.MemoryContextKey,
+		InputKey:   chat.ChatReplyContextKey,
+		ContextKey: memory.ContextualMemoryKey,
+
+		Index: index,
+
+		Embedder: &openai.Embedder{
+			Client: oai,
+			Model:  openai.AdaEmbeddingV2,
+		},
+	}
+
 	w.contentChain = chain.Compose(
+		chain.Func(func(ctx chain.ChainContext) error {
+			page := chain.Input(ctx, PageSettingsKey)
+
+			return contextualMemory.LoadFor(ctx, page.Title)
+		}),
+
 		chat.Predict(
 			w.model,
 			PageGeneratorPrompt,
@@ -63,6 +89,12 @@ func NewPageGenerator(client *openai.Client, cache *ContentCache) (*PageGenerato
 	)
 
 	w.editorChain = chain.Compose(
+		chain.Func(func(ctx chain.ChainContext) error {
+			page := chain.Input(ctx, PageSettingsKey)
+
+			return contextualMemory.LoadFor(ctx, page.Title)
+		}),
+
 		chat.Predict(
 			w.model,
 			PageEditorPrompt,

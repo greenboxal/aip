@@ -6,6 +6,7 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
 	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
 
@@ -62,6 +63,8 @@ var PageGeneratorPrompt = chat.ComposeTemplate(
 	`, chain.WithRequiredInput(AttentionContextKey)),
 		),*/
 
+	chat.HistoryFromContext(memory.ContextualMemoryKey),
+
 	chat.EntryTemplate(
 		msn.RoleUser,
 		chain.NewTemplatePrompt(
@@ -76,13 +79,7 @@ var PageGeneratorPrompt = chat.ComposeTemplate(
 var PageEditorPrompt = chat.ComposeTemplate(
 	PageGeneratorHeader,
 
-	chat.EntryTemplate(
-		msn.RoleSystem,
-		chain.NewTemplatePrompt(
-			`You are gonna be asked to perform a task based on the following Wiki page: {{.BasePage.Status.Markdown}}`,
-			chain.WithRequiredInput(PageSettingsKey, BasePageKey),
-		),
-	),
+	chat.HistoryFromContext(memory.ContextualMemoryKey),
 
 	chat.EntryTemplate(
 		msn.RoleUser,

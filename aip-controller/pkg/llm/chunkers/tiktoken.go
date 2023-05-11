@@ -6,11 +6,9 @@ import (
 	"github.com/pkoukk/tiktoken-go"
 )
 
-type Chunker interface {
-	SplitTextIntoChunks(ctx context.Context, text string, chunkSize int, overlapSize int) ([]string, error)
-}
+type TikToken struct{}
 
-func SplitTextIntoChunks(text string, chunkSize int, overlapSize int) ([]string, error) {
+func (tt TikToken) SplitTextIntoChunks(ctx context.Context, text string, chunkSize int, overlapSize int) ([]string, error) {
 	// Tokenize the text using tiktoken
 	tokenizer, err := tiktoken.EncodingForModel("text-embedding-ada-002")
 
@@ -35,12 +33,4 @@ func SplitTextIntoChunks(text string, chunkSize int, overlapSize int) ([]string,
 	}
 
 	return chunks, nil
-}
-
-func Min(i int, i2 int) int {
-	if i < i2 {
-		return i
-	}
-
-	return i2
 }

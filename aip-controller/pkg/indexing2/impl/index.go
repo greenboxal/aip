@@ -3,7 +3,7 @@ package impl
 import (
 	"context"
 
-	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing"
+	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing2"
 )
 
 type Index struct {

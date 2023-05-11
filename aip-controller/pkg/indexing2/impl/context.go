@@ -4,7 +4,7 @@ import (
 	"context"
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
-	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing"
+	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing2"
 )
 
 type indexContext struct {
