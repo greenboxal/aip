@@ -382,8 +382,8 @@ func (s *Storage) Put(
 	col := s.client.Collection(collection)
 	doc := col.Doc(resource.GetResourceBasicID().String())
 
-	metaValue := resource["metadata"].(map[string]interface{})
-	version := metaValue["version"].(uint64)
+	metaValue := fields["metadata"].(map[string]interface{})
+	version := resource.GetResourceVersion()
 
 	if version >= 0 {
 		if r, err := doc.Set(ctx, fields); err != nil {

@@ -70,7 +70,6 @@ export const PageShow = () => (
                 )}/>
 
                 <TextField source="id" label="ID"/>
-                <TextField source="spec.base_page_id" label="Base Page ID"/>
 
                 <ReferenceField source="spec.base_page_id" reference="Page" label="Base Page" link="show">
                     <ChipField source="spec.title"/>

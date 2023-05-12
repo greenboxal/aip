@@ -17,8 +17,10 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	forddbimpl "github.com/greenboxal/aip/aip-forddb/pkg/impl"
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tracing"
 	apimachinery2 "github.com/greenboxal/aip/aip-sdk/pkg/apimachinery"
 	"github.com/greenboxal/aip/aip-sdk/pkg/apis"
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
@@ -48,7 +50,9 @@ func main() {
 		comms.Module,
 		msn.Module,
 		ford.Module,
+		forddbimpl.Module,
 		wiki.Module,
+		tracing.Module,
 
 		milvus.WithIndexStorage(),
 		firestore.WithObjectStore(),

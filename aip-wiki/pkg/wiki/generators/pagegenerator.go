@@ -11,12 +11,13 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 
-	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
-	chat2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	chain "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	chat "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memory"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memoryctx"
-	openai2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	openai "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tracing"
 	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
@@ -25,81 +26,84 @@ const PageGeneratorBaseUrl = "http://127.0.0.1:30100"
 const PageGeneratorWikiUrl = "http://127.0.0.1:30100"
 
 type PageGenerator struct {
-	client *openai2.Client
+	client *openai.Client
+	tracer tracing.Tracer
 
 	cache     *ContentCache
-	model     *openai2.ChatLanguageModel
+	model     *openai.ChatLanguageModel
 	tokenizer *tokenizers.TikTokenTokenizer
 
-	contentChain chain2.Handler
-	editorChain  chain2.Handler
+	contentChain chain.Handler
+	editorChain  chain.Handler
 }
 
 func NewPageGenerator(
-	client *openai2.Client,
+	tracer tracing.Tracer,
+	client *openai.Client,
 	cache *ContentCache,
 	index vectorstore.VectorStore,
-	oai *openai2.Client,
+	oai *openai.Client,
 ) (*PageGenerator, error) {
 	var err error
 
 	w := &PageGenerator{}
+	w.tracer = tracer
 	w.client = client
 	w.cache = cache
 
-	w.model = &openai2.ChatLanguageModel{
+	w.model = &openai.ChatLanguageModel{
 		Client: client,
 		Model:  "gpt-3.5-turbo",
 	}
 
-	w.tokenizer, err = tokenizers.TikTokenForModel(openai2.AdaEmbeddingV2.String())
+	w.tokenizer, err = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	if err != nil {
 		return nil, err
 	}
 
 	contextualMemory := &memory.ContextualMemory{
-		HistoryKey: chat2.MemoryContextKey,
-		InputKey:   chat2.ChatReplyContextKey,
+		HistoryKey: chat.MemoryContextKey,
+		InputKey:   chat.ChatReplyContextKey,
 		ContextKey: memory.ContextualMemoryKey,
 
 		Index: index,
 
-		Embedder: &openai2.Embedder{
+		Embedder: &openai.Embedder{
 			Client: oai,
-			Model:  openai2.AdaEmbeddingV2,
+			Model:  openai.AdaEmbeddingV2,
 		},
 	}
 
-	w.contentChain = chain2.Sequential(
-		chain2.Func(func(ctx chain2.ChainContext) error {
-			page := chain2.Input(ctx, PageSettingsKey)
+	w.contentChain = chain.Sequential(
+		chain.Func(func(ctx chain.ChainContext) error {
+			page := chain.Input(ctx, PageSettingsKey)
 
 			return contextualMemory.LoadFor(ctx, page.Title)
 		}),
 
-		chat2.Predict(
+		chat.Predict(
 			w.model,
 			PageGeneratorPrompt,
-			chat2.WithChatMemory(chat2.MemoryContextKey),
-			chat2.WithOutputParsers(
+			chat.WithChatMemory(chat.MemoryContextKey),
+			chat.WithOutputParsers(
 				GeneratedHtmlParser(PageContentKey),
 			),
 		),
 	)
 
-	w.editorChain = chain2.Sequential(
-		chain2.Func(func(ctx chain2.ChainContext) error {
-			page := chain2.Input(ctx, PageSettingsKey)
+	w.editorChain = chain.Sequential(
+		chain.Func(func(ctx chain.ChainContext) error {
+			page := chain.Input(ctx, PageSettingsKey)
 
 			return contextualMemory.LoadFor(ctx, page.Title)
 		}),
 
-		chat2.Predict(
+		chat.Predict(
 			w.model,
 			PageEditorPrompt,
-			chat2.WithChatMemory(chat2.MemoryContextKey),
-			chat2.WithOutputParsers(
+			chat.WithChatMemory(chat.MemoryContextKey),
+			chat.WithOutputParsers(
 				GeneratedHtmlParser(PageContentKey),
 			),
 		),
@@ -116,20 +120,22 @@ func (pg *PageGenerator) GetPage(
 		BaseUrl: "http://127.0.0.1:30100",
 	}
 
+	ctx = tracing.WithTracer(ctx, pg.tracer)
+
 	chatMemory := memoryctx.GetMemory(ctx)
 
-	cctx := chain2.NewChainContext(ctx)
+	cctx := chain.NewChainContext(ctx)
 
 	cctx.SetInput(SiteSettingsKey, siteSettings)
 	cctx.SetInput(PageSettingsKey, pageSettings)
-	cctx.SetInput(chat2.MemoryContextKey, chatMemory)
+	cctx.SetInput(chat.MemoryContextKey, chatMemory)
 
 	if pageSettings.BasePage.IsEmpty() {
 		if err := pg.contentChain.Run(cctx); err != nil {
 			return nil, err
 		}
 
-		pageContent := chain2.Output(cctx, PageContentKey)
+		pageContent := chain.Output(cctx, PageContentKey)
 
 		return []byte(pageContent), nil
 	} else {
@@ -145,7 +151,7 @@ func (pg *PageGenerator) GetPage(
 			return nil, err
 		}
 
-		pageContent := chain2.Output(cctx, PageContentKey)
+		pageContent := chain.Output(cctx, PageContentKey)
 
 		return []byte(pageContent), nil
 	}

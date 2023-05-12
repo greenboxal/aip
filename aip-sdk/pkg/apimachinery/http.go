@@ -37,7 +37,7 @@ func (m *httpServiceMount[T]) Install(mux *RootMux) {
 		handler = http.StripPrefix(m.Path, handler)
 	}
 
-	mux.Mount(m.Path, mux)
+	mux.Mount(m.Path, handler)
 }
 
 func NewMountOptions(opts ...MountOption) MountOptions {

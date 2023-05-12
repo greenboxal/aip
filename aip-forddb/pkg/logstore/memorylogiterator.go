@@ -2,6 +2,7 @@ package logstore
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
@@ -10,9 +11,8 @@ type memoryLogStoreIterator struct {
 	ls      *MemoryLogStore
 	options forddb.LogIteratorOptions
 
-	current        *forddb.LogEntryRecord
-	currentLsn     forddb.LSN
-	currentSegment *fileStoreSegment
+	current    *forddb.LogEntryRecord
+	currentLsn forddb.LSN
 
 	err error
 }
@@ -142,7 +142,16 @@ func (mls *memoryLogStoreIterator) invalidate(ctx context.Context) error {
 
 	if index >= 0 && index < head {
 		current := mls.ls.records[index]
-		mls.current = &current
+
+		data, err := json.Marshal(current)
+
+		if err != nil {
+			return err
+		}
+
+		if err := json.Unmarshal(data, &mls.current); err != nil {
+			return err
+		}
 	}
 
 	return nil

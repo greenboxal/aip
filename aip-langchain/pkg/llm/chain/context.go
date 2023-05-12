@@ -64,6 +64,16 @@ func NewChainContext(ctx context.Context) ChainContext {
 	}
 }
 
+type chainSubContext struct {
+	ChainContext
+
+	ctx context.Context
+}
+
+func (sc *chainSubContext) Context() context.Context {
+	return sc.ctx
+}
+
 type chainContext struct {
 	ctx context.Context
 

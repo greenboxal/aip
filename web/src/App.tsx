@@ -34,6 +34,8 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import GroupIcon from '@mui/icons-material/Group';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
+import {TraceList, TraceShow} from "./resources/Trace";
+import {SpanList, SpanShow} from "./resources/Span";
 
 const App: React.FC = () => {
     const [dataProviderAndClient, setDataProviderAndClient] = React.useState<{
@@ -95,6 +97,9 @@ const App: React.FC = () => {
                 <Resource name="Task" icon={AssignmentIcon} list={ListGuesser} show={ShowGuesser} />
                 <Resource name="Team" icon={GroupIcon} list={ListGuesser} show={ShowGuesser} />
                 <Resource name="Pipeline" icon={GroupWorkIcon} list={ListGuesser} show={ShowGuesser} />
+
+                <Resource name="Trace" list={TraceList} show={TraceShow} />
+                <Resource name="Span" list={SpanList} show={SpanShow} />
 
                 <CustomRoutes>
                     <Route path="/chat" element={<ChatPage/>}/>

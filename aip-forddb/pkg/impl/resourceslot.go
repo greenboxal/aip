@@ -176,15 +176,7 @@ func (rs *resourceSlot) doUpdate(
 		}
 	}
 
-	metadataValue := resource["metadata"]
-
-	if metadataValue == nil {
-		metadataValue = map[string]interface{}{}
-		resource["metadata"] = metadataValue
-	}
-
-	metadata := metadataValue.(map[string]interface{})
-
+	metadata := resource["metadata"].(map[string]interface{})
 	metadata["version"] = resource.GetResourceVersion() + 1
 	metadata["updated_at"] = time.Now()
 
@@ -196,7 +188,7 @@ func (rs *resourceSlot) doUpdate(
 		Kind:        forddb.LogEntryKindSet,
 		Type:        rs.table.typ,
 		ID:          rs.id.String(),
-		Version:     metadata["version"].(uint64),
+		Version:     resource.GetResourceVersion(),
 		CurrentCid:  nil,
 		PreviousCid: nil,
 		Previous:    rs.encoded,

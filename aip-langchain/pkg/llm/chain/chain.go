@@ -1,5 +1,12 @@
 package chain
 
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/greenboxal/aip/aip-langchain/pkg/tracing"
+)
+
 type Hook interface {
 	BeforeAll(ctx ChainContext) error
 	BeforeOne(ctx ChainContext) error
@@ -10,13 +17,17 @@ type Hook interface {
 type Chain interface{ Handler }
 type Handler interface{ Run(ctx ChainContext) error }
 
-type Func func(ctx ChainContext) error
+type HandlerFunc func(ctx ChainContext) error
 
-func (c Func) Run(ctx ChainContext) error {
+func (c HandlerFunc) Run(ctx ChainContext) error {
 	return c(ctx)
 }
 
-func Sequential(items ...Handler) Handler {
+func Func(handler HandlerFunc) Chain {
+	return handler
+}
+
+func Sequential(items ...Handler) Chain {
 	return sequentialChain(items)
 }
 
@@ -24,7 +35,29 @@ type sequentialChain []Handler
 
 func (s sequentialChain) Run(ctx ChainContext) error {
 	for i, item := range s {
-		if err := item.Run(ctx); err != nil {
+		run := func() (err error) {
+			defer func() {
+				if e := recover(); err != nil {
+					if er, ok := e.(error); ok {
+						err = er
+					} else {
+						err = fmt.Errorf("%v", e)
+					}
+				}
+			}()
+
+			spanCtx, span := tracing.Start(ctx.Context(), reflect.TypeOf(item).String())
+			defer span.End()
+
+			stepCtx := chainSubContext{
+				ChainContext: ctx,
+				ctx:          spanCtx,
+			}
+
+			return item.Run(&stepCtx)
+		}
+
+		if err := run(); err != nil {
 			return err
 		}
 

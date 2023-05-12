@@ -31,6 +31,10 @@ export const AppMenu: React.FC<MenuProps> = (props: MenuProps) => (
             <ResourceMenuItem name="Memory"/>
         </MultiLevelMenu.Item>
 
+        <MultiLevelMenu.Item label="Tracing" name="tracing">
+            <ResourceMenuItem name="Trace"/>
+            <ResourceMenuItem name="Span"/>
+        </MultiLevelMenu.Item>
     </MultiLevelMenu>
 )
 

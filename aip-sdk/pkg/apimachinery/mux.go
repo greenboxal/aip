@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/riandyrn/otelchi"
 )
 
 type RootMux struct {
@@ -20,6 +21,7 @@ func NewRootMux() *RootMux {
 		Router: chi.NewRouter(),
 	}
 
+	mux.Use(otelchi.Middleware("aip", otelchi.WithChiRoutes(mux)))
 	mux.Use(middleware.RealIP)
 	mux.Use(middleware.Logger)
 	mux.Use(middleware.Recoverer)

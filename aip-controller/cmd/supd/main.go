@@ -19,6 +19,7 @@ import (
 	forddbimpl "github.com/greenboxal/aip/aip-forddb/pkg/impl"
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tracing"
 	apimachinery "github.com/greenboxal/aip/aip-sdk/pkg/apimachinery"
 	"github.com/greenboxal/aip/aip-sdk/pkg/apis"
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
@@ -46,6 +47,7 @@ func main() {
 		jobs.Module,
 		daemon.Module,
 		wiki.Module,
+		tracing.Module,
 
 		//inmemory.WithInIndexingMemoryDatabase(),
 		//badger.WithBadgerStorage(),
