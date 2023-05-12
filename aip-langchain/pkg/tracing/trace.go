@@ -19,7 +19,7 @@ type SpanID struct {
 type Trace struct {
 	forddb.ResourceBase[TraceID, *Trace] `json:"metadata"`
 
-	Spans      []SpanID `json:"spans"`
+	SpanIds    []SpanID `json:"span_ids"`
 	RootSpanID SpanID   `json:"root_span_id"`
 }
 

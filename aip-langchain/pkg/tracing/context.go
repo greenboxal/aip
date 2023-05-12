@@ -30,6 +30,8 @@ func Start(ctx context.Context, name string) (context.Context, SpanContext) {
 
 	if parent != nil {
 		span = newSpanContext(parent.traceCtx, parent.SpanID(), name)
+
+		parent.onChildStarted(span)
 	} else {
 		t := TracerFromContext(ctx)
 		tc := newTraceContext(t, NewTraceID(), name)
@@ -86,7 +88,7 @@ func (tc *traceContext) onSpanStarted(sc *spanContext) {
 		panic("trace already finished")
 	}
 
-	tc.trace.Spans = append(tc.trace.Spans, sc.span.ID)
+	tc.trace.SpanIds = append(tc.trace.SpanIds, sc.span.ID)
 
 	if tc.tracer != nil {
 		tc.tracer.OnSpanStarted(sc, sc.span)
@@ -189,4 +191,11 @@ func (sc *spanContext) End() {
 	sc.finished = true
 
 	sc.traceCtx.onSpanFinished(sc)
+}
+
+func (sc *spanContext) onChildStarted(span *spanContext) {
+	sc.m.Lock()
+	defer sc.m.Unlock()
+
+	sc.span.InnerSpanIds = append(sc.span.InnerSpanIds, span.span.ID)
 }
