@@ -1,8 +1,8 @@
 package models
 
 import (
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
 )
 
 func init() {

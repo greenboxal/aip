@@ -1,15 +1,15 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 type TaskID struct {
-	forddb2.StringResourceID[*Task]
+	forddb.StringResourceID[*Task]
 }
 
 type Task struct {
-	forddb2.ResourceBase[TaskID, *Task] `json:"metadata"`
+	forddb.ResourceBase[TaskID, *Task] `json:"metadata"`
 
 	Spec   TaskSpec   `json:"spec"`
 	Status TaskStatus `json:"status"`

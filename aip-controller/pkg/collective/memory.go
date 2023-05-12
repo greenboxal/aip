@@ -1,16 +1,16 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
 )
 
 type MemoryID struct {
-	forddb2.StringResourceID[*Memory]
+	forddb.StringResourceID[*Memory]
 }
 
 type Memory struct {
-	forddb2.ResourceBase[MemoryID, *Memory] `json:"metadata"`
+	forddb.ResourceBase[MemoryID, *Memory] `json:"metadata"`
 
 	RootMemoryID   MemoryID   `json:"root_memory_id"`
 	BranchMemoryID MemoryID   `json:"branch_memory_id"`

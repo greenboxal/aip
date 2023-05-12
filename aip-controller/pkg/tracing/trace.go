@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 type TraceID struct {
@@ -56,22 +56,7 @@ func FromContext(ctx context.Context) (SpanContext, bool) {
 }
 
 func Start(ctx context.Context, name string) (context.Context, SpanContext) {
-	var parentId SpanID
-	var traceId TraceID
-
-	parent, _ := FromContext(ctx)
-
-	if parent != nil {
-		parentId = parent.SpanID()
-		traceId = parent.TraceID()
-	} else {
-		traceId = NewTraceID()
-	}
-
-	span := NewSpanContext(traceId, parentId, name)
-	ctx = context.WithValue(ctx, SpanContextKey, span)
-
-	return ctx, span
+	return nil, nil
 }
 
 func NewTraceID() TraceID {

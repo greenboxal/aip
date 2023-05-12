@@ -1,9 +1,9 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
-	"github.com/greenboxal/aip/aip-controller/pkg/utils"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-sdk/pkg/utils"
 )
 
 type MemorySet interface {
@@ -12,11 +12,11 @@ type MemorySet interface {
 }
 
 type MemorySegmentID struct {
-	forddb2.StringResourceID[*Memory]
+	forddb.StringResourceID[*Memory]
 }
 
 type MemorySegment struct {
-	forddb2.ResourceBase[MemorySegmentID, *MemorySegment] `json:"metadata"`
+	forddb.ResourceBase[MemorySegmentID, *MemorySegment] `json:"metadata"`
 
 	Memories []Memory
 }

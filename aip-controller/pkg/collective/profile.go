@@ -1,15 +1,15 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 type ProfileID struct {
-	forddb2.StringResourceID[*Profile]
+	forddb.StringResourceID[*Profile]
 }
 
 type Profile struct {
-	forddb2.ResourceBase[ProfileID, *Profile] `json:"metadata"`
+	forddb.ResourceBase[ProfileID, *Profile] `json:"metadata"`
 
 	Spec ProfileSpec `json:"spec"`
 

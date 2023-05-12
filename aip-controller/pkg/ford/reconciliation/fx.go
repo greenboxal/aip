@@ -4,7 +4,7 @@ import (
 	"github.com/jbenet/goprocess"
 	"go.uber.org/fx"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/apis/graphql"
+	"github.com/greenboxal/aip/aip-sdk/pkg/apis/graphql"
 )
 
 var Module = fx.Module(

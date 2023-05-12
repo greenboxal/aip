@@ -6,10 +6,10 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 
-	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing2"
-	"github.com/greenboxal/aip/aip-controller/pkg/indexing2/impl"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/summarizers"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/tokenizers"
+	indexing22 "github.com/greenboxal/aip/aip-langchain/pkg/indexing"
+	"github.com/greenboxal/aip/aip-langchain/pkg/indexing/impl"
+	summarizers2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/summarizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
 )
 
 type Manager struct {
@@ -19,7 +19,7 @@ type Manager struct {
 
 func NewManager(
 	logger *zap.SugaredLogger,
-	storage indexing2.MemoryStorage,
+	storage indexing22.MemoryStorage,
 ) (*Manager, error) {
 	m := &Manager{
 		logger: logger.Named("ford"),
@@ -32,11 +32,11 @@ func NewManager(
 		return nil, err
 	}
 
-	m.index = impl.NewIndex(storage, indexing2.IndexConfiguration{
-		Reducer: &summarizers.MipMapSummarizer{
+	m.index = impl.NewIndex(storage, indexing22.IndexConfiguration{
+		Reducer: &summarizers2.MipMapSummarizer{
 			Tokenizer: tokenizer,
 
-			Summarizer: &summarizers.ChatGptSummarizer{
+			Summarizer: &summarizers2.ChatGptSummarizer{
 				Client: oai,
 				Model:  openai.GPT3Dot5Turbo,
 			},
@@ -50,6 +50,6 @@ func NewManager(
 	return m, nil
 }
 
-func (m *Manager) Index() indexing2.Index {
+func (m *Manager) Index() indexing22.Index {
 	return m.index
 }

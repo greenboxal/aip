@@ -14,14 +14,14 @@ import (
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/comms"
 	supervisor2 "github.com/greenboxal/aip/aip-controller/pkg/collective/supervisor"
-	"github.com/greenboxal/aip/aip-controller/pkg/config"
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-sdk/pkg/config"
 )
 
 type Manager struct {
 	logger *zap.SugaredLogger
 
-	db         forddb2.Database
+	db         forddb.Database
 	rsm        *config.ResourceManager
 	routing    *comms.Routing
 	supervisor *supervisor2.Manager
@@ -34,7 +34,7 @@ type Manager struct {
 func NewManager(
 	logger *zap.SugaredLogger,
 	rsm *config.ResourceManager,
-	db forddb2.Database,
+	db forddb.Database,
 	routing *comms.Routing,
 	sup *supervisor2.Manager,
 ) (*Manager, error) {
@@ -80,7 +80,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 		return err
 	}
 
-	profile, err := forddb2.Get[*collective2.Profile](ctx, m.db, task.Spec.ProfileID)
+	profile, err := forddb.Get[*collective2.Profile](ctx, m.db, task.Spec.ProfileID)
 
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 		return err
 	}
 
-	if err := forddb2.SerializeTo(tmpProfile, forddb2.Json, profile); err != nil {
+	if err := forddb.SerializeTo(tmpProfile, forddb.Json, profile); err != nil {
 		return err
 	}
 

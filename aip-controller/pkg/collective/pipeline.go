@@ -1,15 +1,15 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 type PipelineID struct {
-	forddb2.StringResourceID[*Pipeline]
+	forddb.StringResourceID[*Pipeline]
 }
 
 type StageID struct {
-	forddb2.StringResourceID[*Stage]
+	forddb.StringResourceID[*Stage]
 }
 
 type PipelineSpec struct {
@@ -17,7 +17,7 @@ type PipelineSpec struct {
 }
 
 type Pipeline struct {
-	forddb2.ResourceBase[PipelineID, *Pipeline] `json:"metadata"`
+	forddb.ResourceBase[PipelineID, *Pipeline] `json:"metadata"`
 
 	Spec PipelineSpec `json:"spec"`
 }
@@ -33,7 +33,7 @@ func (p *Pipeline) GetStage(id StageID) *Stage {
 }
 
 type Stage struct {
-	forddb2.ResourceBase[StageID, *Stage] `json:"metadata"`
+	forddb.ResourceBase[StageID, *Stage] `json:"metadata"`
 
 	ID           StageID   `json:"id"`
 	AssignedTeam string    `json:"assigned_team"`

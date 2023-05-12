@@ -1,19 +1,19 @@
 package collective
 
 import (
-	forddb2 "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 type PortID struct {
-	forddb2.StringResourceID[*Port]
+	forddb.StringResourceID[*Port]
 }
 
 type PortBindingID struct {
-	forddb2.StringResourceID[*PortBinding]
+	forddb.StringResourceID[*PortBinding]
 }
 
 type Port struct {
-	forddb2.ResourceBase[PortID, *Port] `json:"metadata"`
+	forddb.ResourceBase[PortID, *Port] `json:"metadata"`
 
 	Spec   PortSpec   `json:"spec"`
 	Status PortStatus `json:"status"`
@@ -36,7 +36,7 @@ type PortStatus struct {
 }
 
 type PortBinding struct {
-	forddb2.ResourceBase[PortBindingID, *PortBinding] `json:"metadata"`
+	forddb.ResourceBase[PortBindingID, *PortBinding] `json:"metadata"`
 
 	Spec   PortBindingSpec   `json:"spec"`
 	Status PortBindingStatus `json:"status"`

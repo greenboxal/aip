@@ -1,6 +1,8 @@
 package msn
 
-import "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+import (
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+)
 
 type MessageID struct {
 	forddb.StringResourceID[*Message]

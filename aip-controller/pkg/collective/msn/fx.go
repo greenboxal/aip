@@ -3,9 +3,9 @@ package msn
 import (
 	"go.uber.org/fx"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/apis/graphql"
-	"github.com/greenboxal/aip/aip-controller/pkg/apis/rpc"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	api2 "github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-sdk/pkg/apis/graphql"
+	"github.com/greenboxal/aip/aip-sdk/pkg/apis/rpc"
 )
 
 var Module = fx.Module(
@@ -25,7 +25,7 @@ var Module = fx.Module(
 )
 
 func init() {
-	forddb.DefineResourceType[MessageID, *Message]("message")
-	forddb.DefineResourceType[EndpointID, *Endpoint]("endpoint")
-	forddb.DefineResourceType[ChannelID, *Channel]("channel")
+	api2.DefineResourceType[MessageID, *Message]("message")
+	api2.DefineResourceType[EndpointID, *Endpoint]("endpoint")
+	api2.DefineResourceType[ChannelID, *Channel]("channel")
 }

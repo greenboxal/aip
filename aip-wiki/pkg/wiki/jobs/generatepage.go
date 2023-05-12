@@ -2,11 +2,11 @@ package jobs
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/memoryctx"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memory"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memoryctx"
+	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )

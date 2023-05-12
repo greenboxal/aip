@@ -7,14 +7,14 @@ import (
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	indexing2 "github.com/greenboxal/aip/aip-controller/pkg/indexing2"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	indexing22 "github.com/greenboxal/aip/aip-langchain/pkg/indexing"
 )
 
 type MemoryLink struct {
 	logger *zap.SugaredLogger
 	db     forddb.Database
-	index  indexing2.Index
+	index  indexing22.Index
 }
 
 func NewMemoryLink(
@@ -38,7 +38,7 @@ type OneShotGetMemoryResponse struct {
 }
 
 func (ml *MemoryLink) OneShotGetMemory(ctx context.Context, req *OneShotGetMemoryRequest) (*OneShotGetMemoryResponse, error) {
-	tx, err := ml.index.OpenSession(ctx, indexing2.SessionOptions{
+	tx, err := ml.index.OpenSession(ctx, indexing22.SessionOptions{
 		ReadOnly:        true,
 		InitialMemoryID: req.MemoryId,
 	})
@@ -76,7 +76,7 @@ func (ml *MemoryLink) OneShotPutMemory(ctx context.Context, req *OneShotPutMemor
 		previousMemoryId = &req.PreviousMemory.ID
 	}
 
-	opts := indexing2.SessionOptions{
+	opts := indexing22.SessionOptions{
 		ReadOnly: false,
 	}
 

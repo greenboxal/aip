@@ -11,20 +11,21 @@ import (
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/apimachinery"
-	"github.com/greenboxal/aip/aip-controller/pkg/apis"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/comms"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	"github.com/greenboxal/aip/aip-controller/pkg/config"
 	"github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
-	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
-	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
-	"github.com/greenboxal/aip/aip-controller/pkg/storage/firestore"
-	"github.com/greenboxal/aip/aip-controller/pkg/storage/milvus"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	forddbimpl "github.com/greenboxal/aip/aip-forddb/pkg/impl"
+	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	apimachinery "github.com/greenboxal/aip/aip-sdk/pkg/apimachinery"
+	"github.com/greenboxal/aip/aip-sdk/pkg/apis"
+	"github.com/greenboxal/aip/aip-sdk/pkg/config"
+	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
+	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
+	"github.com/greenboxal/aip/aip-sdk/pkg/network/p2p"
+	"github.com/greenboxal/aip/aip-sdk/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
 
@@ -41,6 +42,7 @@ func main() {
 		comms.Module,
 		msn.Module,
 		ford.Module,
+		forddbimpl.Module,
 		jobs.Module,
 		daemon.Module,
 		wiki.Module,
@@ -49,7 +51,7 @@ func main() {
 		//badger.WithBadgerStorage(),
 		//memgraph.WithMemgraphStorage(),
 		//ipfs.WithIpfsStorage(),
-		firestore.WithFordStorage(),
+		firestore.WithObjectStore(),
 		milvus.WithIndexStorage(),
 
 		fx.Invoke(func(d *daemon.Daemon, db forddb.Database, _api *apimachinery.Server) {

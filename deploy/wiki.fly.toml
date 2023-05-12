@@ -16,6 +16,10 @@ MILVUS_USERNAME="db_admin"
 AIP_FORD_STORAGE_MEMGRAPH_CONNECTION_URI="bolt+ssc://54.152.19.198:7687"
 AIP_FORD_STORAGE_MEMGRAPH_USERNAME="aip"
 
+OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+OTEL_EXPORTER_OTLP_ENDPOINT="https://otlp-gateway-prod-us-central-0.grafana.net/otlp"
+OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic NjQyNTExOmV5SnJJam9pTVRCaE9ESm1abUV4TXpVMlpETXpZbVUzTVdSa04ySXdZV0V6TnpWallqZGpOVGN3TldObVpTSXNJbTRpT2lKaGFYQXRkMmxyYVNJc0ltbGtJam80TlRVd016Ujk="
+
 [http_service]
 internal_port = 30100
 force_https = true

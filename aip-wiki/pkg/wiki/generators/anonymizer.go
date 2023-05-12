@@ -2,8 +2,8 @@ package generators
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 )
 
 var AnonymizerPrompt = chat.ComposeTemplate(

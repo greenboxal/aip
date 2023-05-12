@@ -4,18 +4,18 @@ import (
 	"html/template"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/chain"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/chat"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/memory"
+	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memory"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
 
-var BasePageKey chain.ContextKey[*models.Page] = "BasePage"
-var PageSettingsKey chain.ContextKey[models.PageSpec] = "PageSettings"
-var SiteSettingsKey chain.ContextKey[SiteSettings] = "SiteSettings"
-var PageLayoutKey chain.ContextKey[*template.Template] = "PageLayout"
-var PageContentKey chain.ContextKey[string] = "PageContent"
-var AttentionContextKey chain.ContextKey[string] = "AttentionContext"
+var BasePageKey chain2.ContextKey[*models.Page] = "BasePage"
+var PageSettingsKey chain2.ContextKey[models.PageSpec] = "PageSettings"
+var SiteSettingsKey chain2.ContextKey[SiteSettings] = "SiteSettings"
+var PageLayoutKey chain2.ContextKey[*template.Template] = "PageLayout"
+var PageContentKey chain2.ContextKey[string] = "PageContent"
+var AttentionContextKey chain2.ContextKey[string] = "AttentionContext"
 
 type SiteSettings struct {
 	Title       string
@@ -34,7 +34,7 @@ type PageSettings struct {
 
 var PageGeneratorHeader = chat.EntryTemplate(
 	msn.RoleSystem,
-	chain.NewTemplatePrompt(`
+	chain2.NewTemplatePrompt(`
 You are an AI assistant specialized in generating Wiki-style satirical content in the voice of {{.PageSettings.Voice}}.
 Be as expressive as possible. Use as many curse words as you can. Be as funny as you can.
 
@@ -49,7 +49,7 @@ You should follow the following rules:
 * Make it funny. Use satire, irony, exaggeration, ridicule, or the like, in exposing, denouncing, or deriding vice, folly, etc.
 * Write it in {{.PageSettings.Language}}.
 `,
-		chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey),
+		chain2.WithRequiredInput(PageSettingsKey, SiteSettingsKey),
 	),
 )
 
@@ -67,13 +67,13 @@ var PageGeneratorPrompt = chat.ComposeTemplate(
 
 	chat.EntryTemplate(
 		msn.RoleUser,
-		chain.NewTemplatePrompt(
+		chain2.NewTemplatePrompt(
 			`Generate a Wiki style page about "{{.PageSettings.Title}}".`,
-			chain.WithRequiredInput(PageSettingsKey),
+			chain2.WithRequiredInput(PageSettingsKey),
 		),
 	),
 
-	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain2.Static("")),
 )
 
 var PageEditorPrompt = chat.ComposeTemplate(
@@ -83,35 +83,35 @@ var PageEditorPrompt = chat.ComposeTemplate(
 
 	chat.EntryTemplate(
 		msn.RoleUser,
-		chain.NewTemplatePrompt(
+		chain2.NewTemplatePrompt(
 			`Improve the Wiki page by expanding the topic about "{{.PageSettings.Title}}, and correcting anything you believe is wrong.
 Remember to leave notes at the bottom of the page explaining what you did and why. Write everything in {{.PageSettings.Language}}.`,
-			chain.WithRequiredInput(PageSettingsKey),
+			chain2.WithRequiredInput(PageSettingsKey),
 		),
 	),
 
-	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain2.Static("")),
 )
 
 var LinkEnricherPrompt = chat.ComposeTemplate(
 	chat.EntryTemplate(
 		msn.RoleSystem,
-		chain.NewTemplatePrompt(`
+		chain2.NewTemplatePrompt(`
 You are an AI assistant specialized in analyzing the most relevant topics in an article and adding links to the HTML page for the article.
 Return the full HTML page with links added.
 `,
-			chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey, PageContentKey),
+			chain2.WithRequiredInput(PageSettingsKey, SiteSettingsKey, PageContentKey),
 		),
 	),
 
 	chat.EntryTemplate(
 		msn.RoleUser,
-		chain.NewTemplatePrompt(
+		chain2.NewTemplatePrompt(
 			`Insert links in the HTML below that was generated for a Wiki style page about "{{.PageSettings.Title}}"
 {{.PageContent}}"`,
-			chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey, PageContentKey),
+			chain2.WithRequiredInput(PageSettingsKey, SiteSettingsKey, PageContentKey),
 		),
 	),
 
-	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
+	chat.EntryTemplate(msn.RoleAI, chain2.Static("")),
 )

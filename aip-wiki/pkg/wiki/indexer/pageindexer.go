@@ -4,10 +4,10 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/indexing"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
+	openai2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
 
@@ -19,19 +19,19 @@ type PageIndexer struct {
 	forddb.LogConsumer
 
 	db       forddb.Database
-	index    indexing.Provider
+	index    vectorstore.VectorStore
 	embedder llm.Embedder
 }
 
 func NewPageIndexer(
 	db forddb.Database,
-	oai *openai.Client,
-	index indexing.Provider,
+	oai *openai2.Client,
+	index vectorstore.VectorStore,
 ) *PageIndexer {
 	pi := &PageIndexer{}
 	pi.db = db
 	pi.index = index
-	pi.embedder = &openai.Embedder{Client: oai, Model: openai.AdaEmbeddingV2}
+	pi.embedder = &openai2.Embedder{Client: oai, Model: openai2.AdaEmbeddingV2}
 	pi.LogStore = db.LogStore()
 	pi.StreamID = PageIndexerStreamID
 	pi.Handler = pi.handleStream
@@ -55,7 +55,7 @@ func (i *PageIndexer) handleStream(ctx context.Context, record *forddb.LogEntryR
 			return nil
 		}
 
-		doc := &indexing.Document{}
+		doc := &vectorstore.Document{}
 		doc.ID = page.GetResourceID().String()
 		doc.Type = page.GetResourceType().Name()
 		doc.Content = page.Status.Markdown
@@ -63,7 +63,7 @@ func (i *PageIndexer) handleStream(ctx context.Context, record *forddb.LogEntryR
 		_, err = i.index.IndexDocument(
 			ctx,
 			doc,
-			indexing.WithIndexEmbedder(i.embedder),
+			vectorstore.WithIndexEmbedder(i.embedder),
 		)
 
 		if err != nil {

@@ -12,33 +12,33 @@ import (
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/apimachinery"
-	"github.com/greenboxal/aip/aip-controller/pkg/apis"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/comms"
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	"github.com/greenboxal/aip/aip-controller/pkg/config"
 	"github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
-	"github.com/greenboxal/aip/aip-controller/pkg/jobs"
-	"github.com/greenboxal/aip/aip-controller/pkg/llm/providers/openai"
-	"github.com/greenboxal/aip/aip-controller/pkg/network/ipfs"
-	"github.com/greenboxal/aip/aip-controller/pkg/network/p2p"
-	"github.com/greenboxal/aip/aip-controller/pkg/storage/firestore"
-	"github.com/greenboxal/aip/aip-controller/pkg/storage/milvus"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	apimachinery2 "github.com/greenboxal/aip/aip-sdk/pkg/apimachinery"
+	"github.com/greenboxal/aip/aip-sdk/pkg/apis"
+	"github.com/greenboxal/aip/aip-sdk/pkg/config"
+	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
+	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
+	"github.com/greenboxal/aip/aip-sdk/pkg/network/p2p"
+	"github.com/greenboxal/aip/aip-sdk/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
 
 func main() {
-	SetupGoogleCredentials()
-
 	var app *fx.App
+
+	SetupGoogleCredentials()
 
 	app = fx.New(
 		BuildLogging(),
 
 		config.Module,
-		apimachinery.Module,
+		apimachinery2.Module,
 		apis.Module,
 		p2p.Module,
 		ipfs.Module,
@@ -51,9 +51,9 @@ func main() {
 		wiki.Module,
 
 		milvus.WithIndexStorage(),
-		firestore.WithFordStorage(),
+		firestore.WithObjectStore(),
 
-		fx.Invoke(func(db forddb.Database, _api *apimachinery.Server) error {
+		fx.Invoke(func(db forddb.Database, _api *apimachinery2.Server) error {
 			return nil
 		}),
 

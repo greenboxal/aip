@@ -1,7 +1,7 @@
 package collective
 
 import (
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 func init() {

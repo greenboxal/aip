@@ -8,8 +8,8 @@ import (
 	gql "github.com/graphql-go/graphql"
 	"go.uber.org/zap"
 
-	"github.com/greenboxal/aip/aip-controller/pkg/apis/graphql"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-sdk/pkg/apis/graphql"
 )
 
 type RealTimeService struct {

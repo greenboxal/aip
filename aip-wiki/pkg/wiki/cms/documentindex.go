@@ -1,6 +1,8 @@
 package cms
 
-import "github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
+import (
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+)
 
 type Document interface {
 	DocumentID() forddb.BasicResourceID

@@ -7,8 +7,8 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/agent"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/forddb"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
+	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
 type AgentReconciler struct {
