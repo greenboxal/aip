@@ -180,7 +180,7 @@ func (rs *resourceSlot) doUpdate(
 	metadata["version"] = resource.GetResourceVersion() + 1
 	metadata["updated_at"] = time.Now()
 
-	if !rs.hasValue {
+	if resource.GetResourceMetadata().CreatedAt.IsZero() {
 		metadata["created_at"] = metadata["updated_at"]
 	}
 

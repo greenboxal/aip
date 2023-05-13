@@ -145,7 +145,7 @@ func (bt *basicType) Initialize(ts *ResourceTypeSystem, options ...nodebinder.Op
 			if f.Anonymous && fieldType.Kind() != KindId && actualType.Kind() == reflect.Struct && taggedName == "" {
 				walkFields(f.Type, nestedF.Index)
 			} else {
-				field := NewReflectedField(fieldName, bt, fieldType, f)
+				field := NewReflectedField(fieldName, bt, fieldType, nestedF)
 
 				bt.fields = append(bt.fields, field)
 				bt.fieldMap[field.Name()] = field

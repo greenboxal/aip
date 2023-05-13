@@ -2,7 +2,7 @@ package collective
 
 import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type MemoryID struct {

@@ -11,6 +11,16 @@ import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
 
+var globalTracer Tracer
+
+func SetGlobalTracer(tracer Tracer) {
+	globalTracer = tracer
+}
+
+func GetGlobalTracer() Tracer {
+	return globalTracer
+}
+
 type Tracer interface {
 	OnSpanStarted(sc *spanContext, span Span)
 	OnSpanFinished(sc *spanContext, span Span)
@@ -49,6 +59,8 @@ func NewTracer(
 			return t.Shutdown(ctx)
 		},
 	})
+
+	SetGlobalTracer(t)
 
 	return t
 }

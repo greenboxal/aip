@@ -3,12 +3,12 @@ package compressors
 import (
 	"context"
 
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/documents"
+	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/documents"
 )
 
-const CompressionInputKey chain.ContextKey[string] = "input"
-const CompressionOutputKey chain.ContextKey[string] = "output"
+const CompressionInputKey chain2.ContextKey[string] = "input"
+const CompressionOutputKey chain2.ContextKey[string] = "output"
 
 type CompressionOption func(options *CompressionOptions)
 
@@ -44,9 +44,9 @@ type DocumentCompressor interface {
 	DecompressDocument(ctx context.Context, text documents.Document, options ...CompressionOption) (documents.Document, error)
 }
 
-func CompressorChain(compressor Compressor) chain.Handler {
-	return chain.Func(func(ctx chain.ChainContext) error {
-		input := chain.Input(ctx, CompressionInputKey)
+func CompressorChain(compressor Compressor) chain2.Handler {
+	return chain2.Func(func(ctx chain2.ChainContext) error {
+		input := chain2.Input(ctx, CompressionInputKey)
 
 		output, err := compressor.Compress(ctx.Context(), input)
 

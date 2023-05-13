@@ -2,9 +2,9 @@ package summarizers
 
 import (
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chunkers"
 	"github.com/greenboxal/aip/aip-langchain/pkg/indexing"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chunkers"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type MipMapSummarizer struct {

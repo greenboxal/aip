@@ -3,8 +3,8 @@ package vectorstore
 import (
 	"context"
 
+	chunkers2 "github.com/greenboxal/aip/aip-langchain/pkg/chunkers"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	chunkers "github.com/greenboxal/aip/aip-langchain/pkg/llm/chunkers"
 )
 
 type VectorStore interface {
@@ -27,7 +27,7 @@ type SearchResult struct {
 }
 
 type IndexDocumentOptions struct {
-	Chunker      chunkers.Chunker
+	Chunker      chunkers2.Chunker
 	MaxChunkSize int
 	ChunkOverlap int
 
@@ -38,7 +38,7 @@ type IndexDocumentOption func(options *IndexDocumentOptions)
 
 func NewIndexDocumentOptions(opts ...IndexDocumentOption) *IndexDocumentOptions {
 	options := &IndexDocumentOptions{
-		Chunker:      chunkers.TikToken{},
+		Chunker:      chunkers2.TikToken{},
 		MaxChunkSize: 1024,
 	}
 
@@ -49,7 +49,7 @@ func NewIndexDocumentOptions(opts ...IndexDocumentOption) *IndexDocumentOptions 
 	return options
 }
 
-func WithChunker(chunker chunkers.Chunker) IndexDocumentOption {
+func WithChunker(chunker chunkers2.Chunker) IndexDocumentOption {
 	return func(options *IndexDocumentOptions) {
 		options.Chunker = chunker
 	}

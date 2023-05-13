@@ -1,5 +1,15 @@
 package chain
 
+type IOMap map[IOAddress]MappedIO
+
+type MappedIO struct {
+	FromKind IOKind
+	FromKey  BasicContextKey
+	ToKind   IOKind
+	ToKey    BasicContextKey
+	Mapper   func(any) any
+}
+
 type IOKind int
 
 const (
@@ -13,23 +23,23 @@ type IOAddress struct {
 	Key  BasicContextKey
 }
 
-func MapInput[T any](src, dst ContextKey[T]) SubChainOption {
+func MapInput[T any](src, dst ContextKey[T]) Option {
 	return MapIO(IOKindInput, src, IOKindInput, dst)
 }
 
-func TransformInput[Src, Dst any](src ContextKey[Src], dst ContextKey[Dst], mapper func(Src) Dst) SubChainOption {
+func TransformInput[Src, Dst any](src ContextKey[Src], dst ContextKey[Dst], mapper func(Src) Dst) Option {
 	return TransformIO(IOKindInput, src, IOKindInput, dst, mapper)
 }
 
-func MapOutput[T any](src, dst ContextKey[T]) SubChainOption {
+func MapOutput[T any](src, dst ContextKey[T]) Option {
 	return MapIO(IOKindOutput, src, IOKindOutput, dst)
 }
 
-func TransformOutput[Src, Dst any](src ContextKey[Src], dst ContextKey[Dst], mapper func(Src) Dst) SubChainOption {
+func TransformOutput[Src, Dst any](src ContextKey[Src], dst ContextKey[Dst], mapper func(Src) Dst) Option {
 	return TransformIO(IOKindOutput, src, IOKindOutput, dst, mapper)
 }
 
-func MapIO[T any](srcKind IOKind, src ContextKey[T], dstKind IOKind, dst ContextKey[T]) SubChainOption {
+func MapIO[T any](srcKind IOKind, src ContextKey[T], dstKind IOKind, dst ContextKey[T]) Option {
 	return TransformIO(srcKind, src, dstKind, dst, func(srcValue T) T {
 		return srcValue
 	})
@@ -41,8 +51,8 @@ func TransformIO[Src, Dst any, SrcKey IContextKey[Src], DstKey IContextKey[Dst]]
 	dstKind IOKind,
 	dst DstKey,
 	fn func(Src) Dst,
-) SubChainOption {
-	return func(options *SubChainOptions) {
+) OptionFunc {
+	return func(options *Options) {
 		if options.IOMap == nil {
 			options.IOMap = make(map[IOAddress]MappedIO)
 		}

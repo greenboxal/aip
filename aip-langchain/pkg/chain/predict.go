@@ -34,14 +34,19 @@ func (p *predictChain) Run(ctx ChainContext) error {
 	return nil
 }
 
-func Predict(model llm.LanguageModel, prompt Prompt, parsers ...OutputParser) Handler {
+func Predict(model llm.LanguageModel, prompt Prompt, parsers ...OutputParser) Chain {
 	if len(parsers) == 0 {
 		parsers = []OutputParser{StringCompletionParser(DefaultOutput)}
 	}
 
-	return &predictChain{
+	handler := &predictChain{
 		model:   model,
 		prompt:  prompt,
 		parsers: parsers,
 	}
+
+	return New(
+		WithName("Predict"),
+		WithHandler(handler),
+	)
 }

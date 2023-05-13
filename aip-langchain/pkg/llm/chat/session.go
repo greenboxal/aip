@@ -3,7 +3,7 @@ package chat
 import (
 	"context"
 
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 )
 
 type Session struct {

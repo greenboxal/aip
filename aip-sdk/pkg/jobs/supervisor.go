@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
 	"github.com/greenboxal/aip/aip-sdk/pkg/utils"
 )
 
@@ -197,6 +198,11 @@ func (r *runningJob) run(proc goprocess.Process) {
 			r.ctx = goprocessctx.OnClosingContext(proc)
 
 			r.updateState(r.ctx, JobStateRunning)
+
+			spanCtx, span := tracing.StartTrace(r.ctx, "Job: "+r.job.Spec.Handler)
+			defer span.End()
+
+			r.ctx = spanCtx
 
 			r.err = r.handler.Run(r)
 		})

@@ -3,19 +3,19 @@ package generators
 import (
 	"html/template"
 
-	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 )
 
-func GeneratedHtmlParser(key chain2.ContextKey[string]) chain2.OutputParser {
-	return chain2.OutputParserFunc(func(ctx chain2.ChainContext, result string) error {
+func GeneratedHtmlParser(key chain.ContextKey[string]) chain.OutputParser {
+	return chain.OutputParserFunc(func(ctx chain.ChainContext, result string) error {
 		ctx.SetOutput(key, result)
 
 		return nil
 	})
 }
 
-func GoTemplateParser(key chain2.ContextKey[*template.Template]) chain2.OutputParser {
-	return chain2.OutputParserFunc(func(ctx chain2.ChainContext, result string) error {
+func GoTemplateParser(key chain.ContextKey[*template.Template]) chain.OutputParser {
+	return chain.OutputParserFunc(func(ctx chain.ChainContext, result string) error {
 		t, err := template.New("template").Parse(result)
 
 		if err != nil {

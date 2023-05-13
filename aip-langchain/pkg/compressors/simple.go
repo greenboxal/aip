@@ -3,9 +3,9 @@ package compressors
 import (
 	"context"
 
+	chain "github.com/greenboxal/aip/aip-langchain/pkg/chain"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 var simpleCompressorCompressPrompt = chain.NewTemplatePrompt(`

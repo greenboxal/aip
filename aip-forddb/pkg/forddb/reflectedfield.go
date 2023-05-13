@@ -36,22 +36,30 @@ func (f *ReflectedField) IsOptional() bool {
 	return false
 }
 
-func (f *ReflectedField) GetValue(receiver any) any {
-	v := reflect.ValueOf(receiver)
+func (f *ReflectedField) GetValue(receiver reflect.Value) reflect.Value {
+	v := receiver
+
+	for v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
 
 	for _, i := range f.field.Index {
 		v = v.Field(i)
 	}
 
-	return v.Interface()
+	return v
 }
 
-func (f *ReflectedField) SetValue(receiver, value any) {
-	v := reflect.ValueOf(receiver)
+func (f *ReflectedField) SetValue(receiver, value reflect.Value) {
+	v := receiver
 
 	for _, i := range f.field.Index {
+		for v.Kind() == reflect.Pointer {
+			v = v.Elem()
+		}
+
 		v = v.Field(i)
 	}
 
-	v.Set(reflect.ValueOf(value))
+	v.Set(value)
 }

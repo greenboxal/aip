@@ -19,8 +19,18 @@ type SpanID struct {
 type Trace struct {
 	forddb.ResourceBase[TraceID, *Trace] `json:"metadata"`
 
+	Name string `json:"name"`
+
+	StartedAt   time.Time `json:"started_at"`
+	CompletedAt time.Time `json:"completed_at"`
+
 	SpanIds    []SpanID `json:"span_ids"`
 	RootSpanID SpanID   `json:"root_span_id"`
+}
+
+type SpanAttribute struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type Span struct {
@@ -29,10 +39,12 @@ type Span struct {
 	TraceID  TraceID `json:"trace_id"`
 	ParentID SpanID  `json:"parent_id"`
 
-	StartedAt   time.Time `json:"started_at"`
-	CompletedAt time.Time `json:"completed_at"`
+	StartedAt   time.Time     `json:"started_at"`
+	CompletedAt time.Time     `json:"completed_at"`
+	Duration    time.Duration `json:"duration"`
 
-	Name string `json:"name"`
+	Name       string          `json:"name"`
+	Attributes []SpanAttribute `json:"attributes"`
 
 	InnerSpanIds []SpanID `json:"inner_span_ids"`
 }

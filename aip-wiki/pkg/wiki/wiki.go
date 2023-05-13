@@ -6,14 +6,14 @@ import (
 	"github.com/jbenet/goprocess"
 	"go.uber.org/fx"
 
-	openai2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/indexer"
 )
 
 func NewWiki(
 	lc fx.Lifecycle,
-	client *openai2.Client,
+	client *openai.Client,
 	pageIndexer *indexer.PageIndexer,
 ) (*Wiki, error) {
 	var err error
@@ -22,12 +22,12 @@ func NewWiki(
 	w.client = client
 	w.pageIndexer = pageIndexer
 
-	w.model = &openai2.ChatLanguageModel{
+	w.model = &openai.ChatLanguageModel{
 		Client: client,
 		Model:  "gpt-3.5-turbo",
 	}
 
-	w.tokenizer, err = tokenizers.TikTokenForModel(openai2.AdaEmbeddingV2.String())
+	w.tokenizer, err = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	if err != nil {
 		return nil, err
@@ -43,9 +43,9 @@ func NewWiki(
 }
 
 type Wiki struct {
-	client *openai2.Client
+	client *openai.Client
 
-	model     *openai2.ChatLanguageModel
+	model     *openai.ChatLanguageModel
 	tokenizer *tokenizers.TikTokenTokenizer
 
 	pageIndexer *indexer.PageIndexer

@@ -10,44 +10,44 @@ import (
 	goprocessctx "github.com/jbenet/goprocess/context"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
-	chat2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/compressors"
-	openai2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
+	compressors2 "github.com/greenboxal/aip/aip-langchain/pkg/compressors"
+	chat "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type ChatHandler struct {
 	Input  io.Reader
 	Output io.Writer
 
-	model      *openai2.ChatLanguageModel
+	model      *openai.ChatLanguageModel
 	tokenizer  *tokenizers.TikTokenTokenizer
-	compressor compressors.Compressor
+	compressor compressors2.Compressor
 
-	ctx   chain2.ChainContext
-	chain chain2.Handler
+	ctx   chain.ChainContext
+	chain chain.Handler
 }
 
-var ChatPrompt = chat2.ComposeTemplate(
-	chat2.HistoryFromContext(chat2.ChatHistoryContextKey),
-	chat2.EntryTemplate(msn.RoleUser, chain2.TemplateFromContext(chat2.ChatReplyContextKey)),
-	chat2.EntryTemplate(msn.RoleAI, chain2.Static("")),
+var ChatPrompt = chat.ComposeTemplate(
+	chat.HistoryFromContext(chat.ChatHistoryContextKey),
+	chat.EntryTemplate(msn.RoleUser, chain.TemplateFromContext(chat.ChatReplyContextKey)),
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
 )
 
-func NewChatHandler(client *openai2.Client) (*ChatHandler, error) {
-	model := &openai2.ChatLanguageModel{
+func NewChatHandler(client *openai.Client) (*ChatHandler, error) {
+	model := &openai.ChatLanguageModel{
 		Client: client,
 		Model:  "gpt-3.5-turbo",
 	}
 
-	tokenizer, err := tokenizers.TikTokenForModel(openai2.AdaEmbeddingV2.String())
+	tokenizer, err := tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	if err != nil {
 		return nil, err
 	}
 
-	compressor := compressors.NewSimpleCompressor(model, tokenizer)
+	compressor := compressors2.NewSimpleCompressor(model, tokenizer)
 
 	return &ChatHandler{
 		Input:  os.Stdin,
@@ -57,26 +57,26 @@ func NewChatHandler(client *openai2.Client) (*ChatHandler, error) {
 		tokenizer:  tokenizer,
 		compressor: compressor,
 
-		chain: chain2.Sequential(
-			chat2.Predict(model, ChatPrompt),
+		chain: chain.Sequential(
+			chat.Predict(model, ChatPrompt),
 
-			chain2.MapContext(
-				chain2.TransformInput(chat2.ChatReplyContextKey, compressors.CompressionInputKey, func(msg chat2.Message) string {
+			chain.MapContext(
+				chain.TransformInput(chat.ChatReplyContextKey, compressors2.CompressionInputKey, func(msg chat.Message) string {
 					return msg.String()
 				}),
 			),
 
-			compressors.CompressorChain(compressor),
+			compressors2.CompressorChain(compressor),
 		),
 	}, nil
 }
 
 func (ch *ChatHandler) Run(proc goprocess.Process) {
-	history := chat2.Message{}
+	history := chat.Message{}
 	inputStream := bufio.NewReader(ch.Input)
 
 	ctx := goprocessctx.OnClosingContext(proc)
-	ch.ctx = chain2.NewChainContext(ctx)
+	ch.ctx = chain.NewChainContext(ctx)
 
 	for {
 		select {
@@ -86,7 +86,7 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 		default:
 		}
 
-		entry := chat2.MessageEntry{
+		entry := chat.MessageEntry{
 			Role: msn.RoleUser,
 			Text: "",
 		}
@@ -104,8 +104,8 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 		}
 
 		ch.ctx.Flip()
-		ch.ctx.SetInput(chat2.ChatReplyContextKey, entry)
-		ch.ctx.SetInput(chat2.ChatHistoryContextKey, history)
+		ch.ctx.SetInput(chat.ChatReplyContextKey, entry)
+		ch.ctx.SetInput(chat.ChatHistoryContextKey, history)
 
 		if err := ch.chain.Run(ch.ctx); err != nil {
 			_, err = fmt.Fprintf(ch.Output, "ERROR: %s\n", err)
@@ -115,7 +115,7 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 			}
 		}
 
-		result := chain2.Output(ch.ctx, chat2.ChatReplyContextKey)
+		result := chain.Output(ch.ctx, chat.ChatReplyContextKey)
 
 		history.Entries = append(history.Entries, entry)
 		history.Entries = append(history.Entries, result.Entries...)
@@ -128,7 +128,7 @@ func (ch *ChatHandler) Run(proc goprocess.Process) {
 			}
 		}
 
-		compressed := chain2.Output(ch.ctx, compressors.CompressionOutputKey)
+		compressed := chain.Output(ch.ctx, compressors2.CompressionOutputKey)
 
 		_, err = fmt.Fprintf(ch.Output, "COMPRESSED: %s\n", compressed)
 

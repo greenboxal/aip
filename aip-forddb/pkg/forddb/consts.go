@@ -19,6 +19,7 @@ const (
 	Desc SortOrder = "DESC"
 )
 
+//go:generate go run github.com/dmarkham/enumer -type=
 type OnConflict int
 
 const (

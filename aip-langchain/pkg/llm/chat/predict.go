@@ -2,23 +2,23 @@ package chat
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 )
 
-const MemoryContextKey chain2.ContextKey[Memory] = "MemoryKey"
+const MemoryContextKey chain.ContextKey[Memory] = "MemoryKey"
 
 type predictChain struct {
 	model   LanguageModel
 	prompt  Prompt
-	outputs []chain2.OutputParser
-	memory  *chain2.ContextKey[Memory]
+	outputs []chain.OutputParser
+	memory  *chain.ContextKey[Memory]
 }
 
-func (p *predictChain) Run(ctx chain2.ChainContext) error {
+func (p *predictChain) Run(ctx chain.ChainContext) error {
 	var memory Memory
 
 	if p.memory != nil {
-		memory = chain2.Input[Memory](ctx, *p.memory)
+		memory = chain.Input[Memory](ctx, *p.memory)
 	}
 
 	if memory != nil {
@@ -62,8 +62,8 @@ func (p *predictChain) Run(ctx chain2.ChainContext) error {
 	return nil
 }
 
-func CompletionMessageParser(key chain2.ContextKey[Message]) chain2.OutputParser {
-	return chain2.OutputParserFunc(func(ctx chain2.ChainContext, result string) error {
+func CompletionMessageParser(key chain.ContextKey[Message]) chain.OutputParser {
+	return chain.OutputParserFunc(func(ctx chain.ChainContext, result string) error {
 		msg := Compose(Entry(msn.RoleAI, result))
 
 		ctx.SetOutput(key, msg)
@@ -73,8 +73,8 @@ func CompletionMessageParser(key chain2.ContextKey[Message]) chain2.OutputParser
 }
 
 type ChatOptions struct {
-	OutputParsers []chain2.OutputParser
-	ChatMemory    *chain2.ContextKey[Memory]
+	OutputParsers []chain.OutputParser
+	ChatMemory    *chain.ContextKey[Memory]
 }
 
 type ChatOption func(*ChatOptions)
@@ -87,31 +87,36 @@ func NewChatOptions(options ...ChatOption) (result ChatOptions) {
 	return
 }
 
-func WithOutputParsers(parsers ...chain2.OutputParser) ChatOption {
+func WithOutputParsers(parsers ...chain.OutputParser) ChatOption {
 	return func(options *ChatOptions) {
 		options.OutputParsers = append(options.OutputParsers, parsers...)
 	}
 }
 
-func WithChatMemory(memory chain2.ContextKey[Memory]) ChatOption {
+func WithChatMemory(memory chain.ContextKey[Memory]) ChatOption {
 	return func(options *ChatOptions) {
 		options.ChatMemory = &memory
 	}
 }
 
-func Predict(model LanguageModel, prompt Prompt, options ...ChatOption) chain2.Handler {
+func Predict(model LanguageModel, prompt Prompt, options ...ChatOption) chain.Handler {
 	opts := NewChatOptions(options...)
 
 	if len(opts.OutputParsers) == 0 {
-		opts.OutputParsers = []chain2.OutputParser{
+		opts.OutputParsers = []chain.OutputParser{
 			CompletionMessageParser(ChatReplyContextKey),
 		}
 	}
 
-	return &predictChain{
+	handler := &predictChain{
 		model:   model,
 		prompt:  prompt,
 		outputs: opts.OutputParsers,
 		memory:  opts.ChatMemory,
 	}
+
+	return chain.New(
+		chain.WithName("chat.Predict"),
+		chain.WithHandler(handler),
+	)
 }

@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 )
 
 const ChatHistoryContextKey chain.ContextKey[Message] = "chat_history"

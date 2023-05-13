@@ -2,31 +2,31 @@ package memory
 
 import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
 	chat2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore"
 )
 
-const ContextualMemoryKey chain2.ContextKey[chat2.Message] = "contextual_memory"
+const ContextualMemoryKey chain.ContextKey[chat2.Message] = "contextual_memory"
 
 type ContextualMemory struct {
-	HistoryKey chain2.ContextKey[chat2.Memory]
-	InputKey   chain2.ContextKey[chat2.Message]
-	ContextKey chain2.ContextKey[chat2.Message]
+	HistoryKey chain.ContextKey[chat2.Memory]
+	InputKey   chain.ContextKey[chat2.Message]
+	ContextKey chain.ContextKey[chat2.Message]
 
 	Index    vectorstore.VectorStore
 	Embedder llm.Embedder
 }
 
-func (cm *ContextualMemory) Load(ctx chain2.ChainContext) error {
+func (cm *ContextualMemory) Load(ctx chain.ChainContext) error {
 	//chatMemory := chain.Input(ctx, cm.HistoryKey)
-	currentInput := chain2.Input(ctx, cm.InputKey)
+	currentInput := chain.Input(ctx, cm.InputKey)
 
 	return cm.LoadFor(ctx, currentInput.AsText())
 }
 
-func (cm *ContextualMemory) LoadFor(ctx chain2.ChainContext, query string) error {
+func (cm *ContextualMemory) LoadFor(ctx chain.ChainContext, query string) error {
 	result, err := cm.Index.Search(
 		ctx.Context(),
 		query,
@@ -39,7 +39,7 @@ func (cm *ContextualMemory) LoadFor(ctx chain2.ChainContext, query string) error
 	}
 
 	if len(result.Hits) == 0 {
-		chain2.SetOutput(ctx, cm.ContextKey, chat2.Message{})
+		chain.SetOutput(ctx, cm.ContextKey, chat2.Message{})
 		return nil
 	}
 
@@ -49,7 +49,7 @@ func (cm *ContextualMemory) LoadFor(ctx chain2.ChainContext, query string) error
 		chat2.Entry(msn.RoleSystem, "Contextual memory related to the request: "+resultAsText),
 	)
 
-	chain2.SetOutput(ctx, cm.ContextKey, msg)
+	chain.SetOutput(ctx, cm.ContextKey, msg)
 
 	return nil
 }

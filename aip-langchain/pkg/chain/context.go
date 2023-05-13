@@ -3,7 +3,7 @@ package chain
 import (
 	"context"
 
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/documents"
+	"github.com/greenboxal/aip/aip-langchain/pkg/documents"
 )
 
 const DefaultInput ContextKey[string] = "completion_input"
@@ -49,8 +49,8 @@ type ChainContext interface {
 	SetInput(name BasicContextKey, value any)
 	SetOutput(name BasicContextKey, value any)
 
-	ApplyOptions(o ...SubChainOption) error
-	SubChain(chain Handler, options ...SubChainOption) (ChainContext, error)
+	ApplyOptions(o ...Option) error
+	SubChain(chain Handler, options ...Option) (ChainContext, error)
 
 	Flip()
 	Reset()
@@ -82,7 +82,7 @@ type chainContext struct {
 	inputs  map[BasicContextKey]ChainInput
 	outputs map[BasicContextKey]ChainOutput
 
-	opts SubChainOptions
+	opts Options
 }
 
 func (cctx *chainContext) Context() context.Context                 { return cctx.ctx }
@@ -166,15 +166,15 @@ func (cctx *chainContext) Run(chain Handler) error {
 	return nil
 }
 
-func (cctx *chainContext) ApplyOptions(options ...SubChainOption) error {
+func (cctx *chainContext) ApplyOptions(options ...Option) error {
 	for _, opt := range options {
-		opt(&cctx.opts)
+		opt.applyOption(&cctx.opts)
 	}
 
 	return nil
 }
 
-func (cctx *chainContext) SubChain(chain Handler, options ...SubChainOption) (ChainContext, error) {
+func (cctx *chainContext) SubChain(chain Handler, options ...Option) (ChainContext, error) {
 	sb := cctx.clone()
 
 	if err := sb.ApplyOptions(options...); err != nil {

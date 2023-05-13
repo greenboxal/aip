@@ -23,25 +23,35 @@ func WithTracer(ctx context.Context, tracer Tracer) context.Context {
 	return context.WithValue(ctx, spanTracerKey, tracer)
 }
 
-func Start(ctx context.Context, name string) (context.Context, SpanContext) {
-	var span *spanContext
+func StartTrace(ctx context.Context, name string) (context.Context, SpanContext) {
+	t := TracerFromContext(ctx)
 
-	parent := getSpanContext(ctx)
-
-	if parent != nil {
-		span = newSpanContext(parent.traceCtx, parent.SpanID(), name)
-
-		parent.onChildStarted(span)
-	} else {
-		t := TracerFromContext(ctx)
-		tc := newTraceContext(t, NewTraceID(), name)
-
-		span = tc.rootSpan
+	if t == nil {
+		t = GetGlobalTracer()
 	}
 
+	tc := newTraceContext(t, NewTraceID(), name)
+
+	ctx = context.WithValue(ctx, spanContextKey, tc.rootSpan)
+
+	tc.rootSpan.Start()
+
+	return ctx, tc.rootSpan
+}
+
+func StartSpan(ctx context.Context, name string) (context.Context, SpanContext) {
+	parent := getSpanContext(ctx)
+
+	if parent == nil {
+		return ctx, newSpanContext(nil, SpanID{}, name)
+	}
+
+	span := newSpanContext(parent.traceCtx, parent.SpanID(), name)
 	ctx = context.WithValue(ctx, spanContextKey, span)
 
 	span.Start()
+
+	parent.onChildStarted(span)
 
 	return ctx, span
 }
@@ -60,6 +70,8 @@ type SpanContext interface {
 	TraceID() TraceID
 	ParentID() SpanID
 	SpanID() SpanID
+
+	SetAttribute(key string, value string)
 
 	End()
 }
@@ -93,6 +105,12 @@ func (tc *traceContext) onSpanStarted(sc *spanContext) {
 	if tc.tracer != nil {
 		tc.tracer.OnSpanStarted(sc, sc.span)
 	}
+
+	if sc == tc.rootSpan {
+		tc.trace.RootSpanID = tc.rootSpan.SpanID()
+		tc.trace.Name = tc.rootSpan.span.Name
+		tc.trace.StartedAt = tc.rootSpan.span.StartedAt
+	}
 }
 
 func (tc *traceContext) onSpanFinished(sc *spanContext) {
@@ -108,6 +126,7 @@ func (tc *traceContext) onSpanFinished(sc *spanContext) {
 	}
 
 	if sc == tc.rootSpan {
+		tc.trace.CompletedAt = tc.rootSpan.span.CompletedAt
 		tc.finished = true
 
 		if tc.tracer != nil {
@@ -122,8 +141,11 @@ func newSpanContext(traceCtx *traceContext, parentId SpanID, name string) *spanC
 	sc.traceCtx = traceCtx
 	sc.span.ID = NewSpanID()
 	sc.span.ParentID = parentId
-	sc.span.TraceID = traceCtx.trace.ID
 	sc.span.Name = name
+
+	if traceCtx != nil {
+		sc.span.TraceID = traceCtx.trace.ID
+	}
 
 	return sc
 }
@@ -147,6 +169,27 @@ type spanContext struct {
 	finished bool
 }
 
+func (sc *spanContext) SetAttribute(key string, value string) {
+	if sc.traceCtx == nil {
+		return
+	}
+
+	sc.m.Lock()
+	defer sc.m.Unlock()
+
+	for i, v := range sc.span.Attributes {
+		if v.Key == key {
+			sc.span.Attributes[i].Value = value
+			return
+		}
+	}
+
+	sc.span.Attributes = append(sc.span.Attributes, SpanAttribute{
+		Key:   key,
+		Value: value,
+	})
+}
+
 func (sc *spanContext) TraceID() TraceID {
 	return sc.traceCtx.trace.ID
 }
@@ -160,6 +203,10 @@ func (sc *spanContext) SpanID() SpanID {
 }
 
 func (sc *spanContext) Start() {
+	if sc.traceCtx == nil {
+		return
+	}
+
 	sc.m.Lock()
 	defer sc.m.Unlock()
 
@@ -176,6 +223,10 @@ func (sc *spanContext) Start() {
 }
 
 func (sc *spanContext) End() {
+	if sc.traceCtx == nil {
+		return
+	}
+
 	sc.m.Lock()
 	defer sc.m.Unlock()
 
@@ -188,6 +239,7 @@ func (sc *spanContext) End() {
 	}
 
 	sc.span.CompletedAt = time.Now()
+	sc.span.Duration = sc.span.CompletedAt.Sub(sc.span.StartedAt)
 	sc.finished = true
 
 	sc.traceCtx.onSpanFinished(sc)

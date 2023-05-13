@@ -2,7 +2,7 @@ package chat
 
 import (
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type MessageComposer struct {

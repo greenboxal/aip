@@ -1,5 +1,7 @@
 package forddb
 
+import "reflect"
+
 type BasicField interface {
 	Name() string
 	Parent() BasicType
@@ -8,6 +10,6 @@ type BasicField interface {
 
 	IsOptional() bool
 
-	GetValue(receiver any) any
-	SetValue(receiver, value any)
+	GetValue(receiver reflect.Value) reflect.Value
+	SetValue(receiver, value reflect.Value)
 }

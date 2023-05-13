@@ -11,13 +11,13 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 
-	chain "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
-	chat "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memory"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memoryctx"
-	openai "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
-	"github.com/greenboxal/aip/aip-langchain/pkg/tracing"
+	tracing2 "github.com/greenboxal/aip/aip-forddb/pkg/tracing"
+	chain "github.com/greenboxal/aip/aip-langchain/pkg/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-langchain/pkg/memory"
+	"github.com/greenboxal/aip/aip-langchain/pkg/memoryctx"
+	openai "github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
@@ -27,7 +27,7 @@ const PageGeneratorWikiUrl = "http://127.0.0.1:30100"
 
 type PageGenerator struct {
 	client *openai.Client
-	tracer tracing.Tracer
+	tracer tracing2.Tracer
 
 	cache     *ContentCache
 	model     *openai.ChatLanguageModel
@@ -38,7 +38,7 @@ type PageGenerator struct {
 }
 
 func NewPageGenerator(
-	tracer tracing.Tracer,
+	tracer tracing2.Tracer,
 	client *openai.Client,
 	cache *ContentCache,
 	index vectorstore.VectorStore,
@@ -75,19 +75,27 @@ func NewPageGenerator(
 		},
 	}
 
-	w.contentChain = chain.Sequential(
-		chain.Func(func(ctx chain.ChainContext) error {
-			page := chain.Input(ctx, PageSettingsKey)
+	w.contentChain = chain.New(
+		chain.WithName("PageGenerator"),
 
-			return contextualMemory.LoadFor(ctx, page.Title)
-		}),
+		chain.Sequential(
+			chain.New(
+				chain.WithName("LoadContextualMemory"),
 
-		chat.Predict(
-			w.model,
-			PageGeneratorPrompt,
-			chat.WithChatMemory(chat.MemoryContextKey),
-			chat.WithOutputParsers(
-				GeneratedHtmlParser(PageContentKey),
+				chain.WithFunc(func(ctx chain.ChainContext) error {
+					page := chain.Input(ctx, PageSettingsKey)
+
+					return contextualMemory.LoadFor(ctx, page.Title)
+				}),
+			),
+
+			chat.Predict(
+				w.model,
+				PageGeneratorPrompt,
+				chat.WithChatMemory(chat.MemoryContextKey),
+				chat.WithOutputParsers(
+					GeneratedHtmlParser(PageContentKey),
+				),
 			),
 		),
 	)
@@ -120,7 +128,7 @@ func (pg *PageGenerator) GetPage(
 		BaseUrl: "http://127.0.0.1:30100",
 	}
 
-	ctx = tracing.WithTracer(ctx, pg.tracer)
+	ctx = tracing2.WithTracer(ctx, pg.tracer)
 
 	chatMemory := memoryctx.GetMemory(ctx)
 

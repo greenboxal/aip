@@ -7,7 +7,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 func Compose(entries ...MessageEntry) Message {

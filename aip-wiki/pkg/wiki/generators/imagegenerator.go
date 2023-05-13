@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
-	chain2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 	chat2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/memoryctx"
-	openai2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/memoryctx"
+	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
 
-var ImageSettingsKey chain2.ContextKey[ImageSettings] = "ImageSettings"
-var ImagePromptKey chain2.ContextKey[string] = "ImagePrompt"
+var ImageSettingsKey chain.ContextKey[ImageSettings] = "ImageSettings"
+var ImagePromptKey chain.ContextKey[string] = "ImagePrompt"
 
 type ImageSettings struct {
 	Prompt string
@@ -23,54 +23,54 @@ type ImageSettings struct {
 var ImageGeneratorPrompt = chat2.ComposeTemplate(
 	chat2.EntryTemplate(
 		msn.RoleSystem,
-		chain2.NewTemplatePrompt(`
+		chain.NewTemplatePrompt(`
 You are an AI assistant specialized in generating prompts for images for a Wiki-style satirical content in the voice of {{.PageSettings.Voice}}.
 Be as funny as possible but don't use any curse words or aggressive language.
 
 Be as short as possible.
 `,
-			chain2.WithRequiredInput(PageSettingsKey, SiteSettingsKey, ImageSettingsKey),
+			chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey, ImageSettingsKey),
 		),
 	),
 
 	chat2.EntryTemplate(
 		msn.RoleUser,
-		chain2.NewTemplatePrompt(
+		chain.NewTemplatePrompt(
 			`Generate a prompt for image for a Wiki style page about "{{.PageSettings.Title}}". The image is named {{.ImageSettings.Path}}.`,
-			chain2.WithRequiredInput(PageSettingsKey, SiteSettingsKey, ImageSettingsKey),
+			chain.WithRequiredInput(PageSettingsKey, SiteSettingsKey, ImageSettingsKey),
 		),
 	),
 
-	chat2.EntryTemplate(msn.RoleAI, chain2.Static("")),
+	chat2.EntryTemplate(msn.RoleAI, chain.Static("")),
 )
 
 type ImageGenerator struct {
-	client *openai2.Client
+	client *openai.Client
 
-	model     *openai2.ChatLanguageModel
+	model     *openai.ChatLanguageModel
 	tokenizer *tokenizers.TikTokenTokenizer
 
-	imageChain chain2.Handler
+	imageChain chain.Handler
 }
 
-func NewImageGenerator(client *openai2.Client) (*ImageGenerator, error) {
+func NewImageGenerator(client *openai.Client) (*ImageGenerator, error) {
 	var err error
 
 	w := &ImageGenerator{}
 	w.client = client
 
-	w.model = &openai2.ChatLanguageModel{
+	w.model = &openai.ChatLanguageModel{
 		Client: client,
 		Model:  "gpt-3.5-turbo",
 	}
 
-	w.tokenizer, err = tokenizers.TikTokenForModel(openai2.AdaEmbeddingV2.String())
+	w.tokenizer, err = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	if err != nil {
 		return nil, err
 	}
 
-	w.imageChain = chain2.Sequential(
+	w.imageChain = chain.Sequential(
 		chat2.Predict(
 			w.model,
 			ImageGeneratorPrompt,
@@ -92,7 +92,7 @@ func (ig *ImageGenerator) GetImage(
 	pageSettings := models.PageSpec{}
 	siteSettings := SiteSettings{}
 
-	cctx := chain2.NewChainContext(ctx)
+	cctx := chain.NewChainContext(ctx)
 
 	chatMemory := memoryctx.GetMemory(ctx)
 
@@ -105,9 +105,9 @@ func (ig *ImageGenerator) GetImage(
 		return models.ImageStatus{}, err
 	}
 
-	prompt := chain2.Output(cctx, ImagePromptKey)
+	prompt := chain.Output(cctx, ImagePromptKey)
 
-	result, err := ig.client.CreateImage(ctx, openai2.ImageRequest{
+	result, err := ig.client.CreateImage(ctx, openai.ImageRequest{
 		N:              1,
 		Size:           "1024x1024",
 		ResponseFormat: "url",

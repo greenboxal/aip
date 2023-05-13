@@ -1,55 +1,13 @@
 package chain
 
-import (
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/documents"
-)
-
-type MappedIO struct {
-	FromKind IOKind
-	FromKey  BasicContextKey
-	ToKind   IOKind
-	ToKey    BasicContextKey
-	Mapper   func(any) any
-}
-
-type SubChainOptions struct {
-	IOMap map[IOAddress]MappedIO
-
-	DocumentStore documents.Store
-}
-
-type SubChainOption func(options *SubChainOptions)
-
-func NewSubChainOptions(options ...SubChainOption) SubChainOptions {
-	result := SubChainOptions{}
-
-	for _, option := range options {
-		option(&result)
-	}
-
-	return result
-}
-
-func WithSubChainOptions(options SubChainOptions) SubChainOption {
-	return func(result *SubChainOptions) {
-		*result = options
-	}
-}
-
-func WithSubChainDocumentStore(store documents.Store) SubChainOption {
-	return func(options *SubChainOptions) {
-		options.DocumentStore = store
-	}
-}
-
-func MapContext(options ...SubChainOption) Handler {
+func MapContext(options ...Option) Handler {
 	return &mapChain{
-		options: NewSubChainOptions(options...),
+		options: NewChainOptions(options...),
 	}
 }
 
 type mapChain struct {
-	options SubChainOptions
+	options Options
 }
 
 func (s *mapChain) Run(ctx ChainContext) error {
@@ -70,12 +28,12 @@ func (s *mapChain) run(src, dst ChainContext) error {
 	return nil
 }
 
-func SubChain(chain Handler, options ...SubChainOption) Handler {
+func SubChain(chain Handler, options ...Option) Handler {
 	return &subChain{
 		chain: chain,
 
 		mapChain: mapChain{
-			options: NewSubChainOptions(options...),
+			options: NewChainOptions(options...),
 		},
 	}
 }
@@ -96,12 +54,12 @@ func (s *subChain) Run(ctx ChainContext) error {
 	return s.mapChain.run(sb, ctx)
 }
 
-func NestedChain(chain Handler, options ...SubChainOption) Handler {
+func NestedChain(chain Handler, options ...Option) Handler {
 	return &nestedChain{
 		chain: chain,
 
 		mapChain: mapChain{
-			options: NewSubChainOptions(options...),
+			options: NewChainOptions(options...),
 		},
 	}
 }

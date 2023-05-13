@@ -4,11 +4,11 @@ import (
 	"errors"
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chunkers"
 	indexing22 "github.com/greenboxal/aip/aip-langchain/pkg/indexing"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chunkers"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/summarizers"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/tokenizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/summarizers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type SummaryDiffusionReducer struct {

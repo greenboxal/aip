@@ -23,7 +23,7 @@ export const TraceListActions = () => (<TopToolbar>
 </TopToolbar>)
 
 export const TraceList = () => (
-    <ListLive actions={<TraceListActions/>} sort={{ field: 'metadata.created_at', order: 'DESC' }}>
+    <ListLive actions={<TraceListActions/>} sort={{ field: 'metadata.updated_at', order: 'DESC' }}>
         <DatagridConfigurable rowClick="show" size="small" preferenceKey="traces.datagrid">
             <TextField source="id" label="ID"/>
         </DatagridConfigurable>

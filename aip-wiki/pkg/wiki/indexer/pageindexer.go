@@ -6,7 +6,7 @@ import (
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	openai2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
 	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
@@ -25,13 +25,13 @@ type PageIndexer struct {
 
 func NewPageIndexer(
 	db forddb.Database,
-	oai *openai2.Client,
+	oai *openai.Client,
 	index vectorstore.VectorStore,
 ) *PageIndexer {
 	pi := &PageIndexer{}
 	pi.db = db
 	pi.index = index
-	pi.embedder = &openai2.Embedder{Client: oai, Model: openai2.AdaEmbeddingV2}
+	pi.embedder = &openai.Embedder{Client: oai, Model: openai.AdaEmbeddingV2}
 	pi.LogStore = db.LogStore()
 	pi.StreamID = PageIndexerStreamID
 	pi.Handler = pi.handleStream

@@ -14,7 +14,7 @@ import (
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
-	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chunkers"
+	"github.com/greenboxal/aip/aip-langchain/pkg/chunkers"
 	"github.com/greenboxal/aip/aip-sdk/pkg/utils"
 )
 

@@ -2,12 +2,14 @@ package forddbimpl
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	"github.com/jbenet/goprocess"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore"
+	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
 )
 
 type database struct {
@@ -55,6 +57,11 @@ func (db *database) List(
 	typ forddb.TypeID,
 	options ...forddb.ListOption,
 ) ([]forddb.BasicResource, error) {
+	ctx, span := tracing.StartSpan(ctx, "forddb.Database.List")
+	defer span.End()
+
+	span.SetAttribute("resource_type", typ.Name())
+
 	opts := forddb.NewListOptions(typ, options...)
 
 	rt := db.GetTable(typ, true)
@@ -72,13 +79,27 @@ func (db *database) Get(
 	id forddb.BasicResourceID,
 	options ...forddb.GetOption,
 ) (forddb.BasicResource, error) {
+	ctx, span := tracing.StartSpan(ctx, "forddb.Database.Get")
+	defer span.End()
+
+	span.SetAttribute("resource_type", typ.Name())
+	span.SetAttribute("resource_id", id.String())
+
 	slot := db.GetSlot(typ, id, true)
 
 	if slot == nil {
 		return nil, forddb.ErrNotFound
 	}
 
-	return slot.Get(ctx, options...)
+	result, err := slot.Get(ctx, options...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttribute("resource_version", strconv.FormatUint(result.GetResourceVersion(), 10))
+
+	return result, nil
 }
 
 func (db *database) Put(
@@ -86,6 +107,12 @@ func (db *database) Put(
 	resource forddb.BasicResource,
 	options ...forddb.PutOption,
 ) (forddb.BasicResource, error) {
+	ctx, span := tracing.StartSpan(ctx, "forddb.Database.Put")
+	defer span.End()
+
+	span.SetAttribute("resource_type", resource.GetResourceTypeID().Name())
+	span.SetAttribute("resource_id", resource.GetResourceBasicID().String())
+
 	resource.OnBeforeSave(resource)
 
 	raw, err := forddb.Encode(resource)
@@ -115,6 +142,12 @@ func (db *database) Delete(
 	resource forddb.BasicResource,
 	options ...forddb.DeleteOption,
 ) (forddb.BasicResource, error) {
+	ctx, span := tracing.StartSpan(ctx, "forddb.Database.Delete")
+	defer span.End()
+
+	span.SetAttribute("resource_type", resource.GetResourceTypeID().Name())
+	span.SetAttribute("resource_id", resource.GetResourceBasicID().String())
+
 	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
 	if slot == nil {
