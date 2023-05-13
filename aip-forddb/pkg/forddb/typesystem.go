@@ -376,6 +376,10 @@ func (rts *ResourceTypeSystem) schemaForId(typ reflect.Type) schema.Type {
 }
 
 func getTypePrimitiveKind(typ reflect.Type) PrimitiveKind {
+	if IsBasicResourceId(typ) {
+		return reflect.New(typ).Interface().(BasicResourceID).PrimitiveKind()
+	}
+
 	switch typ.Kind() {
 	case reflect.Array:
 		fallthrough

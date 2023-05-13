@@ -196,6 +196,9 @@ func parseConditions(node ast.Node, args any) ([]parsedCondition, error) {
 
 	walkValue = func(node ast.Node) (any, error) {
 		switch n := node.(type) {
+		case *ast.ConstantNode:
+			return n.Value, nil
+
 		case *ast.MemberNode:
 			path, err := walkPath(node, "args")
 

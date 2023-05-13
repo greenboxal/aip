@@ -5,6 +5,12 @@ import (
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/ast"
+	"github.com/antonmedv/expr/checker"
+	"github.com/antonmedv/expr/compiler"
+	"github.com/antonmedv/expr/conf"
+	"github.com/antonmedv/expr/file"
+	"github.com/antonmedv/expr/optimizer"
+	"github.com/antonmedv/expr/parser"
 	"github.com/antonmedv/expr/vm"
 )
 
@@ -117,6 +123,61 @@ func WithFilterParameter(name string, value any) QueryOption {
 	})
 }
 
+func WithFilterExpressionNode(node ast.Node) QueryOption {
+	return func(opts *QueryOptions) {
+		var err error
+
+		tree := &parser.Tree{
+			Node: node,
+		}
+
+		config := conf.CreateNew()
+		config.Check()
+
+		if len(config.Operators) > 0 {
+			config.Visitors = append(config.Visitors, &conf.OperatorPatcher{
+				Operators: config.Operators,
+				Types:     config.Types,
+			})
+		}
+
+		if len(config.Visitors) > 0 {
+			for _, v := range config.Visitors {
+				// We need to perform types check, because some visitors may rely on
+				// types information available in the tree.
+				_, _ = checker.Check(tree, config)
+				ast.Walk(&tree.Node, v)
+			}
+			_, err = checker.Check(tree, config)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			_, err = checker.Check(tree, config)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		if config.Optimize {
+			err = optimizer.Optimize(&tree.Node, config)
+			if err != nil {
+				if fileError, ok := err.(*file.Error); ok {
+					panic(fileError.Bind(tree.Source))
+				}
+
+				panic(err)
+			}
+		}
+
+		program, err := compiler.Compile(tree, config)
+		if err != nil {
+			panic(err)
+		}
+
+		opts.FilterExpression = ProgramFilter{program}
+	}
+}
 func WithFilterExpression(q string) QueryOption {
 	return func(opts *QueryOptions) {
 		program, err := expr.Compile(q)

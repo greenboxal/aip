@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"github.com/ipld/go-ipld-prime/schema"
+
+	"github.com/greenboxal/aip/aip-forddb/pkg/impl/nodebinder"
 )
 
 func newResourceType[ID ResourceID[T], T Resource[ID]](name string) *resourceType[ID, T] {
@@ -40,10 +42,15 @@ type resourceType[ID ResourceID[T], T Resource[ID]] struct {
 
 	m sync.Mutex
 
-	name         ResourceTypeName
-	idType       BasicType
-	idSchemaType schema.Type
-	idPrototype  schema.TypedPrototype
+	name             ResourceTypeName
+	idType           BasicType
+	idSchemaType     schema.Type
+	idPrototype      schema.TypedPrototype
+	filterableFields []FilterableField
+}
+
+func (rt *resourceType[ID, T]) FilterableFields() []FilterableField {
+	return rt.filterableFields
 }
 
 func (rt *resourceType[ID, T]) ResourceName() ResourceTypeName {
@@ -68,4 +75,40 @@ func (rt *resourceType[ID, T]) ResourceType() BasicType {
 
 func (rt *resourceType[ID, T]) SetRuntimeOnly() {
 	rt.metadata.IsRuntimeOnly = true
+}
+
+func (rt *resourceType[ID, T]) Initialize(ts *ResourceTypeSystem, options ...nodebinder.Option) {
+	rt.basicType.Initialize(ts, options...)
+
+	for _, f := range rt.fields {
+		var filterable FilterableField
+
+		filterable.Field = f
+
+		switch f.BasicType().PrimitiveKind() {
+		case PrimitiveKindString:
+			filterable.Operators = []string{"==", "!="}
+
+		case PrimitiveKindBoolean:
+			filterable.Operators = []string{"==", "!="}
+
+		case PrimitiveKindInt:
+			fallthrough
+		case PrimitiveKindUnsignedInt:
+			fallthrough
+		case PrimitiveKindFloat:
+			filterable.Operators = []string{"==", "!=", "<", "<=", ">", ">="}
+
+		default:
+			if f.BasicType().Kind() == KindId {
+				filterable.Operators = []string{"==", "!="}
+			} else {
+				continue
+			}
+
+			continue
+		}
+
+		rt.filterableFields = append(rt.filterableFields, filterable)
+	}
 }

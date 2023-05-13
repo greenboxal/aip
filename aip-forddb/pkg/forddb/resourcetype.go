@@ -1,5 +1,10 @@
 package forddb
 
+type FilterableField struct {
+	Field     BasicField
+	Operators []string
+}
+
 type BasicResourceType interface {
 	BasicType
 
@@ -7,6 +12,8 @@ type BasicResourceType interface {
 
 	IDType() BasicType
 	ResourceType() BasicType
+
+	FilterableFields() []FilterableField
 
 	CreateID(name string) BasicResourceID
 }

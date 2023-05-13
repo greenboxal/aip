@@ -3,9 +3,12 @@ package graphql
 import (
 	"context"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/antonmedv/expr/ast"
+	"github.com/antonmedv/expr/parser"
 	"github.com/graphql-go/graphql"
 	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
@@ -136,19 +139,41 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 		},
 	}
 
-	filterType := graphql.NewInputObject(graphql.InputObjectConfig{
-		Name: typ.ResourceName().ToTitle() + "Filter",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"q": &graphql.InputObjectFieldConfig{
-				Type: graphql.String,
-			},
-			"id": &graphql.InputObjectFieldConfig{
-				Type: graphql.String,
-			},
-			"ids": &graphql.InputObjectFieldConfig{
-				Type: graphql.NewList(graphql.String),
-			},
+	filterFields := graphql.InputObjectConfigFieldMap{
+		"q": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
 		},
+		"id": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+		"ids": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewList(graphql.String),
+		},
+	}
+
+	for _, f := range typ.FilterableFields() {
+		for _, op := range f.Operators {
+			var suffix string
+
+			if op != "==" {
+				mapped, ok := operatorMap[op]
+
+				if !ok {
+					continue
+				}
+
+				suffix = "_" + mapped
+			}
+
+			filterFields[f.Field.Name()+suffix] = &graphql.InputObjectFieldConfig{
+				Type: ctx.LookupInputType(f.Field.BasicType()),
+			}
+		}
+	}
+
+	filterType := graphql.NewInputObject(graphql.InputObjectConfig{
+		Name:   typ.ResourceName().ToTitle() + "Filter",
+		Fields: filterFields,
 	})
 
 	getAll := &graphql.Field{
@@ -218,8 +243,73 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 					q = qVal.(string)
 				}
 
+				var filters []ast.Node
+
+				for key, val := range filter {
+					targetOp := "=="
+					fieldName := key
+					components := strings.Split(key, "_")
+
+					if key == "id" || key == "ids" || key == "q" {
+						continue
+					}
+
+					if len(components) > 1 {
+						op := components[len(components)-1]
+						mappedOp, ok := reverseOperatorMap[op]
+
+						if !ok {
+							continue
+						}
+
+						targetOp = mappedOp
+						fieldName = strings.Join(components[:len(components)-1], "_")
+					}
+
+					filters = append(filters, &ast.BinaryNode{
+						Left: &ast.MemberNode{
+							Name: fieldName,
+
+							Property: &ast.IdentifierNode{Value: fieldName},
+							Node:     &ast.IdentifierNode{Value: "resource"},
+						},
+
+						Operator: targetOp,
+
+						Right: &ast.ConstantNode{
+							Value: val,
+						},
+					})
+				}
+
 				if q != "" {
-					options = append(options, forddb.WithListQueryOptions(forddb.WithFilterExpression(q)))
+					parsed, err := parser.Parse(q)
+
+					if err != nil {
+						return nil, err
+					}
+
+					filters = append(filters, parsed.Node)
+				}
+
+				if len(filters) > 0 {
+					var rootNode ast.Node
+
+					for i, v := range filters {
+						if i == 0 {
+							rootNode = v
+
+							continue
+						}
+
+						rootNode = &ast.BinaryNode{
+							Left:     rootNode,
+							Operator: "&&",
+							Right:    v,
+						}
+					}
+
+					options = append(options, forddb.WithListQueryOptions(forddb.WithFilterExpressionNode(rootNode)))
 				}
 
 				if len(ids) > 0 {
@@ -447,5 +537,22 @@ func (sm *SubscriptionManager) dispatch(record *forddb.LogEntryRecord) {
 		}
 
 		sub <- event
+	}
+}
+
+var operatorMap = map[string]string{
+	"==": "eq",
+	"!=": "neq",
+	"<":  "lt",
+	"<=": "lte",
+	">":  "gt",
+	">=": "gte",
+}
+
+var reverseOperatorMap = map[string]string{}
+
+func init() {
+	for k, v := range operatorMap {
+		reverseOperatorMap[v] = k
 	}
 }
