@@ -19,7 +19,7 @@ export type Scalars = {
 export type Agent = {
   __typename?: 'Agent';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseAgentIdAgent>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseAgentIdAgent>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveAgentSpec>;
   status?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveAgentStatus>;
 };
@@ -38,7 +38,7 @@ export type AgentListMetadata = {
 export type Channel = {
   __typename?: 'Channel';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseChannelIdChannel>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseChannelIdChannel>;
   subscribers?: Maybe<Array<Maybe<Scalars['String']>>>;
 };
 
@@ -56,7 +56,7 @@ export type ChannelListMetadata = {
 export type Domain = {
   __typename?: 'Domain';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseDomainIdDomain>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseDomainIdDomain>;
   spec?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsDomainSpec>;
 };
 
@@ -74,7 +74,7 @@ export type DomainListMetadata = {
 export type Endpoint = {
   __typename?: 'Endpoint';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseEndpointIdEndpoint>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseEndpointIdEndpoint>;
   subscriptions?: Maybe<Array<Maybe<Scalars['String']>>>;
 };
 
@@ -92,7 +92,7 @@ export type EndpointListMetadata = {
 export type Image = {
   __typename?: 'Image';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBaseImageIdImage>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBaseImageIdImage>;
   spec?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsImageSpec>;
   status?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsImageStatus>;
 };
@@ -113,7 +113,7 @@ export type InMemory = {
   clock?: InputMaybe<Scalars['Int']>;
   data?: InputMaybe<InMemoryDatum>;
   height?: InputMaybe<Scalars['Int']>;
-  metadata?: InputMaybe<IngithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryIdMemory>;
+  metadata?: InputMaybe<IngithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryIdMemory>;
   parent_memory_id?: InputMaybe<Scalars['String']>;
   root_memory_id?: InputMaybe<Scalars['String']>;
 };
@@ -121,10 +121,10 @@ export type InMemory = {
 export type InMemoryDatum = {
   cid?: InputMaybe<Scalars['String']>;
   data?: InputMaybe<Scalars['String']>;
-  metadata?: InputMaybe<IngithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryDataIdMemoryData>;
+  metadata?: InputMaybe<IngithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryDataIdMemoryData>;
 };
 
-export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBaseImageIdImage = {
+export type IngithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBaseImageIdImage = {
   created_at?: InputMaybe<Scalars['DateTime']>;
   id?: InputMaybe<Scalars['String']>;
   kind?: InputMaybe<Scalars['String']>;
@@ -134,7 +134,7 @@ export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedRe
   version?: InputMaybe<Scalars['Int']>;
 };
 
-export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBasePageIdPage = {
+export type IngithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBasePageIdPage = {
   created_at?: InputMaybe<Scalars['DateTime']>;
   id?: InputMaybe<Scalars['String']>;
   kind?: InputMaybe<Scalars['String']>;
@@ -144,7 +144,7 @@ export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedRe
   version?: InputMaybe<Scalars['Int']>;
 };
 
-export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryDataIdMemoryData = {
+export type IngithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryDataIdMemoryData = {
   created_at?: InputMaybe<Scalars['DateTime']>;
   id?: InputMaybe<Scalars['String']>;
   kind?: InputMaybe<Scalars['String']>;
@@ -154,7 +154,7 @@ export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemory
   version?: InputMaybe<Scalars['Int']>;
 };
 
-export type IngithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryIdMemory = {
+export type IngithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryIdMemory = {
   created_at?: InputMaybe<Scalars['DateTime']>;
   id?: InputMaybe<Scalars['String']>;
   kind?: InputMaybe<Scalars['String']>;
@@ -204,9 +204,9 @@ export type IngithubcomgreenboxalaipaipwikipkgwikimodelsPageStatus = {
 export type Job = {
   __typename?: 'Job';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseJobIdJob>;
-  spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgjobsJobSpec>;
-  status?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgjobsJobStatus>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseJobIdJob>;
+  spec?: Maybe<GithubcomgreenboxalaipaipsdkpkgjobsJobSpec>;
+  status?: Maybe<GithubcomgreenboxalaipaipsdkpkgjobsJobStatus>;
 };
 
 export type JobFilter = {
@@ -223,7 +223,7 @@ export type JobListMetadata = {
 export type Layout = {
   __typename?: 'Layout';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseLayoutIdLayout>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseLayoutIdLayout>;
   spec?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsLayoutSpec>;
 };
 
@@ -245,7 +245,7 @@ export type Memory = {
   data?: Maybe<MemoryDatum>;
   height?: Maybe<Scalars['Int']>;
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryIdMemory>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryIdMemory>;
   parent_memory_id?: Maybe<Scalars['String']>;
   root_memory_id?: Maybe<Scalars['String']>;
 };
@@ -255,10 +255,12 @@ export type MemoryDatum = {
   cid?: Maybe<Scalars['String']>;
   data?: Maybe<Scalars['String']>;
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryDataIdMemoryData>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryDataIdMemoryData>;
 };
 
 export type MemoryDatumFilter = {
+  data?: InputMaybe<Scalars['String']>;
+  data_neq?: InputMaybe<Scalars['String']>;
   id?: InputMaybe<Scalars['String']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   q?: InputMaybe<Scalars['String']>;
@@ -270,9 +272,27 @@ export type MemoryDatumListMetadata = {
 };
 
 export type MemoryFilter = {
+  branch_memory_id?: InputMaybe<Scalars['String']>;
+  branch_memory_id_neq?: InputMaybe<Scalars['String']>;
+  clock?: InputMaybe<Scalars['Int']>;
+  clock_gt?: InputMaybe<Scalars['Int']>;
+  clock_gte?: InputMaybe<Scalars['Int']>;
+  clock_lt?: InputMaybe<Scalars['Int']>;
+  clock_lte?: InputMaybe<Scalars['Int']>;
+  clock_neq?: InputMaybe<Scalars['Int']>;
+  height?: InputMaybe<Scalars['Int']>;
+  height_gt?: InputMaybe<Scalars['Int']>;
+  height_gte?: InputMaybe<Scalars['Int']>;
+  height_lt?: InputMaybe<Scalars['Int']>;
+  height_lte?: InputMaybe<Scalars['Int']>;
+  height_neq?: InputMaybe<Scalars['Int']>;
   id?: InputMaybe<Scalars['String']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  parent_memory_id?: InputMaybe<Scalars['String']>;
+  parent_memory_id_neq?: InputMaybe<Scalars['String']>;
   q?: InputMaybe<Scalars['String']>;
+  root_memory_id?: InputMaybe<Scalars['String']>;
+  root_memory_id_neq?: InputMaybe<Scalars['String']>;
 };
 
 export type MemoryListMetadata = {
@@ -283,7 +303,7 @@ export type MemoryListMetadata = {
 export type MemorySegment = {
   __typename?: 'MemorySegment';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemorySegmentIdMemorySegment>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemorySegmentIdMemorySegment>;
 };
 
 export type MemorySegmentFilter = {
@@ -302,7 +322,7 @@ export type Message = {
   channel?: Maybe<Scalars['String']>;
   from?: Maybe<Scalars['String']>;
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMessageIdMessage>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMessageIdMessage>;
   reply_to_id?: Maybe<Scalars['String']>;
   role?: Maybe<Scalars['String']>;
   text?: Maybe<Scalars['String']>;
@@ -311,9 +331,23 @@ export type Message = {
 };
 
 export type MessageFilter = {
+  channel?: InputMaybe<Scalars['String']>;
+  channel_neq?: InputMaybe<Scalars['String']>;
+  from?: InputMaybe<Scalars['String']>;
+  from_neq?: InputMaybe<Scalars['String']>;
   id?: InputMaybe<Scalars['String']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   q?: InputMaybe<Scalars['String']>;
+  reply_to_id?: InputMaybe<Scalars['String']>;
+  reply_to_id_neq?: InputMaybe<Scalars['String']>;
+  role?: InputMaybe<Scalars['String']>;
+  role_neq?: InputMaybe<Scalars['String']>;
+  text?: InputMaybe<Scalars['String']>;
+  text_neq?: InputMaybe<Scalars['String']>;
+  thread_id?: InputMaybe<Scalars['String']>;
+  thread_id_neq?: InputMaybe<Scalars['String']>;
+  username?: InputMaybe<Scalars['String']>;
+  username_neq?: InputMaybe<Scalars['String']>;
 };
 
 export type MessageListMetadata = {
@@ -328,8 +362,8 @@ export type Mutations = {
   msnRouterJoinChannel?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivemsnJoinChannelResponse>;
   msnRouterLeaveChannel?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivemsnLeaveChannelResponse>;
   msnRouterPostMessage?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivemsnPostMessageResponse>;
-  supervisorListChildren?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgapissupervisorListChildrenResponse>;
-  supervisorStartChild?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgapissupervisorStartChildResponse>;
+  supervisorListChildren?: Maybe<GithubcomgreenboxalaipaipsdkpkgapissupervisorListChildrenResponse>;
+  supervisorStartChild?: Maybe<GithubcomgreenboxalaipaipsdkpkgapissupervisorStartChildResponse>;
   wikiContentCacheGetImage?: Maybe<Image>;
   wikiContentCacheGetPage?: Maybe<Page>;
   wikiContentCacheGetPageById?: Maybe<Page>;
@@ -405,19 +439,19 @@ export type MutationsWikiContentCacheGetPageArgs = {
 
 
 export type MutationsWikiContentCacheGetPageByIdArgs = {
-  StringResourceID?: InputMaybe<Scalars['String']>;
+  arg?: InputMaybe<Scalars['String']>;
 };
 
 
 export type MutationsWikiContentCachePutImageArgs = {
-  metadata?: InputMaybe<IngithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBaseImageIdImage>;
+  metadata?: InputMaybe<IngithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBaseImageIdImage>;
   spec?: InputMaybe<IngithubcomgreenboxalaipaipwikipkgwikimodelsImageSpec>;
   status?: InputMaybe<IngithubcomgreenboxalaipaipwikipkgwikimodelsImageStatus>;
 };
 
 
 export type MutationsWikiContentCachePutPageArgs = {
-  metadata?: InputMaybe<IngithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBasePageIdPage>;
+  metadata?: InputMaybe<IngithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBasePageIdPage>;
   spec?: InputMaybe<IngithubcomgreenboxalaipaipwikipkgwikimodelsPageSpec>;
   status?: InputMaybe<IngithubcomgreenboxalaipaipwikipkgwikimodelsPageStatus>;
 };
@@ -480,13 +514,13 @@ export type MutationsWikiPageManagerGetPageArgs = {
 
 
 export type MutationsWikiPageManagerGetPageByIdArgs = {
-  StringResourceID?: InputMaybe<Scalars['String']>;
+  arg?: InputMaybe<Scalars['String']>;
 };
 
 export type Page = {
   __typename?: 'Page';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBasePageIdPage>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBasePageIdPage>;
   spec?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsPageSpec>;
   status?: Maybe<GithubcomgreenboxalaipaipwikipkgwikimodelsPageStatus>;
 };
@@ -505,7 +539,7 @@ export type PageListMetadata = {
 export type Pipeline = {
   __typename?: 'Pipeline';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePipelineIdPipeline>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBasePipelineIdPipeline>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivePipelineSpec>;
 };
 
@@ -523,7 +557,7 @@ export type PipelineListMetadata = {
 export type Port = {
   __typename?: 'Port';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePortIdPort>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBasePortIdPort>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivePortSpec>;
   status?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivePortStatus>;
 };
@@ -531,7 +565,7 @@ export type Port = {
 export type PortBinding = {
   __typename?: 'PortBinding';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePortBindingIdPortBinding>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBasePortBindingIdPortBinding>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivePortBindingSpec>;
   status?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivePortBindingStatus>;
 };
@@ -562,7 +596,7 @@ export type Profile = {
   __typename?: 'Profile';
   aptitudes?: Maybe<Array<Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveProfileAptitude>>>;
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseProfileIdProfile>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseProfileIdProfile>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveProfileSpec>;
 };
 
@@ -596,9 +630,11 @@ export type RootQuery = {
   PortBinding?: Maybe<PortBinding>;
   Profile?: Maybe<Profile>;
   Reconciler?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordreconciliationreconcilerInformation>;
+  Span?: Maybe<Span>;
   Stage?: Maybe<Stage>;
   Task?: Maybe<Task>;
   Team?: Maybe<Team>;
+  Trace?: Maybe<Trace>;
   _allAgentsMeta?: Maybe<AgentListMetadata>;
   _allChannelsMeta?: Maybe<ChannelListMetadata>;
   _allDomainsMeta?: Maybe<DomainListMetadata>;
@@ -615,9 +651,11 @@ export type RootQuery = {
   _allPortBindingsMeta?: Maybe<PortBindingListMetadata>;
   _allPortsMeta?: Maybe<PortListMetadata>;
   _allProfilesMeta?: Maybe<ProfileListMetadata>;
+  _allSpansMeta?: Maybe<SpanListMetadata>;
   _allStagesMeta?: Maybe<StageListMetadata>;
   _allTasksMeta?: Maybe<TaskListMetadata>;
   _allTeamsMeta?: Maybe<TeamListMetadata>;
+  _allTracesMeta?: Maybe<TraceListMetadata>;
   allAgents?: Maybe<Array<Maybe<Agent>>>;
   allChannels?: Maybe<Array<Maybe<Channel>>>;
   allDomains?: Maybe<Array<Maybe<Domain>>>;
@@ -635,9 +673,11 @@ export type RootQuery = {
   allPorts?: Maybe<Array<Maybe<Port>>>;
   allProfiles?: Maybe<Array<Maybe<Profile>>>;
   allReconcilers?: Maybe<Array<Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordreconciliationreconcilerInformation>>>;
+  allSpans?: Maybe<Array<Maybe<Span>>>;
   allStages?: Maybe<Array<Maybe<Stage>>>;
   allTasks?: Maybe<Array<Maybe<Task>>>;
   allTeams?: Maybe<Array<Maybe<Team>>>;
+  allTraces?: Maybe<Array<Maybe<Trace>>>;
 };
 
 
@@ -726,6 +766,11 @@ export type RootQueryReconcilerArgs = {
 };
 
 
+export type RootQuerySpanArgs = {
+  id?: InputMaybe<Scalars['String']>;
+};
+
+
 export type RootQueryStageArgs = {
   id?: InputMaybe<Scalars['String']>;
 };
@@ -737,6 +782,11 @@ export type RootQueryTaskArgs = {
 
 
 export type RootQueryTeamArgs = {
+  id?: InputMaybe<Scalars['String']>;
+};
+
+
+export type RootQueryTraceArgs = {
   id?: InputMaybe<Scalars['String']>;
 };
 
@@ -885,6 +935,15 @@ export type RootQuery_AllProfilesMetaArgs = {
 };
 
 
+export type RootQuery_AllSpansMetaArgs = {
+  filter?: InputMaybe<SpanFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
 export type RootQuery_AllStagesMetaArgs = {
   filter?: InputMaybe<StageFilter>;
   page?: InputMaybe<Scalars['Int']>;
@@ -905,6 +964,15 @@ export type RootQuery_AllTasksMetaArgs = {
 
 export type RootQuery_AllTeamsMetaArgs = {
   filter?: InputMaybe<TeamFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
+export type RootQuery_AllTracesMetaArgs = {
+  filter?: InputMaybe<TraceFilter>;
   page?: InputMaybe<Scalars['Int']>;
   perPage?: InputMaybe<Scalars['Int']>;
   sortField?: InputMaybe<Scalars['String']>;
@@ -1062,6 +1130,15 @@ export type RootQueryAllReconcilersArgs = {
 };
 
 
+export type RootQueryAllSpansArgs = {
+  filter?: InputMaybe<SpanFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+
 export type RootQueryAllStagesArgs = {
   filter?: InputMaybe<StageFilter>;
   page?: InputMaybe<Scalars['Int']>;
@@ -1088,16 +1165,65 @@ export type RootQueryAllTeamsArgs = {
   sortOrder?: InputMaybe<Scalars['String']>;
 };
 
+
+export type RootQueryAllTracesArgs = {
+  filter?: InputMaybe<TraceFilter>;
+  page?: InputMaybe<Scalars['Int']>;
+  perPage?: InputMaybe<Scalars['Int']>;
+  sortField?: InputMaybe<Scalars['String']>;
+  sortOrder?: InputMaybe<Scalars['String']>;
+};
+
+export type Span = {
+  __typename?: 'Span';
+  attributes?: Maybe<Array<Maybe<GithubcomgreenboxalaipaipforddbpkgtracingSpanAttribute>>>;
+  completed_at?: Maybe<Scalars['DateTime']>;
+  duration?: Maybe<Scalars['Int']>;
+  id?: Maybe<Scalars['String']>;
+  inner_span_ids?: Maybe<Array<Maybe<Scalars['String']>>>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseSpanIdSpan>;
+  name?: Maybe<Scalars['String']>;
+  parent_id?: Maybe<Scalars['String']>;
+  started_at?: Maybe<Scalars['DateTime']>;
+  trace_id?: Maybe<Scalars['String']>;
+};
+
+export type SpanFilter = {
+  duration?: InputMaybe<Scalars['Int']>;
+  duration_gt?: InputMaybe<Scalars['Int']>;
+  duration_gte?: InputMaybe<Scalars['Int']>;
+  duration_lt?: InputMaybe<Scalars['Int']>;
+  duration_lte?: InputMaybe<Scalars['Int']>;
+  duration_neq?: InputMaybe<Scalars['Int']>;
+  id?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  name?: InputMaybe<Scalars['String']>;
+  name_neq?: InputMaybe<Scalars['String']>;
+  parent_id?: InputMaybe<Scalars['String']>;
+  parent_id_neq?: InputMaybe<Scalars['String']>;
+  q?: InputMaybe<Scalars['String']>;
+  trace_id?: InputMaybe<Scalars['String']>;
+  trace_id_neq?: InputMaybe<Scalars['String']>;
+};
+
+export type SpanListMetadata = {
+  __typename?: 'SpanListMetadata';
+  count?: Maybe<Scalars['Int']>;
+};
+
 export type Stage = {
   __typename?: 'Stage';
   assigned_team?: Maybe<Scalars['String']>;
   depends_on?: Maybe<Array<Maybe<Scalars['String']>>>;
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseStageIdStage>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseStageIdStage>;
 };
 
 export type StageFilter = {
+  assigned_team?: InputMaybe<Scalars['String']>;
+  assigned_team_neq?: InputMaybe<Scalars['String']>;
   id?: InputMaybe<Scalars['String']>;
+  id_neq?: InputMaybe<Scalars['String']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   q?: InputMaybe<Scalars['String']>;
 };
@@ -1110,7 +1236,7 @@ export type StageListMetadata = {
 export type Subscriptions = {
   __typename?: 'Subscriptions';
   realTimeEvents?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectivemsnEvent>;
-  resourceChanged?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEvent>;
+  resourceChanged?: Maybe<GithubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEvent>;
 };
 
 
@@ -1126,7 +1252,7 @@ export type SubscriptionsResourceChangedArgs = {
 export type Task = {
   __typename?: 'Task';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseTaskIdTask>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseTaskIdTask>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveTaskSpec>;
   status?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveTaskStatus>;
 };
@@ -1145,7 +1271,7 @@ export type TaskListMetadata = {
 export type Team = {
   __typename?: 'Team';
   id?: Maybe<Scalars['String']>;
-  metadata?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseTeamIdTeam>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseTeamIdTeam>;
   spec?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgcollectiveTeamSpec>;
 };
 
@@ -1160,17 +1286,30 @@ export type TeamListMetadata = {
   count?: Maybe<Scalars['Int']>;
 };
 
-export type GithubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEvent = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEvent';
+export type Trace = {
+  __typename?: 'Trace';
+  completed_at?: Maybe<Scalars['DateTime']>;
   id?: Maybe<Scalars['String']>;
-  payload?: Maybe<GithubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEventPayload>;
-  type?: Maybe<Scalars['String']>;
+  metadata?: Maybe<GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseTraceIdTrace>;
+  name?: Maybe<Scalars['String']>;
+  root_span_id?: Maybe<Scalars['String']>;
+  span_ids?: Maybe<Array<Maybe<Scalars['String']>>>;
+  started_at?: Maybe<Scalars['DateTime']>;
 };
 
-export type GithubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEventPayload = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEventPayload';
-  id?: Maybe<Scalars['String']>;
-  ids?: Maybe<Array<Maybe<Scalars['String']>>>;
+export type TraceFilter = {
+  id?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  name?: InputMaybe<Scalars['String']>;
+  name_neq?: InputMaybe<Scalars['String']>;
+  q?: InputMaybe<Scalars['String']>;
+  root_span_id?: InputMaybe<Scalars['String']>;
+  root_span_id_neq?: InputMaybe<Scalars['String']>;
+};
+
+export type TraceListMetadata = {
+  __typename?: 'TraceListMetadata';
+  count?: Maybe<Scalars['Int']>;
 };
 
 export type GithubcomgreenboxalaipaipcontrollerpkgapismemorylinkOneShotGetMemoryResponse = {
@@ -1183,17 +1322,6 @@ export type GithubcomgreenboxalaipaipcontrollerpkgapismemorylinkOneShotPutMemory
   __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapismemorylinkOneShotPutMemoryResponse';
   id?: Maybe<Scalars['String']>;
   new_memory?: Maybe<Memory>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgapissupervisorListChildrenResponse = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapissupervisorListChildrenResponse';
-  children?: Maybe<Array<Maybe<Scalars['String']>>>;
-  id?: Maybe<Scalars['String']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgapissupervisorStartChildResponse = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapissupervisorStartChildResponse';
-  id?: Maybe<Scalars['String']>;
 };
 
 export type GithubcomgreenboxalaipaipcontrollerpkgcollectiveAgentSpec = {
@@ -1317,229 +1445,282 @@ export type GithubcomgreenboxalaipaipcontrollerpkgcollectivemsnPostMessageRespon
   message?: Maybe<Message>;
 };
 
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBaseImageIdImage = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBaseImageIDImage';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBasePageIdPage = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbContentAddressedResourceBasePageIDPage';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseAgentIdAgent = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseAgentIDAgent';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseChannelIdChannel = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseChannelIDChannel';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseDomainIdDomain = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseDomainIDDomain';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseEndpointIdEndpoint = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseEndpointIDEndpoint';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseJobIdJob = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseJobIDJob';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseLayoutIdLayout = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseLayoutIDLayout';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryDataIdMemoryData = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryDataIDMemoryData';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryIdMemory = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemoryIDMemory';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemorySegmentIdMemorySegment = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMemorySegmentIDMemorySegment';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMessageIdMessage = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseMessageIDMessage';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePipelineIdPipeline = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePipelineIDPipeline';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePortBindingIdPortBinding = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePortBindingIDPortBinding';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePortIdPort = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBasePortIDPort';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseProfileIdProfile = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseProfileIDProfile';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseStageIdStage = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseStageIDStage';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseTaskIdTask = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseTaskIDTask';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
-export type GithubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseTeamIdTeam = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordforddbResourceBaseTeamIDTeam';
-  created_at?: Maybe<Scalars['DateTime']>;
-  id?: Maybe<Scalars['String']>;
-  kind?: Maybe<Scalars['String']>;
-  namespace?: Maybe<Scalars['String']>;
-  scope?: Maybe<Scalars['String']>;
-  updated_at?: Maybe<Scalars['DateTime']>;
-  version?: Maybe<Scalars['Int']>;
-};
-
 export type GithubcomgreenboxalaipaipcontrollerpkgfordreconciliationreconcilerInformation = {
   __typename?: 'githubcomgreenboxalaipaipcontrollerpkgfordreconciliationreconcilerInformation';
   id?: Maybe<Scalars['String']>;
 };
 
-export type GithubcomgreenboxalaipaipcontrollerpkgjobsJobSpec = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgjobsJobSpec';
+export type GithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBaseImageIdImage = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBaseImageIDImage';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBasePageIdPage = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBasePageIDPage';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseAgentIdAgent = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseAgentIDAgent';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseChannelIdChannel = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseChannelIDChannel';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseDomainIdDomain = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseDomainIDDomain';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseEndpointIdEndpoint = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseEndpointIDEndpoint';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseJobIdJob = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseJobIDJob';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseLayoutIdLayout = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseLayoutIDLayout';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryDataIdMemoryData = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryDataIDMemoryData';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryIdMemory = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemoryIDMemory';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemorySegmentIdMemorySegment = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseMemorySegmentIDMemorySegment';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseMessageIdMessage = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseMessageIDMessage';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBasePipelineIdPipeline = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBasePipelineIDPipeline';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBasePortBindingIdPortBinding = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBasePortBindingIDPortBinding';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBasePortIdPort = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBasePortIDPort';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseProfileIdProfile = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseProfileIDProfile';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseSpanIdSpan = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseSpanIDSpan';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseStageIdStage = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseStageIDStage';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseTaskIdTask = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseTaskIDTask';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseTeamIdTeam = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseTeamIDTeam';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgforddbResourceBaseTraceIdTrace = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbResourceBaseTraceIDTrace';
+  created_at?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  kind?: Maybe<Scalars['String']>;
+  namespace?: Maybe<Scalars['String']>;
+  scope?: Maybe<Scalars['String']>;
+  updated_at?: Maybe<Scalars['DateTime']>;
+  version?: Maybe<Scalars['Int']>;
+};
+
+export type GithubcomgreenboxalaipaipforddbpkgtracingSpanAttribute = {
+  __typename?: 'githubcomgreenboxalaipaipforddbpkgtracingSpanAttribute';
+  id?: Maybe<Scalars['String']>;
+  key?: Maybe<Scalars['String']>;
+  value?: Maybe<Scalars['String']>;
+};
+
+export type GithubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEvent = {
+  __typename?: 'githubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEvent';
+  id?: Maybe<Scalars['String']>;
+  payload?: Maybe<GithubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEventPayload>;
+  type?: Maybe<Scalars['String']>;
+};
+
+export type GithubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEventPayload = {
+  __typename?: 'githubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEventPayload';
+  id?: Maybe<Scalars['String']>;
+  ids?: Maybe<Array<Maybe<Scalars['String']>>>;
+};
+
+export type GithubcomgreenboxalaipaipsdkpkgapissupervisorListChildrenResponse = {
+  __typename?: 'githubcomgreenboxalaipaipsdkpkgapissupervisorListChildrenResponse';
+  children?: Maybe<Array<Maybe<Scalars['String']>>>;
+  id?: Maybe<Scalars['String']>;
+};
+
+export type GithubcomgreenboxalaipaipsdkpkgapissupervisorStartChildResponse = {
+  __typename?: 'githubcomgreenboxalaipaipsdkpkgapissupervisorStartChildResponse';
+  id?: Maybe<Scalars['String']>;
+};
+
+export type GithubcomgreenboxalaipaipsdkpkgjobsJobSpec = {
+  __typename?: 'githubcomgreenboxalaipaipsdkpkgjobsJobSpec';
   handler?: Maybe<Scalars['String']>;
   id?: Maybe<Scalars['String']>;
   payload?: Maybe<Scalars['String']>;
 };
 
-export type GithubcomgreenboxalaipaipcontrollerpkgjobsJobStatus = {
-  __typename?: 'githubcomgreenboxalaipaipcontrollerpkgjobsJobStatus';
+export type GithubcomgreenboxalaipaipsdkpkgjobsJobStatus = {
+  __typename?: 'githubcomgreenboxalaipaipsdkpkgjobsJobStatus';
   id?: Maybe<Scalars['String']>;
   last_error?: Maybe<Scalars['String']>;
   progress?: Maybe<Scalars['String']>;
@@ -1620,7 +1801,15 @@ export type SubSubscriptionVariables = Exact<{
 }>;
 
 
-export type SubSubscription = { __typename?: 'Subscriptions', resourceChanged?: { __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEvent', type?: string | null, payload?: { __typename?: 'githubcomgreenboxalaipaipcontrollerpkgapisgraphqlResourceEventPayload', ids?: Array<string | null> | null } | null } | null };
+export type SubSubscription = { __typename?: 'Subscriptions', resourceChanged?: { __typename?: 'githubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEvent', type?: string | null, payload?: { __typename?: 'githubcomgreenboxalaipaipsdkpkgapisgraphqlResourceEventPayload', ids?: Array<string | null> | null } | null } | null };
+
+export type GetPageQueryVariables = Exact<{
+  id: Scalars['String'];
+}>;
+
+
+export type GetPageQuery = { __typename?: 'RootQuery', Page?: { __typename?: 'Page', metadata?: { __typename?: 'githubcomgreenboxalaipaipforddbpkgforddbContentAddressedResourceBasePageIDPage', id?: string | null } | null, spec?: { __typename?: 'githubcomgreenboxalaipaipwikipkgwikimodelsPageSpec', title?: string | null, language?: string | null, voice?: string | null } | null, status?: { __typename?: 'githubcomgreenboxalaipaipwikipkgwikimodelsPageStatus', markdown?: string | null } | null } | null };
 
 
 export const SubDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"Sub"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"resourceType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"resourceChanged"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"resourceType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"resourceType"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"payload"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ids"}}]}}]}}]}}]} as unknown as DocumentNode<SubSubscription, SubSubscriptionVariables>;
+export const GetPageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Page"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"spec"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"language"}},{"kind":"Field","name":{"kind":"Name","value":"voice"}}]}},{"kind":"Field","name":{"kind":"Name","value":"status"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"markdown"}}]}}]}}]}}]} as unknown as DocumentNode<GetPageQuery, GetPageQueryVariables>;

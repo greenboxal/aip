@@ -14,6 +14,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  */
 const documents = {
     "\n                        subscription Sub($resourceType: String!) {\n                            resourceChanged(resourceType: $resourceType) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    ": types.SubDocument,
+    "\n    query GetPage($id: String!) {\n        Page(id: $id) {\n            metadata {\n                id\n            }\n            spec {\n                title\n                language\n                voice\n            }\n            status {\n                markdown\n            }\n        }\n    }\n": types.GetPageDocument,
 };
 
 /**
@@ -34,6 +35,10 @@ export function gql(source: string): unknown;
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n                        subscription Sub($resourceType: String!) {\n                            resourceChanged(resourceType: $resourceType) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    "): (typeof documents)["\n                        subscription Sub($resourceType: String!) {\n                            resourceChanged(resourceType: $resourceType) {\n                                type\n\n                                payload {\n                                    ids\n                                }\n                            }\n                        }\n                    "];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n    query GetPage($id: String!) {\n        Page(id: $id) {\n            metadata {\n                id\n            }\n            spec {\n                title\n                language\n                voice\n            }\n            status {\n                markdown\n            }\n        }\n    }\n"): (typeof documents)["\n    query GetPage($id: String!) {\n        Page(id: $id) {\n            metadata {\n                id\n            }\n            spec {\n                title\n                language\n                voice\n            }\n            status {\n                markdown\n            }\n        }\n    }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

@@ -8,7 +8,7 @@ import buildGraphQLProvider from "ra-data-graphql-simple";
 import {CREATE} from "ra-core";
 import {addSearchMethod} from "@react-admin/ra-search";
 import {setContext} from "@apollo/client/link/context";
-import {auth0} from "../authProvider";
+import {auth0} from "../../authProvider";
 
 function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataProvider): DataProvider {
     let subscriptions: any = {};
