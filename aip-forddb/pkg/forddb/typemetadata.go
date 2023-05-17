@@ -3,6 +3,8 @@ package forddb
 import (
 	"reflect"
 	"strings"
+
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 type TypeAnnotation struct{}
@@ -45,10 +47,10 @@ func AnnotationFromType(t reflect.Type) *TypeMetadata {
 type TypeMetadata struct {
 	ResourceBase[TypeID, *TypeMetadata]
 
-	Name          string        `json:"name"`
-	Kind          Kind          `json:"kind"`
-	PrimitiveKind PrimitiveKind `json:"primitive_kind"`
-	Scope         ResourceScope `json:"scope"`
+	Name          string                   `json:"name"`
+	Kind          Kind                     `json:"kind"`
+	PrimitiveKind typesystem.PrimitiveKind `json:"primitive_kind"`
+	Scope         ResourceScope            `json:"scope"`
 
 	IsRuntimeOnly bool `json:"is_runtime_only"`
 }

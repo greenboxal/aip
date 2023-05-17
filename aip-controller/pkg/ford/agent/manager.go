@@ -93,7 +93,7 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 		return err
 	}
 
-	if err := forddb.SerializeTo(tmpProfile, forddb.Json, profile); err != nil {
+	if err := SerializeTo(tmpProfile, profile); err != nil {
 		return err
 	}
 
@@ -131,6 +131,10 @@ func (m *Manager) StartAgent(ctx context.Context, task *collective2.Agent) error
 	}
 
 	return nil
+}
+
+func SerializeTo(profile *os.File, profile2 *collective2.Profile) error {
+	panic("implement me")
 }
 
 func (m *Manager) StopAgent(ctx context.Context, previous *collective2.Agent) error {

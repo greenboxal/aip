@@ -6,7 +6,7 @@ import (
 )
 
 type MemoryID struct {
-	forddb.StringResourceID[*Memory]
+	forddb.StringResourceID[*Memory] `ipld:",inline"`
 }
 
 type Memory struct {

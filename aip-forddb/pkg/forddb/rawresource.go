@@ -1,118 +1,111 @@
 package forddb
 
 import (
-	"time"
-
-	"github.com/mashingan/smapping"
+	"github.com/ipld/go-ipld-prime/schema"
 )
 
-type RawResource smapping.Mapped
+type RawResource struct{ schema.TypedNode }
+
+func (r RawResource) IsEmpty() bool {
+	return r.TypedNode == nil
+}
+
+type RawResourceHeader struct {
+	ID string `json:"id"`
+
+	Metadata
+}
 
 func (r RawResource) GetResourceMetadata() *Metadata {
-	var result Metadata
-	var fakeMetadata struct {
-		Kind      string    `json:"kind"`
-		Namespace string    `json:"namespace"`
-		Version   uint64    `json:"version"`
-		UpdatedAt time.Time `json:"updated_at"`
-		CreatedAt time.Time `json:"created_at"`
-	}
+	metadata, err := r.LookupByString("metadata")
 
-	metadata := r["metadata"]
-
-	if metadata == nil {
-		return nil
-	}
-
-	metadataMapped, ok := metadata.(map[string]interface{})
-
-	if !ok {
-		return nil
-	}
-
-	if err := smapping.FillStructByTags(&fakeMetadata, metadataMapped, "json"); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
-	result.Kind = NewStringID[TypeID](fakeMetadata.Kind)
-	result.UpdatedAt = fakeMetadata.UpdatedAt
-	result.CreatedAt = fakeMetadata.CreatedAt
-	result.Version = fakeMetadata.Version
-	result.Namespace = fakeMetadata.Namespace
+	if metadata == nil {
+		return nil
+	}
 
-	return &result
+	m, err := ConvertNode[RawResourceHeader](metadata)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return &m.Metadata
 }
 
 func (r RawResource) GetResourceBasicID() BasicResourceID {
-	metadata := r["metadata"]
+	metadata, err := r.LookupByString("metadata")
+
+	if err != nil {
+		panic(err)
+	}
 
 	if metadata == nil {
 		return nil
 	}
 
-	metadataMapped, ok := metadata.(map[string]interface{})
+	id, err := metadata.LookupByString("id")
 
-	if !ok {
-		return nil
+	if err != nil {
+		panic(err)
 	}
 
-	idVal, ok := metadataMapped["id"]
+	idStr, err := id.AsString()
 
-	if !ok {
-		return nil
+	if err != nil {
+		panic(err)
 	}
 
-	return r.GetResourceTypeID().Type().CreateID(idVal.(string))
+	return r.GetResourceTypeID().Type().CreateID(idStr)
 }
 
 func (r RawResource) GetResourceTypeID() TypeID {
-	metadata := r["metadata"]
+	metadata, err := r.LookupByString("metadata")
 
-	if metadata == nil {
-		return ""
+	if err != nil {
+		panic(err)
 	}
 
-	metadataMapped, ok := metadata.(map[string]interface{})
+	kind, err := metadata.LookupByString("kind")
 
-	if !ok {
-		return ""
+	if err != nil {
+		panic(err)
 	}
 
-	kindVal, ok := metadataMapped["kind"]
+	kindStr, err := kind.AsString()
 
-	if !ok {
-		return ""
+	if err != nil {
+		panic(err)
 	}
 
-	return NewStringID[TypeID](kindVal.(string))
+	return NewStringID[TypeID](kindStr)
 }
 
 func (r RawResource) GetResourceVersion() uint64 {
-	metadata := r["metadata"]
-
-	if metadata == nil {
+	if r.IsEmpty() {
 		return 0
 	}
 
-	metadataMapped, ok := metadata.(map[string]interface{})
+	metadata, err := r.LookupByString("metadata")
 
-	if !ok {
-		return 0
+	if err != nil {
+		panic(err)
 	}
 
-	versionVal, ok := metadataMapped["version"]
+	version, err := metadata.LookupByString("version")
 
-	if !ok {
-		return 0
+	if err != nil {
+		panic(err)
 	}
 
-	if v, ok := versionVal.(uint64); ok {
-		return v
+	versionVal, err := version.AsInt()
+
+	if err != nil {
+		panic(err)
 	}
 
-	if v, ok := versionVal.(float64); ok {
-		return uint64(v)
-	}
-
-	return 0
+	return uint64(versionVal)
 }

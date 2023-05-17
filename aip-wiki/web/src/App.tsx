@@ -31,7 +31,7 @@ const App = () => {
     return <ApolloProvider client={client}>
         <BrowserRouter>
             <Routes>
-                <Route path="/admin/*" element={<WikiAdmin client={client} dataProvider={dataProvider} />} />
+                <Route path="/admin/*" element={<WikiAdmin baseName="/admin" client={client} dataProvider={dataProvider} />} />
                 <Route path="/*" element={<Wiki />} />
             </Routes>
         </BrowserRouter>

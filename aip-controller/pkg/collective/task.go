@@ -5,7 +5,7 @@ import (
 )
 
 type TaskID struct {
-	forddb.StringResourceID[*Task]
+	forddb.StringResourceID[*Task] `ipld:",inline"`
 }
 
 type Task struct {

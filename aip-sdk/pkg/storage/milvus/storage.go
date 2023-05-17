@@ -274,7 +274,7 @@ func (s *Storage) Get(
 	result, err := s.db.QueryByPks(ctx, "forddb", []string{"_default"}, pkColumns, []string{"data"})
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	for _, col := range result {
@@ -286,26 +286,26 @@ func (s *Storage) Get(
 
 		if !ok {
 			if len(result) == 0 {
-				return nil, forddb.ErrNotFound
+				return forddb.RawResource{}, forddb.ErrNotFound
 			}
 		}
 
 		values := dataColumn.Data()
 
 		if len(values) == 0 {
-			return nil, forddb.ErrNotFound
+			return forddb.RawResource{}, forddb.ErrNotFound
 		}
 
 		var raw forddb.RawResource
 
 		if err := json.Unmarshal([]byte(values[0]), &raw); err != nil {
-			return nil, err
+			return forddb.RawResource{}, err
 		}
 
 		return raw, nil
 	}
 
-	return nil, forddb.ErrNotFound
+	return forddb.RawResource{}, forddb.ErrNotFound
 }
 
 func (s *Storage) Put(
@@ -316,7 +316,7 @@ func (s *Storage) Put(
 	serialized, err := json.Marshal(resource)
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	pk := fmt.Sprintf("%s:%s", resource.GetResourceBasicID().String(), resource.GetResourceTypeID().Name())
@@ -342,7 +342,7 @@ func (s *Storage) Put(
 	_, err = s.db.Insert(ctx, "forddb", "_default", columns...)
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	return resource, nil

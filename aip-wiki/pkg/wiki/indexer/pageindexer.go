@@ -19,14 +19,14 @@ type PageIndexer struct {
 	forddb.LogConsumer
 
 	db       forddb.Database
-	index    vectorstore.VectorStore
+	index    vectorstore.Index
 	embedder llm.Embedder
 }
 
 func NewPageIndexer(
 	db forddb.Database,
 	oai *openai.Client,
-	index vectorstore.VectorStore,
+	index vectorstore.Index,
 ) *PageIndexer {
 	pi := &PageIndexer{}
 	pi.db = db
@@ -45,11 +45,7 @@ func (i *PageIndexer) handleStream(ctx context.Context, record *forddb.LogEntryR
 
 	switch record.Kind {
 	case forddb.LogEntryKindSet:
-		page, err := forddb.Convert[*models.Page](record.Current)
-
-		if err != nil {
-			return err
-		}
+		page := record.Current.(*models.Page)
 
 		if page.Status.Markdown == "" {
 			return nil
@@ -57,10 +53,10 @@ func (i *PageIndexer) handleStream(ctx context.Context, record *forddb.LogEntryR
 
 		doc := &vectorstore.Document{}
 		doc.ID = page.GetResourceID().String()
-		doc.Type = page.GetResourceType().Name()
+		doc.Type = page.GetResourceType().GetResourceID().Name()
 		doc.Content = page.Status.Markdown
 
-		_, err = i.index.IndexDocument(
+		_, err := i.index.IndexDocument(
 			ctx,
 			doc,
 			vectorstore.WithIndexEmbedder(i.embedder),

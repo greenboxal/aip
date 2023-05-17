@@ -4,18 +4,18 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
-	chat2 "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	chat "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore"
 )
 
-const ContextualMemoryKey chain.ContextKey[chat2.Message] = "contextual_memory"
+const ContextualMemoryKey chain.ContextKey[chat.Message] = "contextual_memory"
 
 type ContextualMemory struct {
-	HistoryKey chain.ContextKey[chat2.Memory]
-	InputKey   chain.ContextKey[chat2.Message]
-	ContextKey chain.ContextKey[chat2.Message]
+	HistoryKey chain.ContextKey[chat.Memory]
+	InputKey   chain.ContextKey[chat.Message]
+	ContextKey chain.ContextKey[chat.Message]
 
-	Index    vectorstore.VectorStore
+	Index    vectorstore.Retriever
 	Embedder llm.Embedder
 }
 
@@ -39,14 +39,14 @@ func (cm *ContextualMemory) LoadFor(ctx chain.ChainContext, query string) error 
 	}
 
 	if len(result.Hits) == 0 {
-		chain.SetOutput(ctx, cm.ContextKey, chat2.Message{})
+		chain.SetOutput(ctx, cm.ContextKey, chat.Message{})
 		return nil
 	}
 
 	resultAsText := result.Hits[0].Content
 
-	msg := chat2.Compose(
-		chat2.Entry(msn.RoleSystem, "Contextual memory related to the request: "+resultAsText),
+	msg := chat.Compose(
+		chat.Entry(msn.RoleSystem, "Contextual memory related to the request: "+resultAsText),
 	)
 
 	chain.SetOutput(ctx, cm.ContextKey, msg)

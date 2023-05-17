@@ -5,7 +5,7 @@ import (
 )
 
 type LayoutID struct {
-	forddb.StringResourceID[*Layout]
+	forddb.StringResourceID[*Layout] `ipld:",inline"`
 }
 
 type Layout struct {

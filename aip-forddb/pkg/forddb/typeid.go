@@ -7,6 +7,8 @@ import (
 
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
+
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 type TypeID string
@@ -16,7 +18,7 @@ func (id TypeID) BasicResourceType() BasicResourceType {
 }
 
 func (id TypeID) Name() string                            { return id.String() }
-func (id TypeID) PrimitiveKind() PrimitiveKind            { return PrimitiveKindString }
+func (id TypeID) PrimitiveKind() PrimitiveKind            { return typesystem.PrimitiveKindString }
 func (id TypeID) AsBasicResourceID() BasicResourceID      { return id }
 func (id TypeID) AsCid() cid.Cid                          { panic("unsupported") }
 func (id TypeID) AsLink() ipld.Link                       { panic("unsupported") }
@@ -40,10 +42,6 @@ func (id *TypeID) UnmarshalBinary(data []byte) error {
 	*(*string)(id) = string(data)
 
 	return nil
-}
-
-func (id TypeID) LinkPrototype() ipld.LinkPrototype {
-	return id.BasicResourceType().SchemaLinkPrototype()
 }
 
 func (id TypeID) Hash64() uint64 {

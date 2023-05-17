@@ -37,7 +37,7 @@ func WithIndexStorage() fx.Option {
 			return s
 		}),
 
-		fx.Provide(func(s *IndexProvider) vectorstore.VectorStore {
+		fx.Provide(func(s *IndexProvider) vectorstore.Index {
 			return s
 		}),
 	)

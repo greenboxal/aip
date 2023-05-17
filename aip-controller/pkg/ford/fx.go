@@ -5,7 +5,7 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/ford/agent"
 	reconcilers2 "github.com/greenboxal/aip/aip-controller/pkg/ford/reconcilers"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
+	"github.com/greenboxal/aip/aip-forddb/pkg/reconciliation"
 	"github.com/greenboxal/aip/aip-langchain/pkg/indexing"
 )
 

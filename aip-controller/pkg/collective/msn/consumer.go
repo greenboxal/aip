@@ -48,15 +48,9 @@ func (ed *eventDispatcher) processLogRecord(ctx context.Context, record *forddb.
 
 	switch record.Kind {
 	case forddb.LogEntryKindSet:
-		current, err := forddb.Decode(record.Current)
-
-		if err != nil {
-			return err
-		}
-
 		ed.router.Dispatch(Event{
 			MessageEvent: &MessageEvent{
-				Message: *current.(*Message),
+				Message: *record.Current.(*Message),
 			},
 		})
 	}

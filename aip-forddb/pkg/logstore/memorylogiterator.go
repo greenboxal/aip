@@ -2,7 +2,6 @@ package logstore
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 )
@@ -142,16 +141,8 @@ func (mls *memoryLogStoreIterator) invalidate(ctx context.Context) error {
 
 	if index >= 0 && index < head {
 		current := mls.ls.records[index]
-
-		data, err := json.Marshal(current)
-
-		if err != nil {
-			return err
-		}
-
-		if err := json.Unmarshal(data, &mls.current); err != nil {
-			return err
-		}
+		cloned := forddb.Clone(current)
+		mls.current = &cloned
 	}
 
 	return nil

@@ -8,8 +8,12 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/pelletier/go-toml/v2"
 	"sigs.k8s.io/yaml"
+
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 func Put[T BasicResource](ctx context.Context, db Database, id T) (def T, _ error) {
@@ -101,14 +105,14 @@ func ImportPath(db Database, path string) error {
 				return nil
 			}
 
-			resource, err := Deserialize(data, Json)
+			resource, err := ipld.Decode(data, dagjson.Decode)
 
 			if err != nil {
 				merr = multierror.Append(merr, err)
 				return nil
 			}
 
-			_, err = db.Put(context.TODO(), resource)
+			_, err = db.Put(context.TODO(), typesystem.Unwrap(resource).(BasicResource))
 
 			if err != nil {
 				merr = multierror.Append(merr, err)

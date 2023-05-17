@@ -7,6 +7,7 @@ import (
 	"github.com/ipld/go-ipld-prime/schema"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/impl/nodebinder"
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 func newResourceType[ID ResourceID[T], T Resource[ID]](name string) *resourceType[ID, T] {
@@ -14,8 +15,8 @@ func newResourceType[ID ResourceID[T], T Resource[ID]](name string) *resourceTyp
 
 	idTemplate := reflect.New(reflect.TypeOf((*ID)(nil)).Elem()).Interface().(BasicResourceID)
 
-	idTyp := DerefType[ID]()
-	resourceTyp := DerefType[T]()
+	idTyp := typesystem.TypeFrom(DerefType[ID]())
+	resourceTyp := typesystem.TypeFrom(DerefType[T]())
 
 	rt.name = ResourceTypeNameFromSingular(name)
 
@@ -27,7 +28,7 @@ func newResourceType[ID ResourceID[T], T Resource[ID]](name string) *resourceTyp
 
 	typeMetadata := TypeMetadata{
 		Kind:          KindResource,
-		PrimitiveKind: PrimitiveKindStruct,
+		PrimitiveKind: typesystem.PrimitiveKindStruct,
 		Name:          name,
 	}
 
@@ -80,35 +81,34 @@ func (rt *resourceType[ID, T]) SetRuntimeOnly() {
 func (rt *resourceType[ID, T]) Initialize(ts *ResourceTypeSystem, options ...nodebinder.Option) {
 	rt.basicType.Initialize(ts, options...)
 
-	for _, f := range rt.fields {
-		var filterable FilterableField
+	if st, ok := rt.Type.(typesystem.StructType); ok {
+		for i := 0; i < st.NumField(); i++ {
+			var filterable FilterableField
 
-		filterable.Field = f
+			f := st.FieldByIndex(i)
 
-		switch f.BasicType().PrimitiveKind() {
-		case PrimitiveKindString:
-			filterable.Operators = []string{"==", "!="}
+			filterable.Field = f
 
-		case PrimitiveKindBoolean:
-			filterable.Operators = []string{"==", "!="}
-
-		case PrimitiveKindInt:
-			fallthrough
-		case PrimitiveKindUnsignedInt:
-			fallthrough
-		case PrimitiveKindFloat:
-			filterable.Operators = []string{"==", "!=", "<", "<=", ">", ">="}
-
-		default:
-			if f.BasicType().Kind() == KindId {
+			switch f.Type().PrimitiveKind() {
+			case typesystem.PrimitiveKindString:
 				filterable.Operators = []string{"==", "!="}
-			} else {
+
+			case typesystem.PrimitiveKindBoolean:
+				filterable.Operators = []string{"==", "!="}
+
+			case typesystem.PrimitiveKindInt:
+				fallthrough
+			case typesystem.PrimitiveKindUnsignedInt:
+				fallthrough
+			case typesystem.PrimitiveKindFloat:
+				filterable.Operators = []string{"==", "!=", "<", "<=", ">", ">="}
+
+			default:
+
 				continue
 			}
 
-			continue
+			rt.filterableFields = append(rt.filterableFields, filterable)
 		}
-
-		rt.filterableFields = append(rt.filterableFields, filterable)
 	}
 }

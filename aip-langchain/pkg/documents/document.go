@@ -5,7 +5,7 @@ import (
 )
 
 type DocumentID struct {
-	forddb.StringResourceID[Document]
+	forddb.StringResourceID[Document] `ipld:",inline"`
 }
 
 type Document interface {

@@ -5,7 +5,7 @@ import (
 )
 
 type ChannelID struct {
-	forddb.StringResourceID[*Channel]
+	forddb.StringResourceID[*Channel] `ipld:",inline"`
 }
 
 type Channel struct {

@@ -12,10 +12,10 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/jobs"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-langchain/pkg/memory"
 	"github.com/greenboxal/aip/aip-langchain/pkg/memoryctx"
-	jobs2 "github.com/greenboxal/aip/aip-sdk/pkg/jobs"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
@@ -24,7 +24,7 @@ type PageManager struct {
 	db forddb.Database
 
 	fm    *FileManager
-	jm    *jobs2.Manager
+	jm    *jobs.Manager
 	cache *generators.ContentCache
 	msn   msn.API
 
@@ -35,7 +35,7 @@ type PageManager struct {
 func NewPageManager(
 	db forddb.Database,
 	fm *FileManager,
-	jm *jobs2.Manager,
+	jm *jobs.Manager,
 	messenger msn.API,
 	cache *generators.ContentCache,
 	pageGenerator *generators.PageGenerator,
@@ -72,7 +72,7 @@ func (pm *PageManager) GetPage(ctx context.Context, spec models.PageSpec) (*mode
 
 		ctx = memoryctx.WithMemory(ctx, mem)
 
-		job, err := jobs2.DispatchJob(
+		job, err := jobs.DispatchJob(
 			ctx,
 			pm.jm,
 			models.GeneratePageJobHandlerID,
@@ -83,7 +83,7 @@ func (pm *PageManager) GetPage(ctx context.Context, spec models.PageSpec) (*mode
 			return nil, err
 		}
 
-		return jobs2.Await(job)
+		return jobs.Await(job)
 	} else if err != nil {
 		return nil, err
 	}

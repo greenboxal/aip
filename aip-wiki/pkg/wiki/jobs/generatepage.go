@@ -1,12 +1,14 @@
 package jobs
 
 import (
+	"errors"
+
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/jobs"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-langchain/pkg/memory"
 	"github.com/greenboxal/aip/aip-langchain/pkg/memoryctx"
-	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
@@ -30,10 +32,10 @@ func NewGeneratePageJobHandler(
 }
 
 func (pg *GeneratePageJobHandler) Run(ctx jobs.JobContext) error {
-	spec, err := forddb.Convert[models.PageSpec](ctx.Payload().(forddb.RawResource))
+	spec, ok := ctx.Payload().(models.PageSpec)
 
-	if err != nil {
-		return err
+	if !ok {
+		return errors.New("invalid type")
 	}
 
 	id := models.BuildPageID(spec)

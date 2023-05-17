@@ -2,7 +2,6 @@ package logstore
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"sync"
 	"time"
@@ -57,15 +56,7 @@ func (mls *MemoryLogStore) OpenStream(id forddb.LogStreamID) (forddb.LogStream, 
 }
 
 func (mls *MemoryLogStore) Append(ctx context.Context, log forddb.LogEntry) (forddb.LogEntryRecord, error) {
-	data, err := json.Marshal(log)
-
-	if err != nil {
-		return forddb.LogEntryRecord{}, err
-	}
-
-	if err := json.Unmarshal(data, &log); err != nil {
-		return forddb.LogEntryRecord{}, err
-	}
+	log = forddb.Clone(log)
 
 	mls.m.Lock()
 	defer mls.m.Unlock()

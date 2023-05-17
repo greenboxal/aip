@@ -5,11 +5,11 @@ import (
 )
 
 type PipelineID struct {
-	forddb.StringResourceID[*Pipeline]
+	forddb.StringResourceID[*Pipeline] `ipld:",inline"`
 }
 
 type StageID struct {
-	forddb.StringResourceID[*Stage]
+	forddb.StringResourceID[*Stage] `ipld:",inline"`
 }
 
 type PipelineSpec struct {

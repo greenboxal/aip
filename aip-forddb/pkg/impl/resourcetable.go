@@ -97,7 +97,7 @@ func (rt *resourceTable) List(ctx context.Context, opts forddb.ListOptions) ([]f
 		resources := make([]forddb.BasicResource, len(results))
 
 		for i, v := range results {
-			resource, err := forddb.Decode(v)
+			resource, err := forddb.DecodeAs[forddb.BasicResource](v)
 
 			if err != nil {
 				return nil, err

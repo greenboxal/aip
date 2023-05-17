@@ -12,7 +12,7 @@ type MemorySet interface {
 }
 
 type MemorySegmentID struct {
-	forddb.StringResourceID[*Memory]
+	forddb.StringResourceID[*Memory] `ipld:",inline"`
 }
 
 type MemorySegment struct {

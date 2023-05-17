@@ -3,9 +3,9 @@ package msn
 import (
 	"go.uber.org/fx"
 
+	"github.com/greenboxal/aip/aip-forddb/pkg/apis/graphql"
+	"github.com/greenboxal/aip/aip-forddb/pkg/apis/rpc"
 	api2 "github.com/greenboxal/aip/aip-forddb/pkg/forddb"
-	"github.com/greenboxal/aip/aip-sdk/pkg/apis/graphql"
-	"github.com/greenboxal/aip/aip-sdk/pkg/apis/rpc"
 )
 
 var Module = fx.Module(

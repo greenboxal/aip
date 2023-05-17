@@ -27,14 +27,26 @@ func newObjectIndexer(db *database) *objectIndexer {
 func (oi *objectIndexer) processLogRecord(ctx context.Context, record *forddb.LogEntryRecord) error {
 	switch record.Kind {
 	case forddb.LogEntryKindSet:
-		if _, err := oi.db.storage.Put(ctx, record.Current, forddb.PutOptions{
+		encoded, err := forddb.Encode(record.Current)
+
+		if err != nil {
+			return err
+		}
+
+		if _, err := oi.db.storage.Put(ctx, encoded, forddb.PutOptions{
 			OnConflict: forddb.OnConflictReplace,
 		}); err != nil {
 			return err
 		}
 
 	case forddb.LogEntryKindDelete:
-		if _, err := oi.db.storage.Delete(ctx, record.Previous, forddb.DeleteOptions{}); err != nil {
+		encoded, err := forddb.Encode(record.Previous)
+
+		if err != nil {
+			return err
+		}
+
+		if _, err := oi.db.storage.Delete(ctx, encoded, forddb.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

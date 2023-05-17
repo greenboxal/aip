@@ -1,123 +1,124 @@
 package forddb
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
+	"reflect"
 
-	"github.com/mashingan/smapping"
+	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/codec/dagjson"
+
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
-func Clone[T BasicResource](resource T) T {
+func Clone[T any](resource T) T {
 	return CloneResource(resource).(T)
 }
 
-func CloneResource(resource BasicResource) BasicResource {
-	rawResource := smapping.MapTags(resource, "json")
-	cloned := resource.GetResourceTypeID().Type().CreateInstance()
+func CloneResource(resource any) any {
+	raw := typesystem.Wrap(resource)
+	data, err := ipld.Encode(raw, dagjson.Encode)
 
-	if err := smapping.FillStruct(cloned, rawResource); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
-	return cloned.(BasicResource)
+	node, err := ipld.DecodeUsingPrototype(data, dagjson.Decode, typesystem.TypeOf(resource).IpldPrototype())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return typesystem.Unwrap(node)
 }
 
 func Convert[T any](raw RawResource) (def T, _ error) {
-	var result T
-
-	data, err := json.Marshal(raw)
+	data, err := ipld.Encode(raw.TypedNode, dagjson.Encode)
 
 	if err != nil {
 		return def, err
 	}
 
-	if err := json.Unmarshal(data, &result); err != nil {
+	node, err := ipld.DecodeUsingPrototype(data, dagjson.Decode, typesystem.TypeOf(def).IpldPrototype())
+
+	if err != nil {
 		return def, err
 	}
 
-	return result, nil
+	return typesystem.Unwrap(node).(T), nil
+}
+
+func ConvertNode[T any](node ipld.Node) (def T, _ error) {
+	data, err := ipld.Encode(node, dagjson.Encode)
+
+	if err != nil {
+		return def, err
+	}
+
+	result, err := ipld.DecodeUsingPrototype(data, dagjson.Decode, typesystem.TypeOf(def).IpldPrototype())
+
+	if err != nil {
+		return def, err
+	}
+
+	u := typesystem.Unwrap(result)
+	v := reflect.ValueOf(u)
+	t := reflect.TypeOf((*T)(nil)).Elem()
+
+	if t.Kind() == reflect.Ptr && v.Kind() != reflect.Ptr {
+		v = v.Addr()
+	} else if t.Kind() != reflect.Ptr && v.Kind() == reflect.Ptr {
+		for v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+	}
+
+	return v.Interface().(T), nil
 }
 
 func Encode(value any) (RawResource, error) {
-	var rawResource RawResource
-
-	encoded, err := json.Marshal(value)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(encoded, &rawResource); err != nil {
-		return nil, err
-	}
-
-	if resource, ok := value.(BasicResource); ok {
-		rawResource["kind"] = resource.GetResourceTypeID().Name()
-	}
-
-	return rawResource, nil
+	return RawResource{typesystem.Wrap(value)}, nil
 }
 
-func Decode(rawResource RawResource) (BasicResource, error) {
-	kind := rawResource["kind"].(string)
-	typ := LookupTypeByName(kind)
-
-	if typ == nil {
-		return nil, fmt.Errorf("unknown resource type: %s", kind)
+func Decode(rawResource RawResource) (any, error) {
+	if rawResource.IsEmpty() {
+		return nil, nil
 	}
 
-	resource := typ.CreateInstance()
-
-	encoded, err := json.Marshal(rawResource)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(encoded, resource); err != nil {
-		return nil, err
-	}
-
-	return resource.(BasicResource), nil
+	return typesystem.Unwrap(rawResource.TypedNode), nil
 }
 
-func Serialize(codec Codec, resource BasicResource) ([]byte, error) {
-	rawResource, err := Encode(resource)
+func DecodeAs[T any](rawResource RawResource) (def T, _ error) {
+	typ := reflect.TypeOf((*T)(nil)).Elem()
+	r := typesystem.Unwrap(rawResource.TypedNode)
 
-	if err != nil {
-		return nil, err
+	if r == nil {
+		return def, nil
 	}
 
-	return codec.Encode(rawResource)
-}
+	t, ok := r.(T)
 
-func SerializeTo(writer io.Writer, codec Codec, resource BasicResource) error {
-	rawResource, err := Encode(resource)
+	if !ok {
+		v := reflect.ValueOf(r)
 
-	if err != nil {
-		return err
+		if v.CanConvert(typ) {
+			v = v.Convert(typ)
+		} else if v.Kind() == reflect.Interface {
+			v = v.Elem().Addr()
+		} else if v.Kind() != reflect.Pointer {
+			if v.CanAddr() {
+				v = v.Addr()
+			} else {
+				v2 := reflect.New(v.Type())
+				v2.Elem().Set(v)
+				v = v2.Convert(typ)
+			}
+		}
+
+		t, ok = v.Interface().(T)
+
+		if !ok {
+			panic("invalid type")
+		}
 	}
 
-	return codec.EncodeTo(writer, rawResource)
-}
-
-func DeserializeFrom(reader io.Reader, codec Codec) (BasicResource, error) {
-	rawResource, err := codec.DecodeFrom(reader)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return Decode(rawResource)
-}
-
-func Deserialize(data []byte, codec Codec) (BasicResource, error) {
-	rawResource, err := codec.Decode(data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return Decode(rawResource)
+	return t, nil
 }

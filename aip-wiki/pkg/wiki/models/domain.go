@@ -5,7 +5,7 @@ import (
 )
 
 type DomainID struct {
-	forddb.StringResourceID[*Domain]
+	forddb.StringResourceID[*Domain] `ipld:",inline"`
 }
 
 type Domain struct {

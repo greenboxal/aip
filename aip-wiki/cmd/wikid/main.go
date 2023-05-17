@@ -16,15 +16,15 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-controller/pkg/daemon"
 	"github.com/greenboxal/aip/aip-controller/pkg/ford"
+	"github.com/greenboxal/aip/aip-forddb/pkg/apimachinery"
+	"github.com/greenboxal/aip/aip-forddb/pkg/apis"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	forddbimpl "github.com/greenboxal/aip/aip-forddb/pkg/impl"
+	"github.com/greenboxal/aip/aip-forddb/pkg/jobs"
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore"
 	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
 	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
-	apimachinery2 "github.com/greenboxal/aip/aip-sdk/pkg/apimachinery"
-	"github.com/greenboxal/aip/aip-sdk/pkg/apis"
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
-	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/p2p"
 	"github.com/greenboxal/aip/aip-sdk/pkg/storage/milvus"
@@ -40,7 +40,7 @@ func main() {
 		BuildLogging(),
 
 		config.Module,
-		apimachinery2.Module,
+		apimachinery.Module,
 		apis.Module,
 		p2p.Module,
 		ipfs.Module,
@@ -57,7 +57,7 @@ func main() {
 		milvus.WithIndexStorage(),
 		firestore.WithObjectStore(),
 
-		fx.Invoke(func(db forddb.Database, _api *apimachinery2.Server) error {
+		fx.Invoke(func(db forddb.Database, _api *apimachinery.Server) error {
 			return nil
 		}),
 

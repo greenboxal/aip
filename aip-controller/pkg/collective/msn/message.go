@@ -5,7 +5,7 @@ import (
 )
 
 type MessageID struct {
-	forddb.StringResourceID[*Message]
+	forddb.StringResourceID[*Message] `ipld:",inline"`
 }
 
 type Message struct {

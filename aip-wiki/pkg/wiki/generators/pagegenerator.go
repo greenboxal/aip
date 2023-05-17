@@ -41,7 +41,7 @@ func NewPageGenerator(
 	tracer tracing2.Tracer,
 	client *openai.Client,
 	cache *ContentCache,
-	index vectorstore.VectorStore,
+	index vectorstore.Index,
 	oai *openai.Client,
 ) (*PageGenerator, error) {
 	var err error

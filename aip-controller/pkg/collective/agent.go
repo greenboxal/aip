@@ -5,7 +5,7 @@ import (
 )
 
 type AgentID struct {
-	forddb.StringResourceID[*Agent]
+	forddb.StringResourceID[*Agent] `ipld:",inline"`
 }
 
 type Agent struct {

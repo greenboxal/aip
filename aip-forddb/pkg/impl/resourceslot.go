@@ -6,9 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/pkg/errors"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 type resourceSlot struct {
@@ -48,11 +50,11 @@ func (rs *resourceSlot) Get(ctx context.Context, options ...forddb.GetOption) (f
 		return nil, errors.Wrap(err, "failed to get resource")
 	}
 
-	if raw == nil {
+	if raw.IsEmpty() {
 		return nil, errors.Wrap(forddb.ErrNotFound, "failed to get resource")
 	}
 
-	result, err := forddb.Decode(raw)
+	result, err := forddb.DecodeAs[forddb.BasicResource](raw)
 
 	if err != nil {
 		return nil, err
@@ -73,7 +75,7 @@ func (rs *resourceSlot) doGet(
 	res, err := rs.table.db.storage.Get(ctx, rs.table.typ, rs.id, forddb.GetOptions{})
 
 	if err != nil && !forddb.IsNotFound(err) {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	if err == nil {
@@ -108,11 +110,11 @@ func (rs *resourceSlot) doGet(
 	}
 
 	if rs.err != nil {
-		return nil, rs.err
+		return forddb.RawResource{}, rs.err
 	}
 
 	if !rs.hasValue {
-		return nil, forddb.ErrNotFound
+		return forddb.RawResource{}, forddb.ErrNotFound
 	}
 
 	raw = rs.encoded
@@ -128,7 +130,7 @@ func (rs *resourceSlot) Update(
 	_, current, changed, err := rs.doUpdate(ctx, resource, opts)
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	if changed {
@@ -150,22 +152,22 @@ func (rs *resourceSlot) doUpdate(
 	current, err := rs.doGet(ctx, false, false)
 
 	if forddb.IsNotFound(err) {
-		current = nil
+		current = forddb.RawResource{}
 	} else if err != nil {
-		return nil, nil, false, err
+		return forddb.RawResource{}, forddb.RawResource{}, false, err
 	}
 
-	if current != nil {
+	if current.TypedNode != nil {
 		if reflect.DeepEqual(current, resource) {
 			return current, resource, false, nil
 		}
 
 		switch opts.OnConflict {
 		case forddb.OnConflictError:
-			return current, nil, false, forddb.ErrVersionMismatch
+			return current, forddb.RawResource{}, false, forddb.ErrVersionMismatch
 		case forddb.OnConflictOptimistic:
 			if current.GetResourceVersion() != resource.GetResourceVersion() {
-				return current, nil, false, forddb.ErrVersionMismatch
+				return current, forddb.RawResource{}, false, forddb.ErrVersionMismatch
 			}
 		case forddb.OnConflictLatestWins:
 			if current.GetResourceVersion() >= resource.GetResourceVersion() {
@@ -176,12 +178,67 @@ func (rs *resourceSlot) doUpdate(
 		}
 	}
 
-	metadata := resource["metadata"].(map[string]interface{})
-	metadata["version"] = resource.GetResourceVersion() + 1
-	metadata["updated_at"] = time.Now()
+	builder := resource.Prototype().NewBuilder()
+	baseMetadata := resource.GetResourceMetadata()
 
-	if resource.GetResourceMetadata().CreatedAt.IsZero() {
-		metadata["created_at"] = metadata["updated_at"]
+	if err := builder.AssignNode(resource.TypedNode); err != nil {
+		return current, forddb.RawResource{}, false, err
+	}
+
+	root, err := builder.BeginMap(-1)
+	if err != nil {
+		panic(err)
+	}
+
+	metadataNode, err := root.AssembleEntry("metadata")
+	if err != nil {
+		panic(err)
+	}
+
+	metadataMap, err := metadataNode.BeginMap(-1)
+	if err != nil {
+		panic(err)
+	}
+
+	version, err := metadataMap.AssembleEntry("version")
+	if err != nil {
+		panic(err)
+	}
+
+	err = version.AssignInt(int64(baseMetadata.Version + 1))
+	if err != nil {
+		panic(err)
+	}
+
+	updatedAt, err := metadataMap.AssembleEntry("updated_at")
+	if err != nil {
+		panic(err)
+	}
+
+	nowValue := typesystem.Wrap(time.Now())
+	err = updatedAt.AssignNode(nowValue)
+	if err != nil {
+		panic(err)
+	}
+
+	if baseMetadata.CreatedAt.IsZero() {
+		createdAt, err := metadataMap.AssembleEntry("created_at")
+		if err != nil {
+			panic(err)
+		}
+
+		err = createdAt.AssignNode(nowValue)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	resource = forddb.RawResource{TypedNode: builder.Build().(schema.TypedNode)}
+
+	res, err := forddb.DecodeAs[forddb.BasicResource](resource)
+
+	if err != nil {
+		return current, forddb.RawResource{}, false, err
 	}
 
 	record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
@@ -191,18 +248,18 @@ func (rs *resourceSlot) doUpdate(
 		Version:     resource.GetResourceVersion(),
 		CurrentCid:  nil,
 		PreviousCid: nil,
-		Previous:    rs.encoded,
-		Current:     resource,
+		Previous:    rs.lastRecord.Current,
+		Current:     res,
 	})
 
 	if err != nil {
-		return nil, nil, false, err
+		return forddb.RawResource{}, forddb.RawResource{}, false, err
 	}
 
 	_, err = rs.table.db.storage.Put(ctx, resource, opts)
 
 	if err != nil {
-		return nil, nil, false, err
+		return forddb.RawResource{}, forddb.RawResource{}, false, err
 	}
 
 	rs.lastRecord = record
@@ -218,7 +275,7 @@ func (rs *resourceSlot) Delete(ctx context.Context) (forddb.RawResource, error) 
 	previous, _, err := rs.doDelete(ctx)
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	return previous, nil
@@ -231,7 +288,13 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.RawResource, bool,
 	value, err := rs.doGet(ctx, false, false)
 
 	if err != nil {
-		return nil, false, err
+		return forddb.RawResource{}, false, err
+	}
+
+	res, err := forddb.DecodeAs[forddb.BasicResource](value)
+
+	if err != nil {
+		return forddb.RawResource{}, false, err
 	}
 
 	if !rs.table.typ.Type().IsRuntimeOnly() {
@@ -242,16 +305,16 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.RawResource, bool,
 			Version:     value.GetResourceVersion(),
 			CurrentCid:  nil,
 			PreviousCid: nil,
-			Previous:    value,
+			Previous:    res,
 			Current:     nil,
 		})
 
 		if err != nil {
-			return nil, false, err
+			return forddb.RawResource{}, false, err
 		}
 	}
 
-	rs.encoded = nil
+	rs.encoded = forddb.RawResource{}
 	rs.hasValue = false
 
 	return value, true, nil

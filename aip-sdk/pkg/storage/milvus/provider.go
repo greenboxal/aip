@@ -12,6 +12,7 @@ import (
 type IndexProvider struct {
 	logger *zap.SugaredLogger
 	milvus *Milvus
+	dim    int
 }
 
 func NewIndexProvider(
@@ -21,7 +22,14 @@ func NewIndexProvider(
 	return &IndexProvider{
 		logger: logger.Named("milvus-index-provider"),
 		milvus: milvus,
+		dim:    1536,
 	}
+}
+
+var _ vectorstore.Index = (*IndexProvider)(nil)
+
+func (i *IndexProvider) Dimensions() int {
+	return i.dim
 }
 
 func (i *IndexProvider) IndexDocument(
@@ -85,6 +93,18 @@ func (i *IndexProvider) Search(
 	options ...vectorstore.SearchDocumentOption,
 ) (*vectorstore.SearchResult, error) {
 	opts := vectorstore.NewSearchDocumentOptions(options...)
+
+	embeddings, err := opts.Embedder.GetEmbeddings(ctx, []string{query})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return i.SimilaritySearch(ctx, embeddings[0].Embeddings, opts)
+}
+
+func (i *IndexProvider) SimilaritySearch(ctx context.Context, embeddings []float32, opts *vectorstore.SearchDocumentOptions) (*vectorstore.SearchResult, error) {
+	vectors := []entity.Vector{entity.FloatVector(embeddings)}
 	outputFields := []string{"document_id", "document_type", "chunk_id"}
 
 	if opts.ReturnHitEmbeddings {
@@ -95,21 +115,13 @@ func (i *IndexProvider) Search(
 		outputFields = append(outputFields, "chunk_content")
 	}
 
-	embeddings, err := opts.Embedder.GetEmbeddings(ctx, []string{query})
-
-	if err != nil {
-		return nil, err
-	}
-
-	vectors := []entity.Vector{entity.FloatVector(embeddings[0].Embeddings)}
-
 	sp, err := entity.NewIndexFlatSearchParam()
 
 	if err != nil {
 		return nil, err
 	}
 
-	hits, err := i.milvus.client.Search(
+	hits, err := i.milvus.Client().Search(
 		ctx,
 		"global_index",
 		[]string{"_default"},
@@ -159,4 +171,8 @@ func (i *IndexProvider) Search(
 	}
 
 	return result, nil
+}
+
+func (i *IndexProvider) Close() error {
+	return nil
 }

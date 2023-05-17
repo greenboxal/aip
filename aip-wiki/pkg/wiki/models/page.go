@@ -10,7 +10,7 @@ import (
 )
 
 type PageID struct {
-	forddb.StringResourceID[*Page]
+	forddb.StringResourceID[*Page] `ipld:",inline"`
 }
 
 type Page struct {

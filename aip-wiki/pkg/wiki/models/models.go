@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
-	"github.com/greenboxal/aip/aip-sdk/pkg/jobs"
+	"github.com/greenboxal/aip/aip-forddb/pkg/jobs"
 )
 
 func init() {

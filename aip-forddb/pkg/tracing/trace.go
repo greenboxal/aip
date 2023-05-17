@@ -9,11 +9,11 @@ import (
 )
 
 type TraceID struct {
-	forddb.StringResourceID[*Trace]
+	forddb.StringResourceID[*Trace] `ipld:",inline"`
 }
 
 type SpanID struct {
-	forddb.StringResourceID[*Span]
+	forddb.StringResourceID[*Span] `ipld:",inline"`
 }
 
 type Trace struct {

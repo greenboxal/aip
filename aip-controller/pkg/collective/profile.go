@@ -5,7 +5,7 @@ import (
 )
 
 type ProfileID struct {
-	forddb.StringResourceID[*Profile]
+	forddb.StringResourceID[*Profile] `ipld:",inline"`
 }
 
 type Profile struct {

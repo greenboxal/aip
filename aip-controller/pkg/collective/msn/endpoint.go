@@ -5,7 +5,7 @@ import (
 )
 
 type EndpointID struct {
-	forddb.StringResourceID[*Endpoint]
+	forddb.StringResourceID[*Endpoint] `ipld:",inline"`
 }
 
 type Endpoint struct {

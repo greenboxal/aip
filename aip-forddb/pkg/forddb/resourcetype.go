@@ -1,7 +1,9 @@
 package forddb
 
+import "github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
+
 type FilterableField struct {
-	Field     BasicField
+	Field     typesystem.Field
 	Operators []string
 }
 

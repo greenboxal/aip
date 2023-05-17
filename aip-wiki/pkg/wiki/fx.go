@@ -3,8 +3,8 @@ package wiki
 import (
 	"go.uber.org/fx"
 
-	"github.com/greenboxal/aip/aip-sdk/pkg/apimachinery"
-	"github.com/greenboxal/aip/aip-sdk/pkg/apis/rpc"
+	"github.com/greenboxal/aip/aip-forddb/pkg/apimachinery"
+	"github.com/greenboxal/aip/aip-forddb/pkg/apis/rpc"
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"

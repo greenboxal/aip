@@ -2,7 +2,6 @@ package logstore
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -10,9 +9,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/tidwall/wal"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 type FileLogStore struct {
@@ -91,7 +93,7 @@ func (fls *FileLogStore) Append(ctx context.Context, log forddb.LogEntry) (fordd
 	record.LSN.Clock = fls.lastLsn.Clock + 1
 	record.LSN.TS = time.Now()
 
-	data, err := json.Marshal(record)
+	data, err := ipld.Encode(typesystem.Wrap(record), dagjson.Encode)
 
 	if err != nil {
 		return forddb.LogEntryRecord{}, err

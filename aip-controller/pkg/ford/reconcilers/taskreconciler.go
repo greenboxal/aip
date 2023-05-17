@@ -6,8 +6,8 @@ import (
 	"go.uber.org/zap"
 
 	collective2 "github.com/greenboxal/aip/aip-controller/pkg/collective"
-	"github.com/greenboxal/aip/aip-controller/pkg/ford/reconciliation"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/reconciliation"
 )
 
 type TaskReconciler struct {

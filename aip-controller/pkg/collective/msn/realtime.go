@@ -8,8 +8,9 @@ import (
 	gql "github.com/graphql-go/graphql"
 	"go.uber.org/zap"
 
+	"github.com/greenboxal/aip/aip-forddb/pkg/apis/graphql"
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
-	"github.com/greenboxal/aip/aip-sdk/pkg/apis/graphql"
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 type RealTimeService struct {
@@ -34,7 +35,7 @@ func (r *RealTimeService) BindResource(ctx graphql.BindingContext) {
 	ctx.RegisterSubscription(&gql.Field{
 		Name: "realTimeEvents",
 
-		Type: ctx.LookupOutputType(forddb.TypeOf(Event{})),
+		Type: ctx.LookupOutputType(typesystem.TypeOf(Event{})),
 
 		Args: gql.FieldConfigArgument{
 			"endpoint": &gql.ArgumentConfig{

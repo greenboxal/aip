@@ -7,6 +7,7 @@ import (
 	"github.com/greenboxal/aip/aip-sdk/pkg/utils"
 )
 
+var rawResourceType = reflect.TypeOf((*RawResource)(nil)).Elem()
 var basicResourceType = reflect.TypeOf((*BasicResource)(nil)).Elem()
 var basicResourceIdType = reflect.TypeOf((*BasicResourceID)(nil)).Elem()
 var basicResourcePointerType = reflect.TypeOf((*BasicResourcePointer)(nil)).Elem()

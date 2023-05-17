@@ -11,6 +11,9 @@ import (
 	firebase "firebase.google.com/go"
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/ast"
+	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/codec/dagjson"
+	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
@@ -125,8 +128,6 @@ func (s *Storage) List(
 	raws := make([]forddb.RawResource, len(all))
 
 	for i, v := range all {
-		var raw forddb.RawResource
-
 		data := v.Data()
 
 		serialized, err := json.Marshal(data)
@@ -135,11 +136,13 @@ func (s *Storage) List(
 			return nil, err
 		}
 
-		if err := json.Unmarshal(serialized, &raw); err != nil {
+		node, err := ipld.DecodeUsingPrototype(serialized, dagjson.Decode, typ.Type().ActualType().IpldPrototype())
+
+		if err != nil {
 			return nil, err
 		}
 
-		raws[i] = raw
+		raws[i] = forddb.RawResource{TypedNode: node.(schema.TypedNode)}
 	}
 
 	return raws, nil
@@ -341,25 +344,30 @@ func (s *Storage) Get(
 
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return nil, forddb.ErrNotFound
+			return forddb.RawResource{}, forddb.ErrNotFound
 		}
 
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
-	serialized, err := json.Marshal(result.Data())
+	fields := result.Data()
+
+	// Fixme
+	delete(fields, "kind")
+
+	serialized, err := json.Marshal(fields)
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
-	var raw forddb.RawResource
+	node, err := ipld.DecodeUsingPrototype(serialized, dagjson.Decode, typ.Type().ActualType().IpldPrototype())
 
-	if err := json.Unmarshal(serialized, &raw); err != nil {
-		return nil, err
+	if err != nil {
+		return forddb.RawResource{}, err
 	}
 
-	return raw, nil
+	return forddb.RawResource{TypedNode: node.(schema.TypedNode)}, nil
 }
 
 func (s *Storage) Put(
@@ -367,40 +375,38 @@ func (s *Storage) Put(
 	resource forddb.RawResource,
 	opts forddb.PutOptions,
 ) (forddb.RawResource, error) {
-	var result *firestore.WriteResult
 	var fields map[string]interface{}
 	var preconditions []firestore.Precondition
 
-	serialized, err := json.Marshal(resource)
+	serialized, err := ipld.Encode(resource, dagjson.Encode)
 
 	if err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	if err := json.Unmarshal(serialized, &fields); err != nil {
-		return nil, err
+		return forddb.RawResource{}, err
 	}
 
 	collection := resource.GetResourceTypeID().Name()
 	col := s.client.Collection(collection)
 	doc := col.Doc(resource.GetResourceBasicID().String())
 
-	metaValue := fields["metadata"].(map[string]interface{})
 	version := resource.GetResourceVersion()
 
 	if version >= 0 {
 		if r, err := doc.Set(ctx, fields); err != nil {
-			return nil, err
+			return forddb.RawResource{}, err
 		} else {
-			result = r
+			_ = r
 		}
 	} else {
 		switch opts.OnConflict {
 		case forddb.OnConflictReplace:
 			if r, err := doc.Set(ctx, fields); err != nil {
-				return nil, err
+				return forddb.RawResource{}, err
 			} else {
-				result = r
+				_ = r
 			}
 
 		default:
@@ -418,18 +424,12 @@ func (s *Storage) Put(
 			}*/
 
 			if r, err := doc.Update(ctx, updates, preconditions...); err != nil {
-				return nil, err
+				return forddb.RawResource{}, err
 			} else {
-				result = r
+				_ = r
 			}
 		}
 	}
-
-	if metaValue["created_at"] == metaValue["updated_at"] {
-		metaValue["created_at"] = result.UpdateTime
-	}
-
-	metaValue["updated_at"] = result.UpdateTime
 
 	return resource, nil
 }

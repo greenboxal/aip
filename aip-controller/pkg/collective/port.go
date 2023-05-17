@@ -5,11 +5,11 @@ import (
 )
 
 type PortID struct {
-	forddb.StringResourceID[*Port]
+	forddb.StringResourceID[*Port] `ipld:",inline"`
 }
 
 type PortBindingID struct {
-	forddb.StringResourceID[*PortBinding]
+	forddb.StringResourceID[*PortBinding] `ipld:",inline"`
 }
 
 type Port struct {

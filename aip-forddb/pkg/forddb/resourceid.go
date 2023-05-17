@@ -9,8 +9,11 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
-	"github.com/multiformats/go-multihash"
+
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
+
+type PrimitiveKind = typesystem.PrimitiveKind
 
 type BasicResourceID interface {
 	json.Marshaler
@@ -18,13 +21,9 @@ type BasicResourceID interface {
 	encoding.BinaryMarshaler
 
 	BasicResourceType() BasicResourceType
-	PrimitiveKind() PrimitiveKind
+	PrimitiveKind() typesystem.PrimitiveKind
 
 	AsBasicResourceID() BasicResourceID
-	AsCid() cid.Cid
-	AsLink() ipld.Link
-
-	LinkPrototype() ipld.LinkPrototype
 
 	String() string
 
@@ -56,24 +55,9 @@ func (s StringResourceID[T]) BasicResourceType() BasicResourceType {
 	return TypeSystem().LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
 }
 
-func (s StringResourceID[T]) PrimitiveKind() PrimitiveKind       { return PrimitiveKindString }
+func (s StringResourceID[T]) PrimitiveKind() PrimitiveKind       { return typesystem.PrimitiveKindString }
 func (s StringResourceID[T]) String() string                     { return string(s) }
 func (s StringResourceID[T]) AsBasicResourceID() BasicResourceID { return s }
-func (s StringResourceID[T]) AsCid() cid.Cid {
-	link := s.AsLink()
-
-	return link.(cidlink.Link).Cid
-}
-
-func (s StringResourceID[T]) AsLink() ipld.Link {
-	h, err := multihash.Sum([]byte(s), multihash.SHA2_256, -1)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return s.BasicResourceType().SchemaLinkPrototype().BuildLink(h)
-}
 
 func (s StringResourceID[T]) MarshalText() (text []byte, err error)   { return []byte(s), nil }
 func (s StringResourceID[T]) MarshalBinary() (data []byte, err error) { return []byte(s), nil }
@@ -109,10 +93,6 @@ func (s StringResourceID[T]) Hash64() uint64 {
 
 func (s *StringResourceID[T]) SetValueString(value string) { *s = StringResourceID[T](value) }
 
-func (s StringResourceID[T]) LinkPrototype() ipld.LinkPrototype {
-	return s.BasicResourceType().SchemaLinkPrototype()
-}
-
 type ICidResourceID interface {
 	BasicResourceID
 
@@ -125,7 +105,7 @@ func (s CidResourceID[T]) BasicResourceType() BasicResourceType {
 	return TypeSystem().LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
 }
 
-func (s CidResourceID[T]) PrimitiveKind() PrimitiveKind       { return PrimitiveKindBytes }
+func (s CidResourceID[T]) PrimitiveKind() PrimitiveKind       { return typesystem.PrimitiveKindBytes }
 func (s CidResourceID[T]) AsBasicResourceID() BasicResourceID { return s }
 func (s CidResourceID[T]) AsCid() cid.Cid                     { return cid.Cid(s) }
 func (s CidResourceID[T]) AsLink() ipld.Link                  { return cidlink.Link{Cid: s.AsCid()} }
@@ -139,10 +119,6 @@ func (s *CidResourceID[T]) UnmarshalJSON(data []byte) error { return (*cid.Cid)(
 func (s *CidResourceID[T]) UnmarshalText(data []byte) error { return (*cid.Cid)(s).UnmarshalText(data) }
 func (s *CidResourceID[T]) UnmarshalBinary(data []byte) error {
 	return (*cid.Cid)(s).UnmarshalBinary(data)
-}
-
-func (s CidResourceID[T]) LinkPrototype() ipld.LinkPrototype {
-	return s.BasicResourceType().SchemaLinkPrototype()
 }
 
 func (s *CidResourceID[T]) SetValueString(value string) {
@@ -181,7 +157,7 @@ func (s LinkResourceID[T]) BasicResourceType() BasicResourceType {
 	return TypeSystem().LookupByResourceType(reflect.TypeOf((*T)(nil)).Elem())
 }
 
-func (s LinkResourceID[T]) PrimitiveKind() PrimitiveKind { return PrimitiveKindString }
+func (s LinkResourceID[T]) PrimitiveKind() PrimitiveKind { return typesystem.PrimitiveKindString }
 
 func (s LinkResourceID[T]) AsCid() cid.Cid {
 	link := s.AsLink()
@@ -213,10 +189,6 @@ func (s *LinkResourceID[T]) UnmarshalBinary(data []byte) error {
 }
 
 func (s *LinkResourceID[T]) SetValueLink(value cidlink.Link) { *s = LinkResourceID[T](value) }
-
-func (s LinkResourceID[T]) LinkPrototype() ipld.LinkPrototype {
-	return s.BasicResourceType().SchemaLinkPrototype()
-}
 
 func (s LinkResourceID[T]) Hash64() uint64 {
 	h := fnv.New64()

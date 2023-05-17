@@ -24,13 +24,20 @@ func WithTracer(ctx context.Context, tracer Tracer) context.Context {
 }
 
 func StartTrace(ctx context.Context, name string) (context.Context, SpanContext) {
+	var parentId SpanID
+
 	t := TracerFromContext(ctx)
+	parent := getSpanContext(ctx)
+
+	if parent != nil {
+		parentId = parent.SpanID()
+	}
 
 	if t == nil {
 		t = GetGlobalTracer()
 	}
 
-	tc := newTraceContext(t, NewTraceID(), name)
+	tc := newTraceContext(t, NewTraceID(), parentId, name)
 
 	ctx = context.WithValue(ctx, spanContextKey, tc.rootSpan)
 
@@ -56,12 +63,12 @@ func StartSpan(ctx context.Context, name string) (context.Context, SpanContext) 
 	return ctx, span
 }
 
-func newTraceContext(tracer Tracer, id TraceID, name string) *traceContext {
+func newTraceContext(tracer Tracer, id TraceID, parentSpanId SpanID, name string) *traceContext {
 	tc := &traceContext{}
 
 	tc.tracer = tracer
 	tc.trace.ID = id
-	tc.rootSpan = newSpanContext(tc, SpanID{}, name)
+	tc.rootSpan = newSpanContext(tc, parentSpanId, name)
 
 	return tc
 }

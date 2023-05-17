@@ -130,11 +130,11 @@ func (db *database) Put(
 		return nil, err
 	}
 
-	if result == nil {
+	if result.IsEmpty() {
 		return nil, nil
 	}
 
-	return forddb.Decode(result)
+	return forddb.DecodeAs[forddb.BasicResource](result)
 }
 
 func (db *database) Delete(
@@ -160,11 +160,11 @@ func (db *database) Delete(
 		return nil, err
 	}
 
-	if result == nil {
+	if result.IsEmpty() {
 		return nil, nil
 	}
 
-	return forddb.Decode(result)
+	return forddb.DecodeAs[forddb.BasicResource](result)
 }
 
 func (db *database) GetSlot(typ forddb.TypeID, id forddb.BasicResourceID, create bool) *resourceSlot {

@@ -10,7 +10,7 @@ import (
 )
 
 type ImageID struct {
-	forddb.StringResourceID[*Image]
+	forddb.StringResourceID[*Image] `ipld:",inline"`
 }
 
 type Image struct {
