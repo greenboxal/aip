@@ -6,7 +6,6 @@ import (
 
 	"github.com/ipld/go-ipld-prime/schema"
 
-	"github.com/greenboxal/aip/aip-forddb/pkg/impl/nodebinder"
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
@@ -78,8 +77,8 @@ func (rt *resourceType[ID, T]) SetRuntimeOnly() {
 	rt.metadata.IsRuntimeOnly = true
 }
 
-func (rt *resourceType[ID, T]) Initialize(ts *ResourceTypeSystem, options ...nodebinder.Option) {
-	rt.basicType.Initialize(ts, options...)
+func (rt *resourceType[ID, T]) Initialize(ts *ResourceTypeSystem) {
+	rt.basicType.Initialize(ts)
 
 	if st, ok := rt.Type.(typesystem.StructType); ok {
 		for i := 0; i < st.NumField(); i++ {

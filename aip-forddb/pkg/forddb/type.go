@@ -3,7 +3,6 @@ package forddb
 import (
 	"reflect"
 
-	"github.com/greenboxal/aip/aip-forddb/pkg/impl/nodebinder"
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
@@ -23,8 +22,7 @@ type BasicType interface {
 	CreateInstance() any
 
 	TypeSystem() *ResourceTypeSystem
-
-	Initialize(ts *ResourceTypeSystem, options ...nodebinder.Option)
+	Initialize(ts *ResourceTypeSystem)
 }
 
 type Type[T any] interface {

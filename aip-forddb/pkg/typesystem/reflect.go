@@ -1,6 +1,7 @@
 package typesystem
 
 import (
+	"encoding"
 	"reflect"
 	"strings"
 
@@ -195,7 +196,15 @@ func (st *structType) initialize(ts *TypeSystem) {
 
 	var repr schema.StructRepresentation
 
-	if typ.NumField() == 1 {
+	if Implements[encoding.TextMarshaler](typ) {
+		st.ipldPrimitive = basicnode.Prototype.String
+		st.ipldRepresentationKind = datamodel.Kind_String
+		st.ipldType = schema.SpawnString(st.name.ToTitle())
+	} else if Implements[encoding.BinaryMarshaler](typ) {
+		st.ipldPrimitive = basicnode.Prototype.Bytes
+		st.ipldRepresentationKind = datamodel.Kind_Bytes
+		st.ipldType = schema.SpawnBytes(st.name.ToTitle())
+	} else if typ.NumField() == 1 {
 		f := typ.Field(0)
 		tag := f.Tag.Get("ipld")
 		parts := strings.Split(tag+",", ",")
@@ -221,8 +230,24 @@ func (st *structType) initialize(ts *TypeSystem) {
 	}
 
 	if st.ipldPrimitive == nil {
-		st.ipldPrimitive = basicnode.Prototype.Map
-		st.ipldRepresentationKind = datamodel.Kind_Map
+		st.ipldRepresentationKind = getReprKind(st.ipldType)
+
+		switch st.ipldRepresentationKind {
+		case datamodel.Kind_Map:
+			st.ipldPrimitive = basicnode.Prototype.Map
+		case datamodel.Kind_List:
+			st.ipldPrimitive = basicnode.Prototype.List
+		case datamodel.Kind_String:
+			st.ipldPrimitive = basicnode.Prototype.String
+		case datamodel.Kind_Bytes:
+			st.ipldPrimitive = basicnode.Prototype.Bytes
+		case datamodel.Kind_Bool:
+			st.ipldPrimitive = basicnode.Prototype.Bool
+		case datamodel.Kind_Int:
+			st.ipldPrimitive = basicnode.Prototype.Int
+		case datamodel.Kind_Float:
+			st.ipldPrimitive = basicnode.Prototype.Float
+		}
 	}
 
 	st.ipldPrototype = &valuePrototype{typ: st}
@@ -329,7 +354,6 @@ func getPrimitiveKind(typ reflect.Type) PrimitiveKind {
 		return PrimitiveKindInterface
 	case reflect.Pointer:
 		return getPrimitiveKind(typ.Elem())
-
 	default:
 		panic("not supported")
 	}
@@ -385,6 +409,16 @@ func TryCast[T any](v reflect.Value) (def T, ok bool) {
 	return def, false
 }
 
-func Implements[T any](t reflect.Type) bool {
-	return t.Implements(reflect.TypeOf((*T)(nil)).Elem())
+func Implements[T any](typ reflect.Type) bool {
+	iface := reflect.TypeOf((*T)(nil)).Elem()
+
+	if typ.Implements(iface) {
+		return true
+	}
+
+	if typ.Kind() != reflect.Ptr {
+		typ = reflect.PtrTo(typ)
+	}
+
+	return typ.Implements(iface)
 }

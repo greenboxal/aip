@@ -2,6 +2,7 @@ package typesystem
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
@@ -38,6 +39,9 @@ type TestScalars struct {
 	A bool
 	B int
 	C string
+
+	Time     time.Time
+	Duration time.Duration
 }
 
 type TestNils struct {
@@ -62,9 +66,10 @@ type TestMaps struct {
 type TestStruct1 struct {
 	TestNamedEmbeddedStruct `json:"metadata"`
 
-	Nils  TestNils
-	Lists TestLists
-	Maps  TestMaps
+	Nils    TestNils
+	Scalars TestScalars
+	Lists   TestLists
+	Maps    TestMaps
 
 	TestIfaceNode interface{}
 }

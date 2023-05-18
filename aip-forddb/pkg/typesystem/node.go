@@ -306,9 +306,8 @@ func reprStrategy(typ schema.Type) interface{} {
 	return nil
 }
 
-func (n reprNode) Kind() datamodel.Kind {
-	st := n.v.Type().IpldType()
-	switch reprStrategy(st).(type) {
+func getReprKind(typ schema.Type) datamodel.Kind {
+	switch reprStrategy(typ).(type) {
 	case schema.StructRepresentation_Stringjoin:
 		return datamodel.Kind_String
 	case schema.StructRepresentation_Map:
@@ -324,8 +323,12 @@ func (n reprNode) Kind() datamodel.Kind {
 	case schema.EnumRepresentation_String:
 		return datamodel.Kind_String
 	default:
-		return n.valueNode.Kind()
+		panic("invalid type")
 	}
+}
+
+func (n reprNode) Kind() datamodel.Kind {
+	return n.v.typ.IpldRepresentationKind()
 }
 
 type listIterator struct {

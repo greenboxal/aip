@@ -1,7 +1,6 @@
 package forddb
 
 import (
-	"github.com/greenboxal/aip/aip-forddb/pkg/impl/nodebinder"
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
@@ -41,6 +40,6 @@ func (bt *basicType) Metadata() TypeMetadata          { return bt.metadata }
 func (bt *basicType) IsRuntimeOnly() bool             { return bt.metadata.IsRuntimeOnly }
 func (bt *basicType) CreateInstance() any             { return typesystem.New(bt.Type).Value().Interface() }
 
-func (bt *basicType) Initialize(ts *ResourceTypeSystem, options ...nodebinder.Option) {
+func (bt *basicType) Initialize(ts *ResourceTypeSystem) {
 	bt.universe = ts
 }
