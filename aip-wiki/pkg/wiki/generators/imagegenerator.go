@@ -54,8 +54,6 @@ type ImageGenerator struct {
 }
 
 func NewImageGenerator(client *openai.Client) (*ImageGenerator, error) {
-	var err error
-
 	w := &ImageGenerator{}
 	w.client = client
 
@@ -64,11 +62,7 @@ func NewImageGenerator(client *openai.Client) (*ImageGenerator, error) {
 		Model:  "gpt-3.5-turbo",
 	}
 
-	w.tokenizer, err = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
-
-	if err != nil {
-		return nil, err
-	}
+	w.tokenizer = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	w.imageChain = chain.Sequential(
 		chat2.Predict(

@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/ipld/go-ipld-prime"
 	"github.com/jbenet/goprocess"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore"
 	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
+	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
 )
 
 type database struct {
@@ -18,6 +20,7 @@ type database struct {
 	m       sync.RWMutex
 	log     forddb.LogStore
 	storage objectstore.ObjectStore
+	lsys    ipld.LinkSystem
 
 	resources map[forddb.TypeID]*resourceTable
 
@@ -31,6 +34,7 @@ type database struct {
 func NewDatabase(
 	logStore forddb.LogStore,
 	storage objectstore.ObjectStore,
+	ipfs *ipfs.Manager,
 ) forddb.Database {
 	db := &database{
 		log:     logStore,
@@ -38,6 +42,8 @@ func NewDatabase(
 
 		resources: make(map[forddb.TypeID]*resourceTable),
 	}
+
+	db.lsys = ipfs.LinkingSystem()
 
 	db.objectFetcher = newObjectFetcher(db)
 	db.objectFetchProcess = goprocess.Go(db.objectFetcher.Run)

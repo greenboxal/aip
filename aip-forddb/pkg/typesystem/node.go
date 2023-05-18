@@ -14,6 +14,14 @@ type valueNode struct {
 	v Value
 }
 
+func newNode(v Value) valueNode {
+	if v.typ == nil {
+		panic("not typ")
+	}
+
+	return valueNode{v: v}
+}
+
 func (n valueNode) Kind() datamodel.Kind {
 	if n.v.Type().PrimitiveKind() == PrimitiveKindInterface {
 		if n.v.Value().IsNil() {
@@ -34,6 +42,24 @@ func (n valueNode) Kind() datamodel.Kind {
 	r := n.v.typ.IpldType().TypeKind().ActsLike()
 
 	return r
+}
+
+func (n valueNode) IsAbsent() bool {
+	return !n.v.Value().IsValid() || n.v.Value().IsZero()
+}
+
+func (n valueNode) IsNull() bool {
+	if !n.v.Value().IsValid() {
+		return true
+	}
+
+	switch n.v.Value().Kind() {
+	case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice:
+		return n.v.Value().IsNil()
+
+	default:
+		return false
+	}
 }
 
 func (n valueNode) LookupByString(key string) (datamodel.Node, error) {
@@ -68,8 +94,28 @@ func (n valueNode) LookupByString(key string) (datamodel.Node, error) {
 }
 
 func (n valueNode) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
-	//TODO implement me
-	panic("implement me")
+	switch key.Kind() {
+	case datamodel.Kind_String:
+		str, err := key.AsString()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return n.LookupByString(str)
+
+	case datamodel.Kind_Int:
+		i, err := key.AsInt()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return n.LookupByIndex(i)
+
+	default:
+		return nil, errors.New("invalid key type")
+	}
 }
 
 func (n valueNode) LookupByIndex(idx int64) (datamodel.Node, error) {
@@ -122,6 +168,8 @@ func (n valueNode) ListIterator() datamodel.ListIterator {
 }
 
 func (n valueNode) Length() int64 {
+	v := n.v.Indirect()
+
 	switch n.v.typ.PrimitiveKind() {
 	case PrimitiveKindList:
 		fallthrough
@@ -130,17 +178,18 @@ func (n valueNode) Length() int64 {
 	case PrimitiveKindBytes:
 		fallthrough
 	case PrimitiveKindString:
-		return int64(n.v.Value().Len())
+		return int64(v.Len())
 	case PrimitiveKindStruct:
-		return int64(n.v.typ.(StructType).NumField())
+		return int64(n.v.typ.Struct().NumField())
+
 	case PrimitiveKindInterface:
 		if n.v.Value().IsNil() {
 			return 0
 		}
 
 		c := 1
-		v := ValueFrom(n.v.Value().Elem())
-		l := v.AsNode().Length()
+		e := ValueFrom(v.Elem())
+		l := e.AsNode().Length()
 
 		if l >= 0 {
 			c += int(l)
@@ -152,30 +201,12 @@ func (n valueNode) Length() int64 {
 	return -1
 }
 
-func (n valueNode) IsAbsent() bool {
-	return !n.v.Value().IsValid() || n.v.Value().IsZero()
-}
-
-func (n valueNode) IsNull() bool {
-	if !n.v.Value().IsValid() {
-		return true
-	}
-
-	switch n.v.Value().Kind() {
-	case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice:
-		return n.v.Value().IsNil()
-
-	default:
-		return false
-	}
-}
-
 func (n valueNode) AsBool() (bool, error) {
 	if n.v.Value().Kind() != reflect.Bool {
 		return false, errors.New("cannot convert to bool")
 	}
 
-	return n.v.Value().Bool(), nil
+	return n.v.Indirect().Bool(), nil
 }
 
 func (n valueNode) AsInt() (int64, error) {
@@ -183,15 +214,17 @@ func (n valueNode) AsInt() (int64, error) {
 		return int64(n.v.Value().Uint()), nil
 	}
 
-	return n.v.Value().Int(), nil
+	return n.v.Indirect().Int(), nil
 }
 
 func (n valueNode) AsFloat() (float64, error) {
-	return n.v.Value().Float(), nil
+	return n.v.Indirect().Float(), nil
 }
 
 func (n valueNode) AsString() (string, error) {
-	if m, ok := TryCast[encoding.TextMarshaler](n.v.Value()); ok {
+	v := n.v.Indirect()
+
+	if m, ok := TryCast[encoding.TextMarshaler](v); ok {
 		str, err := m.MarshalText()
 
 		if err != nil {
@@ -203,42 +236,43 @@ func (n valueNode) AsString() (string, error) {
 
 	switch n.v.typ.PrimitiveKind() {
 	case PrimitiveKindString:
-		return n.v.Value().String(), nil
+		return v.String(), nil
 
 	case PrimitiveKindInt:
-		return strconv.FormatInt(n.v.Value().Int(), 10), nil
+		return strconv.FormatInt(v.Int(), 10), nil
 
 	case PrimitiveKindUnsignedInt:
-		return strconv.FormatUint(n.v.Value().Uint(), 10), nil
+		return strconv.FormatUint(v.Uint(), 10), nil
 
 	case PrimitiveKindFloat:
-		return strconv.FormatFloat(n.v.Value().Float(), 'f', -1, 64), nil
+		return strconv.FormatFloat(v.Float(), 'f', -1, 64), nil
 
 	case PrimitiveKindBytes:
-		return string(n.v.Value().Bytes()), nil
+		return string(v.Bytes()), nil
 	}
 
-	return n.v.Value().String(), nil
+	return "", errors.New("cannot convert to string")
 }
 
 func (n valueNode) AsBytes() ([]byte, error) {
-	k := n.v.Value().Kind()
+	v := n.v.Indirect()
+	k := v.Kind()
 
-	if k == reflect.String {
-		return []byte(n.v.Value().String()), nil
-	} else if k == reflect.Slice && n.v.Value().Type().Elem().Kind() == reflect.Uint8 {
-		return n.v.Value().Bytes(), nil
+	if m, ok := TryCast[encoding.BinaryMarshaler](v); ok {
+		return m.MarshalBinary()
 	}
 
-	if m, ok := TryCast[encoding.BinaryMarshaler](n.v.Value()); ok {
-		return m.MarshalBinary()
+	if k == reflect.String {
+		return []byte(v.String()), nil
+	} else if k == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
+		return v.Bytes(), nil
 	}
 
 	return nil, errors.New("cannot convert to bytes")
 }
 
 func (n valueNode) AsLink() (datamodel.Link, error) {
-	return n.v.Value().Interface().(datamodel.Link), nil
+	return n.v.Indirect().Interface().(datamodel.Link), nil
 }
 
 func (n valueNode) Prototype() datamodel.NodePrototype {

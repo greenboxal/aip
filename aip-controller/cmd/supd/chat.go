@@ -41,12 +41,7 @@ func NewChatHandler(client *openai.Client) (*ChatHandler, error) {
 		Model:  "gpt-3.5-turbo",
 	}
 
-	tokenizer, err := tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
-
-	if err != nil {
-		return nil, err
-	}
-
+	tokenizer := tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 	compressor := compressors2.NewSimpleCompressor(model, tokenizer)
 
 	return &ChatHandler{

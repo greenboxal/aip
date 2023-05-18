@@ -16,6 +16,14 @@ type nodeBuilder struct {
 	v Value
 }
 
+func newNodeBuilder(v Value) *nodeBuilder {
+	if v.typ == nil {
+		panic("no node typ set")
+	}
+
+	return &nodeBuilder{v: v}
+}
+
 func (bb *nodeBuilder) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
 	if sizeHint < 0 {
 		sizeHint = 0
@@ -59,7 +67,7 @@ func (bb *nodeBuilder) BeginList(sizeHint int64) (datamodel.ListAssembler, error
 	}
 
 	if !bb.v.v.IsValid() {
-		bb.v = MakeList(bb.v.Type().(ListType).Elem(), 0, int(sizeHint))
+		bb.v = MakeList(bb.v.Type().List().Elem(), 0, int(sizeHint))
 		bb.v.v = bb.v.v.Addr()
 	}
 
@@ -233,11 +241,11 @@ func (la *listAssembler) AssembleValue() datamodel.NodeAssembler {
 
 	v = ValueFrom(l.Index(i))
 
-	return &nodeBuilder{v: v}
+	return newNodeBuilder(v)
 }
 
 func (la *listAssembler) ValuePrototype(idx int64) datamodel.NodePrototype {
-	return la.bb.v.Type().(ListType).Elem().IpldPrototype()
+	return la.bb.v.Type().List().Elem().IpldPrototype()
 }
 
 func (la *listAssembler) Finish() error {
@@ -268,11 +276,11 @@ type mapAssembler struct {
 func (ma *mapAssembler) AssembleKey() datamodel.NodeAssembler {
 	ma.next()
 
-	return &nodeBuilder{v: *ma.nextKey}
+	return newNodeBuilder(*ma.nextKey)
 }
 
 func (ma *mapAssembler) AssembleValue() datamodel.NodeAssembler {
-	return &nodeBuilder{v: *ma.nextValue}
+	return newNodeBuilder(*ma.nextValue)
 }
 
 func (ma *mapAssembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
@@ -284,11 +292,11 @@ func (ma *mapAssembler) AssembleEntry(k string) (datamodel.NodeAssembler, error)
 }
 
 func (ma *mapAssembler) KeyPrototype() datamodel.NodePrototype {
-	return ma.bb.v.Type().(MapType).Key().IpldPrototype()
+	return ma.bb.v.Type().Map().Key().IpldPrototype()
 }
 
 func (ma *mapAssembler) ValuePrototype(k string) datamodel.NodePrototype {
-	return ma.bb.v.Type().(MapType).Value().IpldPrototype()
+	return ma.bb.v.Type().Map().Value().IpldPrototype()
 }
 
 func (ma *mapAssembler) Finish() error {
@@ -323,7 +331,7 @@ func (sa *structAssembler) AssembleKey() datamodel.NodeAssembler {
 		sa.key = &k
 	}
 
-	return &nodeBuilder{v: *sa.key}
+	return newNodeBuilder(*sa.key)
 }
 
 func (sa *structAssembler) AssembleValue() datamodel.NodeAssembler {
@@ -337,12 +345,12 @@ func (sa *structAssembler) AssembleValue() datamodel.NodeAssembler {
 	fld := st.Field(name)
 
 	if fld == nil {
-		return &nodeBuilder{}
+		return newNodeBuilder(New(TypeFrom(reflect.TypeOf((*any)(nil)).Elem())))
 	}
 
 	v := fld.Value(sa.bb.v)
 
-	return &nodeBuilder{v: v}
+	return newNodeBuilder(v)
 }
 
 func (sa *structAssembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
@@ -358,7 +366,7 @@ func (sa *structAssembler) KeyPrototype() datamodel.NodePrototype {
 }
 
 func (sa *structAssembler) ValuePrototype(k string) datamodel.NodePrototype {
-	fld := sa.bb.v.typ.(StructType).Field(k)
+	fld := sa.bb.v.typ.Struct().Field(k)
 
 	return fld.Type().IpldPrototype()
 }

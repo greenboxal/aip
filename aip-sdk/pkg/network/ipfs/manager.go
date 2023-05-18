@@ -252,6 +252,10 @@ func (m *Manager) ContentRouter() routing.ContentRouting {
 	return m.contentRouter
 }
 
+func (m *Manager) BlockStore() blockstore.Blockstore {
+	return m.blockStore
+}
+
 func (m *Manager) BlockService() blockservice.BlockService {
 	return m.blockService
 }
@@ -282,4 +286,8 @@ func (m *Manager) Host() host.Host {
 
 func (m *Manager) PubSub() iface.PubSubAPI {
 	return m.psm
+}
+
+func (m *Manager) LinkingSystem() ipld.LinkSystem {
+	return m.linkSystem
 }

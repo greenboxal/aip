@@ -43,13 +43,13 @@ type PageStatus struct {
 }
 
 type PageSpec struct {
-	Format      string `json:"format"`
-	Layout      string `json:"layout"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Voice       string `json:"voice"`
-	Language    string `json:"language"`
-	BasePage    PageID `json:"base_page_id,omitempty"`
+	Format      string   `json:"format"`
+	Layout      string   `json:"layout"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Voice       string   `json:"voice"`
+	Language    string   `json:"language"`
+	BasePageIDs []PageID `json:"base_page_ids,omitempty"`
 }
 
 func BuildPageID(spec PageSpec) PageID {

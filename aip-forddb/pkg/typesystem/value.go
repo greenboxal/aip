@@ -12,6 +12,7 @@ type Value struct {
 }
 
 func (v Value) Value() reflect.Value      { return v.v }
+func (v Value) Indirect() reflect.Value   { return reflect.Indirect(v.v) }
 func (v Value) Type() Type                { return v.typ }
 func (v Value) RuntimeType() reflect.Type { return v.typ.RuntimeType() }
 
@@ -25,7 +26,7 @@ func (v Value) AsNode() ipld.Node {
 		return ipld.Null
 	}
 
-	return valueNode{v: v}
+	return newNode(v)
 }
 
 func (v Value) GetField(f Field) Value {

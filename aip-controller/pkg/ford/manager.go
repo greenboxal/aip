@@ -26,11 +26,7 @@ func NewManager(
 	}
 
 	oai := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
-	tokenizer, err := tokenizers.TikTokenForModel(openai.GPT3Dot5Turbo)
-
-	if err != nil {
-		return nil, err
-	}
+	tokenizer := tokenizers.TikTokenForModel(openai.GPT3Dot5Turbo)
 
 	m.index = impl.NewIndex(storage, indexing22.IndexConfiguration{
 		Reducer: &summarizers.MipMapSummarizer{

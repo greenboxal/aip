@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms"
@@ -77,8 +78,12 @@ func (r *Router) getPageSettings(request *http.Request) (models.PageSpec, error)
 		}
 	}
 
-	if basePageId := url.Query().Get("basePageId"); basePageId != "" {
-		pageSettings.BasePage = forddb.NewStringID[models.PageID](basePageId)
+	if basePageId := url.Query().Get("basePageIds"); basePageId != "" {
+		ids := lo.Map(strings.Split(basePageId, ","), func(item string, index int) models.PageID {
+			return forddb.NewStringID[models.PageID](item)
+		})
+
+		pageSettings.BasePageIDs = ids
 	}
 
 	return pageSettings, nil

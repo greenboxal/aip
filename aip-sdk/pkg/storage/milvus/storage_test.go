@@ -59,9 +59,7 @@ func TestMilvusStorageWithIndex(t *testing.T) {
 
 	require.Nil(t, err)
 
-	tokenizer, err := tokenizers.TikTokenForModel(openai.GPT3Dot5Turbo)
-
-	require.Nil(t, err)
+	tokenizer := tokenizers.TikTokenForModel(openai.GPT3Dot5Turbo)
 
 	index := impl.NewIndex(milvus, indexing22.IndexConfiguration{
 		Reducer: &summarizers.MipMapSummarizer{

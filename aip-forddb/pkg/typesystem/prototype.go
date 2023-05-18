@@ -2,6 +2,7 @@ package typesystem
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/datamodel"
@@ -14,7 +15,7 @@ type valuePrototype struct {
 	typ Type
 }
 
-func (v valuePrototype) NewBuilder() datamodel.NodeBuilder { return &nodeBuilder{v: New(v.typ)} }
+func (v valuePrototype) NewBuilder() datamodel.NodeBuilder { return newNodeBuilder(New(v.typ)) }
 func (v valuePrototype) Type() schema.Type                 { return v.typ.IpldType() }
 func (v valuePrototype) Representation() datamodel.NodePrototype {
 	return reprPrototype{typ: v.typ}
@@ -39,7 +40,7 @@ type reprPrototype struct {
 }
 
 func (r reprPrototype) NewBuilder() datamodel.NodeBuilder {
-	return &reprBuilder{nodeBuilder{v: New(r.typ)}}
+	return &reprBuilder{*newNodeBuilder(New(r.typ))}
 }
 
 type ifaceBuilder struct {
@@ -78,7 +79,7 @@ func (ib *ifaceBuilder) AssembleKey() datamodel.NodeAssembler {
 		ib.k = New(TypeOf(""))
 	}
 
-	return &nodeBuilder{v: ib.k}
+	return newNodeBuilder(ib.k)
 }
 
 func (ib *ifaceBuilder) AssembleValue() datamodel.NodeAssembler {
@@ -97,7 +98,7 @@ func (ib *ifaceBuilder) AssembleValue() datamodel.NodeAssembler {
 			ib.t = New(TypeOf(""))
 		}
 
-		return &nodeBuilder{v: ib.t}
+		return newNodeBuilder(ib.t)
 	}
 
 	if ib.actual == nil && ib.t.v.IsValid() {
@@ -115,12 +116,12 @@ func (ib *ifaceBuilder) AssembleValue() datamodel.NodeAssembler {
 		fld := st.Field(name)
 
 		if fld == nil {
-			return &nodeBuilder{}
+			return newNodeBuilder(New(TypeFrom(reflect.TypeOf((*any)(nil)).Elem())))
 		}
 
 		v := fld.Value(ib.v)
 
-		return &nodeBuilder{v: v}
+		return newNodeBuilder(v)
 	}
 
 	panic("invalid field")

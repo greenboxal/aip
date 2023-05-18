@@ -6,8 +6,15 @@ import (
 	"github.com/pkoukk/tiktoken-go"
 )
 
+type Chunk struct {
+	Index      int
+	Content    string
+	TokenCount int
+}
+
 type Chunker interface {
-	SplitTextIntoChunks(ctx context.Context, text string, chunkSize int, overlapSize int) ([]string, error)
+	SplitTextIntoChunks(ctx context.Context, text string, chunkSize int, overlapSize int) ([]Chunk, error)
+	SplitTextIntoStrings(ctx context.Context, text string, chunkSize int, overlapSize int) ([]string, error)
 }
 
 func SplitTextIntoChunks(text string, chunkSize int, overlapSize int) ([]string, error) {

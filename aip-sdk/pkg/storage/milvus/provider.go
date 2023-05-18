@@ -39,7 +39,7 @@ func (i *IndexProvider) IndexDocument(
 ) (*vectorstore.IndexedDocument, error) {
 	opts := vectorstore.NewIndexDocumentOptions(options...)
 
-	textChunks, err := opts.Chunker.SplitTextIntoChunks(
+	textChunks, err := opts.Chunker.SplitTextIntoStrings(
 		ctx,
 		document.Content,
 		opts.MaxChunkSize,

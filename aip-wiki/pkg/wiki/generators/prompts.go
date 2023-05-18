@@ -10,7 +10,7 @@ import (
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 )
 
-var BasePageKey chain.ContextKey[*models.Page] = "BasePage"
+var BasePageKey chain.ContextKey[[]*models.Page] = "BasePage"
 var PageSettingsKey chain.ContextKey[models.PageSpec] = "PageSettings"
 var SiteSettingsKey chain.ContextKey[SiteSettings] = "SiteSettings"
 var PageLayoutKey chain.ContextKey[*template.Template] = "PageLayout"
@@ -85,7 +85,37 @@ var PageEditorPrompt = chat.ComposeTemplate(
 		msn.RoleUser,
 		chain.NewTemplatePrompt(
 			`Improve the Wiki page by expanding the topic about "{{.PageSettings.Title}}, and correcting anything you believe is wrong.
-Remember to leave notes at the bottom of the page explaining what you did and why. Write everything in {{.PageSettings.Language}}.`,
+Remember to leave notes at the bottom of the page explaining what you did and why. Write everything in {{.PageSettings.Language}}.
+
+{{ range .BasePage }}{{ .Status.Markdown }}{{ end }}
+`,
+			chain.WithRequiredInput(PageSettingsKey),
+		),
+	),
+
+	chat.EntryTemplate(msn.RoleAI, chain.Static("")),
+)
+
+var PageSummarizerPrompt = chat.ComposeTemplate(
+	PageGeneratorHeader,
+
+	chat.HistoryFromContext(memory.ContextualMemoryKey),
+
+	chat.EntryTemplate(
+		msn.RoleSystem,
+		chain.NewTemplatePrompt(
+			`You are an AI assistant specialized in summarizing and merging documents. Based on the documents below, generate a summary as asked by the user.
+
+{{ range .BasePage }}{{ .Status.Markdown }}{{ end }}
+`,
+			chain.WithRequiredInput(PageSettingsKey),
+		),
+	),
+
+	chat.EntryTemplate(
+		msn.RoleUser,
+		chain.NewTemplatePrompt(
+			`Summarize the documents above.`,
 			chain.WithRequiredInput(PageSettingsKey),
 		),
 	),

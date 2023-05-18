@@ -11,7 +11,7 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 
-	tracing2 "github.com/greenboxal/aip/aip-forddb/pkg/tracing"
+	tracing "github.com/greenboxal/aip/aip-forddb/pkg/tracing"
 	chain "github.com/greenboxal/aip/aip-langchain/pkg/chain"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
 	"github.com/greenboxal/aip/aip-langchain/pkg/memory"
@@ -27,18 +27,19 @@ const PageGeneratorWikiUrl = "http://127.0.0.1:30100"
 
 type PageGenerator struct {
 	client *openai.Client
-	tracer tracing2.Tracer
+	tracer tracing.Tracer
 
 	cache     *ContentCache
 	model     *openai.ChatLanguageModel
 	tokenizer *tokenizers.TikTokenTokenizer
 
-	contentChain chain.Handler
-	editorChain  chain.Handler
+	contentChain    chain.Chain
+	editorChain     chain.Chain
+	summarizerChain chain.Chain
 }
 
 func NewPageGenerator(
-	tracer tracing2.Tracer,
+	tracer tracing.Tracer,
 	client *openai.Client,
 	cache *ContentCache,
 	index vectorstore.Index,
@@ -56,7 +57,7 @@ func NewPageGenerator(
 		Model:  "gpt-3.5-turbo",
 	}
 
-	w.tokenizer, err = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
+	w.tokenizer = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	if err != nil {
 		return nil, err
@@ -100,19 +101,44 @@ func NewPageGenerator(
 		),
 	)
 
-	w.editorChain = chain.Sequential(
-		chain.Func(func(ctx chain.ChainContext) error {
-			page := chain.Input(ctx, PageSettingsKey)
+	w.editorChain = chain.New(
+		chain.WithName("PageEditor"),
 
-			return contextualMemory.LoadFor(ctx, page.Title)
-		}),
+		chain.Sequential(
+			chain.Func(func(ctx chain.ChainContext) error {
+				page := chain.Input(ctx, PageSettingsKey)
 
-		chat.Predict(
-			w.model,
-			PageEditorPrompt,
-			chat.WithChatMemory(chat.MemoryContextKey),
-			chat.WithOutputParsers(
-				GeneratedHtmlParser(PageContentKey),
+				return contextualMemory.LoadFor(ctx, page.Title)
+			}),
+
+			chat.Predict(
+				w.model,
+				PageEditorPrompt,
+				chat.WithChatMemory(chat.MemoryContextKey),
+				chat.WithOutputParsers(
+					GeneratedHtmlParser(PageContentKey),
+				),
+			),
+		),
+	)
+
+	w.summarizerChain = chain.New(
+		chain.WithName("PageSummarizer"),
+
+		chain.Sequential(
+			chain.Func(func(ctx chain.ChainContext) error {
+				page := chain.Input(ctx, PageSettingsKey)
+
+				return contextualMemory.LoadFor(ctx, page.Title)
+			}),
+
+			chat.Predict(
+				w.model,
+				PageSummarizerPrompt,
+				chat.WithChatMemory(chat.MemoryContextKey),
+				chat.WithOutputParsers(
+					GeneratedHtmlParser(PageContentKey),
+				),
 			),
 		),
 	)
@@ -128,7 +154,7 @@ func (pg *PageGenerator) GetPage(
 		BaseUrl: "http://127.0.0.1:30100",
 	}
 
-	ctx = tracing2.WithTracer(ctx, pg.tracer)
+	ctx = tracing.WithTracer(ctx, pg.tracer)
 
 	chatMemory := memoryctx.GetMemory(ctx)
 
@@ -138,7 +164,7 @@ func (pg *PageGenerator) GetPage(
 	cctx.SetInput(PageSettingsKey, pageSettings)
 	cctx.SetInput(chat.MemoryContextKey, chatMemory)
 
-	if pageSettings.BasePage.IsEmpty() {
+	if len(pageSettings.BasePageIDs) == 0 {
 		if err := pg.contentChain.Run(cctx); err != nil {
 			return nil, err
 		}
@@ -147,16 +173,28 @@ func (pg *PageGenerator) GetPage(
 
 		return []byte(pageContent), nil
 	} else {
-		basePage, err := pg.cache.GetPageByID(ctx, pageSettings.BasePage)
+		pages := make([]*models.Page, len(pageSettings.BasePageIDs))
 
-		if err != nil {
-			return nil, err
+		for i, basePageId := range pageSettings.BasePageIDs {
+			basePage, err := pg.cache.GetPageByID(ctx, basePageId)
+
+			if err != nil {
+				return nil, err
+			}
+
+			pages[i] = basePage
 		}
 
-		cctx.SetInput(BasePageKey, basePage)
+		cctx.SetInput(BasePageKey, pages)
 
-		if err := pg.editorChain.Run(cctx); err != nil {
-			return nil, err
+		if len(pages) == 1 {
+			if err := pg.editorChain.Run(cctx); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := pg.summarizerChain.Run(cctx); err != nil {
+				return nil, err
+			}
 		}
 
 		pageContent := chain.Output(cctx, PageContentKey)

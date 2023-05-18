@@ -12,16 +12,16 @@ func (t *TikTokenTokenizer) Count(text string) (int, error) {
 	return len(data), nil
 }
 
-func TikTokenForModel(model string) (*TikTokenTokenizer, error) {
+func TikTokenForModel(model string) *TikTokenTokenizer {
 	tokenizer, err := tiktoken.EncodingForModel(model)
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	return &TikTokenTokenizer{
 		tokenizer: tokenizer,
-	}, nil
+	}
 }
 
 func (t *TikTokenTokenizer) Encode(text string) ([]int, error) {

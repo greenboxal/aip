@@ -16,8 +16,6 @@ func NewWiki(
 	client *openai.Client,
 	pageIndexer *indexer.PageIndexer,
 ) (*Wiki, error) {
-	var err error
-
 	w := &Wiki{}
 	w.client = client
 	w.pageIndexer = pageIndexer
@@ -27,11 +25,7 @@ func NewWiki(
 		Model:  "gpt-3.5-turbo",
 	}
 
-	w.tokenizer, err = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
-
-	if err != nil {
-		return nil, err
-	}
+	w.tokenizer = tokenizers.TikTokenForModel(openai.AdaEmbeddingV2.String())
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
