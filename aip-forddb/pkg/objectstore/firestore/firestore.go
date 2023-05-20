@@ -13,8 +13,6 @@ import (
 	"github.com/antonmedv/expr/ast"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
-	"github.com/ipld/go-ipld-prime/schema"
-	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -96,14 +94,6 @@ func (s *Storage) List(
 		}
 	}
 
-	if len(opts.ResourceIDs) > 0 {
-		ids := lo.Map(opts.ResourceIDs, func(id forddb.BasicResourceID, _index int) string {
-			return id.String()
-		})
-
-		query = query.Where("metadata.id", "in", ids)
-	}
-
 	if opts.FilterExpression != nil {
 		node := opts.FilterExpression.AsAst()
 		conditions, err := parseConditions(node, opts.FilterParameters)
@@ -142,7 +132,7 @@ func (s *Storage) List(
 			return nil, err
 		}
 
-		raws[i] = forddb.RawResource{TypedNode: node.(schema.TypedNode)}
+		raws[i] = node
 	}
 
 	return raws, nil
@@ -191,6 +181,9 @@ func parseConditions(node ast.Node, args any) ([]parsedCondition, error) {
 				path = slices.Insert(path, 0, name)
 
 				node = n.Node
+
+			default:
+				return nil, fmt.Errorf("unsupported node: %#v", n)
 			}
 		}
 
@@ -269,9 +262,12 @@ func parseConditions(node ast.Node, args any) ([]parsedCondition, error) {
 
 				values[k] = v
 			}
-		}
 
-		return nil, fmt.Errorf("unsupported node: %#v", node)
+			return values, nil
+
+		default:
+			return nil, fmt.Errorf("unsupported node: %#v", node)
+		}
 	}
 
 	walkBinOp := func(node *ast.BinaryNode) error {
@@ -311,15 +307,18 @@ func parseConditions(node ast.Node, args any) ([]parsedCondition, error) {
 				if err := walkExpression(n.Left); err != nil {
 					return err
 				}
+
+				return nil
 			} else {
 				return walkBinOp(n)
 			}
 
 		case *ast.UnaryNode:
 			return walkUnOp(n)
-		}
 
-		return fmt.Errorf("unsupported node: %#v", node)
+		default:
+			return fmt.Errorf("unsupported node: %#v", node)
+		}
 	}
 
 	if err := walkExpression(node); err != nil {
@@ -344,10 +343,10 @@ func (s *Storage) Get(
 
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return forddb.RawResource{}, forddb.ErrNotFound
+			return nil, forddb.ErrNotFound
 		}
 
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
 	fields := result.Data()
@@ -358,16 +357,16 @@ func (s *Storage) Get(
 	serialized, err := json.Marshal(fields)
 
 	if err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
 	node, err := ipld.DecodeUsingPrototype(serialized, dagjson.Decode, typ.Type().ActualType().IpldPrototype())
 
 	if err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
-	return forddb.RawResource{TypedNode: node.(schema.TypedNode)}, nil
+	return node, nil
 }
 
 func (s *Storage) Put(
@@ -381,22 +380,23 @@ func (s *Storage) Put(
 	serialized, err := ipld.Encode(resource, dagjson.Encode)
 
 	if err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
 	if err := json.Unmarshal(serialized, &fields); err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
-	collection := resource.GetResourceTypeID().Name()
+	unk := forddb.UnknownResource{RawResource: resource}
+	collection := unk.GetResourceTypeID().Name()
 	col := s.client.Collection(collection)
-	doc := col.Doc(resource.GetResourceBasicID().String())
+	doc := col.Doc(unk.GetResourceBasicID().String())
 
-	version := resource.GetResourceVersion()
+	version := unk.GetResourceVersion()
 
 	if version >= 0 {
 		if r, err := doc.Set(ctx, fields); err != nil {
-			return forddb.RawResource{}, err
+			return nil, err
 		} else {
 			_ = r
 		}
@@ -404,7 +404,7 @@ func (s *Storage) Put(
 		switch opts.OnConflict {
 		case forddb.OnConflictReplace:
 			if r, err := doc.Set(ctx, fields); err != nil {
-				return forddb.RawResource{}, err
+				return nil, err
 			} else {
 				_ = r
 			}
@@ -424,7 +424,7 @@ func (s *Storage) Put(
 			}*/
 
 			if r, err := doc.Update(ctx, updates, preconditions...); err != nil {
-				return forddb.RawResource{}, err
+				return nil, err
 			} else {
 				_ = r
 			}

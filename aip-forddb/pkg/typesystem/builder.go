@@ -189,7 +189,7 @@ func (bb *nodeBuilder) AssignBytes(bytes []byte) error {
 
 		return u.UnmarshalBinary(bytes)
 	} else {
-		return errors.New("cannot assign string to non-bytes type")
+		return errors.New("cannot assign bytes to non-bytes type")
 	}
 }
 
@@ -208,19 +208,8 @@ func (bb *nodeBuilder) AssignNode(node datamodel.Node) error {
 		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
 	}
 
-	if vn, ok := node.(valueNode); ok {
-		bb.v = vn.v
-		return nil
-	}
-
 	vn := reflect.ValueOf(node)
 	vt := bb.v.Type()
-
-	if vn.Type().AssignableTo(vt.RuntimeType()) {
-		bb.v.Indirect().Set(vn)
-
-		return nil
-	}
 
 	switch node.Kind() {
 	case datamodel.Kind_Null:
@@ -261,6 +250,7 @@ func (bb *nodeBuilder) AssignNode(node datamodel.Node) error {
 			return err
 		}
 		return bb.AssignLink(v)
+
 	case datamodel.Kind_List:
 		it := node.ListIterator()
 		count := node.Length()
@@ -283,9 +273,7 @@ func (bb *nodeBuilder) AssignNode(node datamodel.Node) error {
 			}
 		}
 
-		if err := lb.Finish(); err != nil {
-			return err
-		}
+		return lb.Finish()
 
 	case datamodel.Kind_Map:
 		it := node.MapIterator()
@@ -313,12 +301,17 @@ func (bb *nodeBuilder) AssignNode(node datamodel.Node) error {
 			}
 		}
 
-		if err := mb.Finish(); err != nil {
-			return err
+		return mb.Finish()
+
+	default:
+		if vn.Type().AssignableTo(vt.RuntimeType()) {
+			bb.v.Indirect().Set(vn)
 		}
+
+		return errors.New("cannot assign node")
 	}
 
-	return errors.New("cannot assign node")
+	return nil
 }
 
 func (bb *nodeBuilder) Prototype() datamodel.NodePrototype {

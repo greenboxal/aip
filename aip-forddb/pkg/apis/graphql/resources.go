@@ -293,6 +293,24 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 					filters = append(filters, parsed.Node)
 				}
 
+				for _, id := range ids {
+					filters = append(filters, &ast.BinaryNode{
+						Left: &ast.MemberNode{
+							Name:     "id",
+							Property: &ast.IdentifierNode{Value: "id"},
+
+							Node: &ast.MemberNode{
+								Name:     "metadata",
+								Property: &ast.IdentifierNode{Value: "metadata"},
+								Node:     &ast.IdentifierNode{Value: "resource"},
+							},
+						},
+
+						Operator: "==",
+						Right:    &ast.StringNode{Value: id.String()},
+					})
+				}
+
 				if len(filters) > 0 {
 					var rootNode ast.Node
 
@@ -311,10 +329,6 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 					}
 
 					options = append(options, forddb.WithListQueryOptions(forddb.WithFilterExpressionNode(rootNode)))
-				}
-
-				if len(ids) > 0 {
-					options = append(options, forddb.WithResourceIDs(ids...))
 				}
 			}
 

@@ -16,7 +16,7 @@ func NewRouter() *Router {
 }
 
 func (r *Router) Dispatch(ev Event) {
-	table := r.getTable(ev.MessageEvent.Message.Channel, false)
+	table := r.getTable(ev.MessageEvent.Message.ChannelID, false)
 
 	if table != nil {
 		table.Dispatch(ev)

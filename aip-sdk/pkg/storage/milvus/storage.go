@@ -274,7 +274,7 @@ func (s *Storage) Get(
 	result, err := s.db.QueryByPks(ctx, "forddb", []string{"_default"}, pkColumns, []string{"data"})
 
 	if err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
 	for _, col := range result {
@@ -286,47 +286,48 @@ func (s *Storage) Get(
 
 		if !ok {
 			if len(result) == 0 {
-				return forddb.RawResource{}, forddb.ErrNotFound
+				return nil, forddb.ErrNotFound
 			}
 		}
 
 		values := dataColumn.Data()
 
 		if len(values) == 0 {
-			return forddb.RawResource{}, forddb.ErrNotFound
+			return nil, forddb.ErrNotFound
 		}
 
 		var raw forddb.RawResource
 
 		if err := json.Unmarshal([]byte(values[0]), &raw); err != nil {
-			return forddb.RawResource{}, err
+			return nil, err
 		}
 
 		return raw, nil
 	}
 
-	return forddb.RawResource{}, forddb.ErrNotFound
+	return nil, forddb.ErrNotFound
 }
 
 func (s *Storage) Put(
 	ctx context.Context,
-	resource forddb.RawResource,
+	res forddb.RawResource,
 	opts forddb.PutOptions,
 ) (forddb.RawResource, error) {
-	serialized, err := json.Marshal(resource)
+	unknown := forddb.UnknownResource{RawResource: res}
+	serialized, err := json.Marshal(unknown)
 
 	if err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
-	pk := fmt.Sprintf("%s:%s", resource.GetResourceBasicID().String(), resource.GetResourceTypeID().Name())
+	pk := fmt.Sprintf("%s:%s", unknown.GetResourceBasicID().String(), unknown.GetResourceTypeID().Name())
 
 	primaryKeys := []string{pk}
 	primaryVecs := [][]float32{{math.Pi}}
-	resourceIds := []string{resource.GetResourceBasicID().String()}
-	resourceKinds := []string{resource.GetResourceTypeID().Name()}
-	resourceVersions := []int64{int64(resource.GetResourceVersion())}
-	resourceNamespaces := []string{resource.GetResourceMetadata().Namespace}
+	resourceIds := []string{unknown.GetResourceBasicID().String()}
+	resourceKinds := []string{unknown.GetResourceTypeID().Name()}
+	resourceVersions := []int64{int64(unknown.GetResourceVersion())}
+	resourceNamespaces := []string{unknown.GetResourceMetadata().Namespace}
 	resourcesData := []string{string(serialized)}
 
 	columns := []entity.Column{
@@ -342,10 +343,10 @@ func (s *Storage) Put(
 	_, err = s.db.Insert(ctx, "forddb", "_default", columns...)
 
 	if err != nil {
-		return forddb.RawResource{}, err
+		return nil, err
 	}
 
-	return resource, nil
+	return res, nil
 }
 
 func (s *Storage) Delete(

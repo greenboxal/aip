@@ -21,7 +21,7 @@ func (t *StdioTransport) Incoming() <-chan msn.Message {
 }
 
 func (s *StdioTransport) RouteMessage(ctx context.Context, msg msn.Message) error {
-	_, err := fmt.Fprintf(s.Stdout, "[%s] %s: %s\n", msg.Channel, msg.From, msg.Text)
+	_, err := fmt.Fprintf(s.Stdout, "[%s] %s: %s\n", msg.ChannelID, msg.From, msg.Text)
 
 	return err
 }

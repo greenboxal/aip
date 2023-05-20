@@ -68,7 +68,7 @@ func (t *Transport) Incoming() <-chan msn.Message {
 }
 
 func (t *Transport) RouteMessage(ctx context.Context, msg msn.Message) error {
-	topic, err := t.getTopic(msg.Channel.String(), false)
+	topic, err := t.getTopic(msg.ChannelID.String(), false)
 
 	if err != nil {
 		return err

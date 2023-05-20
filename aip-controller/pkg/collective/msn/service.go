@@ -93,7 +93,7 @@ func (r *Service) PostMessage(ctx context.Context, req *PostMessageRequest) (*Po
 
 	msg := &Message{}
 	msg.ID = forddb.NewStringID[MessageID](fmt.Sprintf("%d", time.Now().UnixNano()))
-	msg.Channel = req.Channel
+	msg.ChannelID = req.Channel
 	msg.From = req.From
 	msg.Text = req.Text
 

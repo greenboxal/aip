@@ -83,7 +83,7 @@ func (i *ChannelChatMemory) Append(ctx chain.ChainContext, msg chat.Message) err
 	for _, entry := range msg.Entries {
 		req := &msn.PostMessageRequest{
 			From:    entry.From,
-			Channel: entry.Channel,
+			Channel: entry.ChannelID,
 			Text:    entry.Text,
 		}
 

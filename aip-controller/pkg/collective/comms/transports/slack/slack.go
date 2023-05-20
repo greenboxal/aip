@@ -92,7 +92,7 @@ func (t *Transport) RouteMessage(ctx context.Context, msg msn.Message) error {
 		options = append(options, slack.MsgOptionTS(msg.ThreadID))
 	}
 
-	_, _, err := t.rtm.PostMessage(msg.Channel.String(), options...)
+	_, _, err := t.rtm.PostMessage(msg.ChannelID.String(), options...)
 
 	return err
 }
@@ -168,10 +168,10 @@ func (t *Transport) Start(ctx context.Context) error {
 				slackMsg := (*slack.Message)(evt)
 
 				msg := msn.Message{
-					ThreadID: slackMsg.ThreadTimestamp,
-					Channel:  forddb.NewStringID[msn.ChannelID](t.resolveChannel(slackMsg)),
-					From:     forddb.NewStringID[msn.EndpointID](t.resolveUser(slackMsg)),
-					Text:     evt.Text,
+					ThreadID:  slackMsg.ThreadTimestamp,
+					ChannelID: forddb.NewStringID[msn.ChannelID](t.resolveChannel(slackMsg)),
+					From:      forddb.NewStringID[msn.EndpointID](t.resolveUser(slackMsg)),
+					Text:      evt.Text,
 				}
 
 				msg.ID = forddb.NewStringID[msn.MessageID](slackMsg.Timestamp)

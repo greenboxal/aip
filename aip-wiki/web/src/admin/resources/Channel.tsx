@@ -43,7 +43,7 @@ export const ChannelShow = () => (
 
             <ReferenceArrayField source="subscribers" label="Members" reference="Endpoint" />
 
-            <ReferenceManyField reference="Message" target="channel" label="Messages">
+            <ReferenceManyField reference="Message" target="channel_id" label="Messages">
                 <Datagrid rowClick="show" size="small" bulkActionButtons={false} sort={{ field: 'metadata.created_at', order: 'ASC' }}>
                     <TextField source="id" label="ID"/>
                     <DateField source="metadata.created_at" label="Created At"/>

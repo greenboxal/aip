@@ -11,6 +11,7 @@ import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore"
 	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
 )
 
@@ -121,22 +122,16 @@ func (db *database) Put(
 
 	resource.OnBeforeSave(resource)
 
-	raw, err := forddb.Encode(resource)
-
-	if err != nil {
-		return nil, err
-	}
-
 	opts := forddb.NewPutOptions(options...)
 	slot := db.GetSlot(resource.GetResourceTypeID(), resource.GetResourceBasicID(), true)
 
-	result, err := slot.Update(ctx, raw, opts)
+	result, err := slot.Update(ctx, typesystem.Wrap(resource), opts)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if result.IsEmpty() {
+	if result == nil {
 		return nil, nil
 	}
 
@@ -166,7 +161,7 @@ func (db *database) Delete(
 		return nil, err
 	}
 
-	if result.IsEmpty() {
+	if result == nil {
 		return nil, nil
 	}
 

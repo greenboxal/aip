@@ -1,14 +1,10 @@
 package forddb
 
 import (
-	"github.com/ipld/go-ipld-prime/schema"
+	"github.com/ipld/go-ipld-prime"
 )
 
-type RawResource struct{ schema.TypedNode }
-
-func (r RawResource) IsEmpty() bool {
-	return r.TypedNode == nil
-}
+type RawResource = ipld.Node
 
 type RawResourceHeader struct {
 	ID string `json:"id"`
@@ -16,8 +12,14 @@ type RawResourceHeader struct {
 	Metadata
 }
 
-func (r RawResource) GetResourceMetadata() *Metadata {
-	metadata, err := r.LookupByString("metadata")
+type UnknownResource struct{ RawResource RawResource }
+
+func (r UnknownResource) IsEmpty() bool {
+	return r.RawResource == nil
+}
+
+func (r UnknownResource) GetResourceMetadata() *Metadata {
+	metadata, err := r.RawResource.LookupByString("metadata")
 
 	if err != nil {
 		panic(err)
@@ -36,8 +38,8 @@ func (r RawResource) GetResourceMetadata() *Metadata {
 	return &m.Metadata
 }
 
-func (r RawResource) GetResourceBasicID() BasicResourceID {
-	metadata, err := r.LookupByString("metadata")
+func (r UnknownResource) GetResourceBasicID() BasicResourceID {
+	metadata, err := r.RawResource.LookupByString("metadata")
 
 	if err != nil {
 		panic(err)
@@ -62,8 +64,8 @@ func (r RawResource) GetResourceBasicID() BasicResourceID {
 	return r.GetResourceTypeID().Type().CreateID(idStr)
 }
 
-func (r RawResource) GetResourceTypeID() TypeID {
-	metadata, err := r.LookupByString("metadata")
+func (r UnknownResource) GetResourceTypeID() TypeID {
+	metadata, err := r.RawResource.LookupByString("metadata")
 
 	if err != nil {
 		panic(err)
@@ -84,12 +86,12 @@ func (r RawResource) GetResourceTypeID() TypeID {
 	return NewStringID[TypeID](kindStr)
 }
 
-func (r RawResource) GetResourceVersion() uint64 {
+func (r UnknownResource) GetResourceVersion() uint64 {
 	if r.IsEmpty() {
 		return 0
 	}
 
-	metadata, err := r.LookupByString("metadata")
+	metadata, err := r.RawResource.LookupByString("metadata")
 
 	if err != nil {
 		panic(err)

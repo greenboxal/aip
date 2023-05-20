@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/graphql-go/graphql"
-	"github.com/mashingan/smapping"
 	"github.com/stoewer/go-strcase"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/apis/rpc"
@@ -203,18 +202,7 @@ func (r *RpcResourceBinding) compileRpcMutation(ctx BindingContext, binding rpc.
 								v = v.Convert(outTypePtr)
 							}
 
-							if forddb.IsBasicResource(v.Type()) {
-								resource := v.Interface().(forddb.BasicResource)
-								mapped, err := forddb.Encode(resource)
-
-								if err != nil {
-									return nil, err
-								}
-
-								return mapped, nil
-							} else {
-								return smapping.MapTags(v.Interface(), "json"), nil
-							}
+							return v.Interface(), nil
 						}
 					}
 				}

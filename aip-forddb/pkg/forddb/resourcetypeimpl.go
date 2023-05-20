@@ -80,7 +80,9 @@ func (rt *resourceType[ID, T]) SetRuntimeOnly() {
 func (rt *resourceType[ID, T]) Initialize(ts *ResourceTypeSystem) {
 	rt.basicType.Initialize(ts)
 
-	if st, ok := rt.Type.(typesystem.StructType); ok {
+	if rt.ActualType().PrimitiveKind() == typesystem.PrimitiveKindStruct {
+		st := rt.ActualType().Struct()
+
 		for i := 0; i < st.NumField(); i++ {
 			var filterable FilterableField
 
@@ -88,23 +90,27 @@ func (rt *resourceType[ID, T]) Initialize(ts *ResourceTypeSystem) {
 
 			filterable.Field = f
 
-			switch f.Type().PrimitiveKind() {
-			case typesystem.PrimitiveKindString:
+			if typesystem.Implements[BasicResourceID](filterable.Field.Type().RuntimeType()) {
 				filterable.Operators = []string{"==", "!="}
+			} else {
+				switch f.Type().PrimitiveKind() {
+				case typesystem.PrimitiveKindString:
+					filterable.Operators = []string{"==", "!="}
 
-			case typesystem.PrimitiveKindBoolean:
-				filterable.Operators = []string{"==", "!="}
+				case typesystem.PrimitiveKindBoolean:
+					filterable.Operators = []string{"==", "!="}
 
-			case typesystem.PrimitiveKindInt:
-				fallthrough
-			case typesystem.PrimitiveKindUnsignedInt:
-				fallthrough
-			case typesystem.PrimitiveKindFloat:
-				filterable.Operators = []string{"==", "!=", "<", "<=", ">", ">="}
+				case typesystem.PrimitiveKindInt:
+					fallthrough
+				case typesystem.PrimitiveKindUnsignedInt:
+					fallthrough
+				case typesystem.PrimitiveKindFloat:
+					filterable.Operators = []string{"==", "!=", "<", "<=", ">", ">="}
 
-			default:
+				default:
 
-				continue
+					continue
+				}
 			}
 
 			rt.filterableFields = append(rt.filterableFields, filterable)

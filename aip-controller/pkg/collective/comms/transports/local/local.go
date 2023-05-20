@@ -72,8 +72,8 @@ func (t *Transport) Close() error {
 func (t *Transport) routeMessage(ctx context.Context, msg msn.Message, allowExternal bool) error {
 	t.routeSubscriptions(ctx, msg)
 
-	if msg.Channel.String() != msg.From.String() {
-		p := t.getPort(msg.Channel.String())
+	if msg.ChannelID.String() != msg.From.String() {
+		p := t.getPort(msg.ChannelID.String())
 
 		if p != nil {
 			p.routeMessage(ctx, msg)
@@ -127,7 +127,7 @@ func (t *Transport) routeSubscriptions(ctx context.Context, msg msn.Message) {
 	t.m.RLock()
 	defer t.m.RUnlock()
 
-	subs := t.subscriptions[msg.Channel.String()]
+	subs := t.subscriptions[msg.ChannelID.String()]
 
 	if subs == nil {
 		return

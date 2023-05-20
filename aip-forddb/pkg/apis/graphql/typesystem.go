@@ -9,6 +9,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/ipfs/go-cid"
+	"github.com/ipld/go-ipld-prime"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
@@ -103,64 +104,93 @@ func (q *GraphQL) LookupInputType(typ typesystem.Type) graphql.Input {
 		return existing
 	}
 
-	switch typ.PrimitiveKind() {
-	case typesystem.PrimitiveKindBoolean:
-		result = graphql.Boolean
-	case typesystem.PrimitiveKindString:
+	if forddb.IsBasicResourceId(typ.RuntimeType()) {
 		result = graphql.String
-	case typesystem.PrimitiveKindBytes:
+	} else if typ.PrimitiveKind() == typesystem.PrimitiveKindInterface {
 		result = graphql.String
-	case typesystem.PrimitiveKindFloat:
-		result = graphql.Float
-	case typesystem.PrimitiveKindInt:
-		result = graphql.Int
-	case typesystem.PrimitiveKindUnsignedInt:
-		result = graphql.Int
+	} else {
+		result = graphql.String
+		switch typ.IpldRepresentationKind() {
+		case ipld.Kind_Bool:
+			result = graphql.Boolean
+		case ipld.Kind_String:
+			result = graphql.String
+		case ipld.Kind_Bytes:
+			result = graphql.String
+		case ipld.Kind_Float:
+			result = graphql.Float
+		case ipld.Kind_Int:
+			result = graphql.Int
 
-	case typesystem.PrimitiveKindList:
-		elemType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
-		elem := q.LookupInputType(elemType.ActualType())
+		case ipld.Kind_List:
+			lt := typ.List()
+			elem := q.LookupInputType(lt.Elem())
 
-		return graphql.NewList(elem)
+			return graphql.NewList(elem)
 
-	case typesystem.PrimitiveKindStruct:
-		fields := graphql.InputObjectConfigFieldMap{}
+		case ipld.Kind_Map:
+			if typ.PrimitiveKind() == typesystem.PrimitiveKindStruct {
+				fields := graphql.InputObjectConfigFieldMap{}
 
-		st := typ.(typesystem.StructType)
+				st := typ.Struct()
 
-		for i := 0; i < st.NumField(); i++ {
-			field := st.FieldByIndex(i)
-			fieldType := field.Type()
+				for i := 0; i < st.NumField(); i++ {
+					field := st.FieldByIndex(i)
+					fieldType := field.Type()
 
-			f := &graphql.InputObjectFieldConfig{
-				Type: q.LookupInputType(fieldType),
+					f := &graphql.InputObjectFieldConfig{
+						Type: q.LookupInputType(fieldType),
+					}
+
+					fields[field.Name()] = f
+				}
+
+				if len(fields) == 0 {
+					result = graphql.String
+					break
+				}
+
+				name := typ.Name().NormalizedFullNameWithArguments()
+
+				resTyp := forddb.TypeSystem().LookupByType(typ.RuntimeType())
+
+				if typ, ok := resTyp.(forddb.BasicResourceType); ok {
+					name = typ.ResourceName().ToTitle()
+				}
+
+				name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+				config := graphql.InputObjectConfig{
+					Name:   "In" + name,
+					Fields: fields,
+				}
+
+				result = graphql.NewInputObject(config)
+			} else {
+				mt := typ.Map()
+
+				keyOutputType := q.LookupInputType(mt.Key())
+				valueOutputType := q.LookupInputType(mt.Map())
+
+				kvType := graphql.NewInputObject(graphql.InputObjectConfig{
+					Name: fmt.Sprintf(
+						"Map_%s_%s",
+						mt.Key().Name().NormalizedFullNameWithArguments(),
+						mt.Value().Name().NormalizedFullNameWithArguments(),
+					),
+
+					Fields: graphql.Fields{
+						"key":   &graphql.Field{Name: "key", Type: keyOutputType},
+						"value": &graphql.Field{Name: "value", Type: valueOutputType},
+					},
+				})
+
+				return graphql.NewList(kvType)
 			}
 
-			fields[field.Name()] = f
+		default:
+			panic("unknown primitive kind")
 		}
-
-		if len(fields) == 0 {
-			result = graphql.String
-			break
-		}
-
-		name := typ.Name().NormalizedFullNameWithArguments()
-
-		if typ, ok := typ.(forddb.BasicResourceType); ok {
-			name = typ.ResourceName().Name
-		}
-
-		name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
-
-		config := graphql.InputObjectConfig{
-			Name:   "In" + name,
-			Fields: fields,
-		}
-
-		result = graphql.NewInputObject(config)
-
-	default:
-		panic("unknown primitive kind")
 	}
 
 	if result == nil {
@@ -181,95 +211,94 @@ func (q *GraphQL) LookupOutputType(typ typesystem.Type) graphql.Output {
 
 	if forddb.IsBasicResourceId(typ.RuntimeType()) {
 		result = graphql.String
+	} else if typ.PrimitiveKind() == typesystem.PrimitiveKindInterface {
+		result = graphql.String
 	} else {
-		switch typ.PrimitiveKind() {
-		case typesystem.PrimitiveKindBoolean:
+		switch typ.IpldRepresentationKind() {
+		case ipld.Kind_Bool:
 			result = graphql.Boolean
-		case typesystem.PrimitiveKindString:
+		case ipld.Kind_String:
 			result = graphql.String
-		case typesystem.PrimitiveKindBytes:
+		case ipld.Kind_Bytes:
 			result = graphql.String
-		case typesystem.PrimitiveKindFloat:
+		case ipld.Kind_Float:
 			result = graphql.Float
-		case typesystem.PrimitiveKindInt:
+		case ipld.Kind_Int:
 			result = graphql.Int
-		case typesystem.PrimitiveKindUnsignedInt:
-			result = graphql.Int
+		case ipld.Kind_Link:
+			result = graphql.String
 
-		case typesystem.PrimitiveKindMap:
-			keyType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Key())
-			keyOutputType := q.LookupOutputType(keyType.ActualType())
-
-			valueType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
-			valueOutputType := q.LookupOutputType(valueType.ActualType())
-
-			kvType := graphql.NewObject(graphql.ObjectConfig{
-				Name: fmt.Sprintf(
-					"Map_%s_%s",
-					keyType.ActualType().Name().NormalizedFullNameWithArguments(),
-					valueType.ActualType().Name().NormalizedFullNameWithArguments(),
-				),
-
-				Fields: graphql.Fields{
-					"key":   &graphql.Field{Name: "key", Type: keyOutputType},
-					"value": &graphql.Field{Name: "value", Type: valueOutputType},
-				},
-			})
-
-			return graphql.NewList(kvType)
-
-		case typesystem.PrimitiveKindList:
-			elemType := forddb.TypeSystem().LookupByType(typ.RuntimeType().Elem())
-			elem := q.LookupOutputType(elemType.ActualType())
+		case ipld.Kind_List:
+			lt := typ.List()
+			elem := q.LookupOutputType(lt.Elem())
 
 			return graphql.NewList(elem)
 
-		case typesystem.PrimitiveKindInterface:
-			return graphql.String
-
-		case typesystem.PrimitiveKindStruct:
-			fields := graphql.Fields{
-				"id": &graphql.Field{
-					Name: "id",
-					Type: graphql.String,
-				},
-			}
-
-			st := typ.(typesystem.StructType)
-
-			for i := 0; i < st.NumField(); i++ {
-				field := st.FieldByIndex(i)
-				fieldType := field.Type()
-
-				f := &graphql.Field{
-					Name: field.Name(),
-					Type: q.LookupOutputType(fieldType),
+		case ipld.Kind_Map:
+			if typ.PrimitiveKind() == typesystem.PrimitiveKindStruct {
+				fields := graphql.Fields{
+					"id": &graphql.Field{
+						Name: "id",
+						Type: graphql.String,
+					},
 				}
 
-				fields[f.Name] = f
+				st := typ.Struct()
+
+				for i := 0; i < st.NumField(); i++ {
+					field := st.FieldByIndex(i)
+					fieldType := field.Type()
+
+					f := &graphql.Field{
+						Name: field.Name(),
+						Type: q.LookupOutputType(fieldType),
+					}
+
+					fields[f.Name] = f
+				}
+
+				if len(fields) == 0 {
+					result = graphql.String
+					break
+				}
+
+				name := typ.Name().NormalizedFullNameWithArguments()
+
+				resTyp := forddb.TypeSystem().LookupByType(typ.RuntimeType())
+
+				if typ, ok := resTyp.(forddb.BasicResourceType); ok {
+					name = typ.ResourceName().ToTitle()
+				}
+
+				name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+				config := graphql.ObjectConfig{
+					Name:   name,
+					Fields: fields,
+				}
+
+				result = graphql.NewObject(config)
+			} else {
+				mt := typ.Map()
+
+				keyOutputType := q.LookupOutputType(mt.Key())
+				valueOutputType := q.LookupOutputType(mt.Map())
+
+				kvType := graphql.NewObject(graphql.ObjectConfig{
+					Name: fmt.Sprintf(
+						"Map_%s_%s",
+						mt.Key().Name().NormalizedFullNameWithArguments(),
+						mt.Value().Name().NormalizedFullNameWithArguments(),
+					),
+
+					Fields: graphql.Fields{
+						"key":   &graphql.Field{Name: "key", Type: keyOutputType},
+						"value": &graphql.Field{Name: "value", Type: valueOutputType},
+					},
+				})
+
+				return graphql.NewList(kvType)
 			}
-
-			if len(fields) == 0 {
-				result = graphql.String
-				break
-			}
-
-			name := typ.Name().NormalizedFullNameWithArguments()
-
-			resTyp := forddb.TypeSystem().LookupByType(typ.RuntimeType())
-
-			if typ, ok := resTyp.(forddb.BasicResourceType); ok {
-				name = typ.ResourceName().ToTitle()
-			}
-
-			name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
-
-			config := graphql.ObjectConfig{
-				Name:   name,
-				Fields: fields,
-			}
-
-			result = graphql.NewObject(config)
 
 		default:
 			panic("unknown primitive kind")

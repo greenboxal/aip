@@ -206,8 +206,6 @@ type ListOptions struct {
 	Offset     int
 	Limit      int
 	SortFields []SortField
-
-	ResourceIDs []BasicResourceID
 }
 
 func NewListOptions(typ TypeID, opts ...ListOption) ListOptions {
@@ -244,12 +242,6 @@ func WithSortField(field string, order SortOrder) ListOption {
 func WithSortFields(fields ...SortField) ListOption {
 	return func(opts *ListOptions) {
 		opts.SortFields = append(opts.SortFields, fields...)
-	}
-}
-
-func WithResourceIDs(ids ...BasicResourceID) ListOption {
-	return func(opts *ListOptions) {
-		opts.ResourceIDs = append(opts.ResourceIDs, ids...)
 	}
 }
 

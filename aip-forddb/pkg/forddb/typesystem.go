@@ -45,7 +45,9 @@ func NewResourceTypeSystem() *ResourceTypeSystem {
 }
 
 func (rts *ResourceTypeSystem) Register(t BasicResourceType) {
-	rts.doRegister(t, true)
+	if rts.doRegister(t, true) {
+		t.Initialize(rts)
+	}
 }
 func (rts *ResourceTypeSystem) doRegister(t BasicType, lock bool) bool {
 	if lock {

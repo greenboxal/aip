@@ -14,9 +14,9 @@ type Message struct {
 	ThreadID  string `json:"thread_id"`
 	ReplyToID string `json:"reply_to_id"`
 
-	Channel ChannelID  `json:"channel"`
-	From    EndpointID `json:"from"`
-	Name    string     `json:"username"`
-	Role    Role       `json:"role"`
-	Text    string     `json:"text"`
+	ChannelID ChannelID  `json:"channel_id"`
+	From      EndpointID `json:"from"`
+	Name      string     `json:"username"`
+	Role      Role       `json:"role"`
+	Text      string     `json:"text"`
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
-	"github.com/ipld/go-ipld-prime/schema"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
@@ -32,7 +31,7 @@ func CloneResource(resource any) any {
 }
 
 func Convert[T any](raw RawResource) (def T, _ error) {
-	data, err := ipld.Encode(raw.TypedNode, dagjson.Encode)
+	data, err := ipld.Encode(raw, dagjson.Encode)
 
 	if err != nil {
 		return def, err
@@ -75,21 +74,9 @@ func ConvertNode[T any](node ipld.Node) (def T, _ error) {
 	return v.Interface().(T), nil
 }
 
-func Encode(value any) (RawResource, error) {
-	return RawResource{typesystem.Wrap(value).(schema.TypedNode)}, nil
-}
-
-func Decode(rawResource RawResource) (any, error) {
-	if rawResource.IsEmpty() {
-		return nil, nil
-	}
-
-	return typesystem.Unwrap(rawResource.TypedNode), nil
-}
-
 func DecodeAs[T any](rawResource RawResource) (def T, _ error) {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
-	r := typesystem.Unwrap(rawResource.TypedNode)
+	r := typesystem.Unwrap(rawResource)
 
 	if r == nil {
 		return def, nil

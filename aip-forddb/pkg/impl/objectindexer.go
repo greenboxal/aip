@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
+	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
 const objectIndexerStreamID = "forddb/objectindexer"
@@ -27,26 +28,14 @@ func newObjectIndexer(db *database) *objectIndexer {
 func (oi *objectIndexer) processLogRecord(ctx context.Context, record *forddb.LogEntryRecord) error {
 	switch record.Kind {
 	case forddb.LogEntryKindSet:
-		encoded, err := forddb.Encode(record.Current)
-
-		if err != nil {
-			return err
-		}
-
-		if _, err := oi.db.storage.Put(ctx, encoded, forddb.PutOptions{
+		if _, err := oi.db.storage.Put(ctx, typesystem.Wrap(record.Current), forddb.PutOptions{
 			OnConflict: forddb.OnConflictReplace,
 		}); err != nil {
 			return err
 		}
 
 	case forddb.LogEntryKindDelete:
-		encoded, err := forddb.Encode(record.Previous)
-
-		if err != nil {
-			return err
-		}
-
-		if _, err := oi.db.storage.Delete(ctx, encoded, forddb.DeleteOptions{}); err != nil {
+		if _, err := oi.db.storage.Delete(ctx, typesystem.Wrap(record.Previous), forddb.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
