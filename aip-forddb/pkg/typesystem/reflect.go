@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/datamodel"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
 	"github.com/ipld/go-ipld-prime/schema"
@@ -54,10 +55,18 @@ func newInterfaceType(typ reflect.Type) *interfaceType {
 }
 
 func (it *interfaceType) initialize(ts *TypeSystem) {
+	it.basicType.initialize(ts)
+
+	if Implements[ipld.Link](it.runtimeType) {
+		it.ipldPrimitive = basicnode.Prototype.Link
+		it.ipldRepresentationKind = datamodel.Kind_Link
+	} else {
+		it.ipldPrimitive = basicnode.Prototype.Any
+		it.ipldRepresentationKind = datamodel.Kind_Map
+	}
+
 	it.ipldType = schema.SpawnAny(it.name.ToTitle())
-	it.ipldPrimitive = basicnode.Prototype.Any
 	it.ipldPrototype = &valuePrototype{typ: it}
-	it.ipldRepresentationKind = datamodel.Kind_Map
 }
 
 func newScalarType(typ reflect.Type) *scalarType {
@@ -92,6 +101,17 @@ func newScalarType(typ reflect.Type) *scalarType {
 		st.ipldType = schema.SpawnBytes(st.name.ToTitle())
 		st.ipldPrimitive = basicnode.Prototype.Bytes
 		st.ipldRepresentationKind = datamodel.Kind_Bytes
+	case PrimitiveKindLink:
+		if Implements[TypedLink](typ) {
+			elemTyp := reflect.New(typ).Interface().(TypedLink).LinkedObjectType()
+
+			st.ipldType = schema.SpawnLinkReference(st.name.ToTitle(), elemTyp.Name().ToTitle())
+		} else {
+			st.ipldType = schema.SpawnLink(st.name.ToTitle())
+		}
+
+		st.ipldPrimitive = basicnode.Prototype.Link
+		st.ipldRepresentationKind = datamodel.Kind_Link
 	default:
 		panic("invalid scalar type")
 	}
@@ -119,7 +139,9 @@ func newStructType(typ reflect.Type) *structType {
 }
 
 func (st *structType) initialize(ts *TypeSystem) {
-	var walkFields func(typ reflect.Type, indexbase []int)
+	var walkFields func(typ reflect.Type, indexBase []int)
+
+	st.basicType.initialize(ts)
 
 	typ := st.runtimeType
 
@@ -166,11 +188,14 @@ func (st *structType) initialize(ts *TypeSystem) {
 				}
 			}
 
-			fld := &field{
-				declaringType: st,
-				name:          name,
-				typ:           ts.LookupByType(f.Type),
-				runtimeField:  patchedField,
+			fld := &reflectedField{
+				fieldBase: fieldBase{
+					declaringType: st,
+					name:          name,
+					typ:           ts.LookupByType(f.Type),
+				},
+
+				runtimeField: patchedField,
 			}
 
 			st.fields = append(st.fields, fld)
@@ -272,6 +297,8 @@ func newMapType(typ reflect.Type) *mapType {
 }
 
 func (mt *mapType) initialize(ts *TypeSystem) {
+	mt.basicType.initialize(ts)
+
 	typ := mt.runtimeType
 
 	mt.key = ts.LookupByType(typ.Key())
@@ -301,6 +328,8 @@ func newListType(typ reflect.Type) *listType {
 }
 
 func (lt *listType) initialize(ts *TypeSystem) {
+	lt.basicType.initialize(ts)
+
 	typ := lt.runtimeType
 
 	lt.elem = ts.LookupByType(typ.Elem())
@@ -311,6 +340,10 @@ func (lt *listType) initialize(ts *TypeSystem) {
 }
 
 func getPrimitiveKind(typ reflect.Type) PrimitiveKind {
+	if Implements[ipld.Link](typ) {
+		return PrimitiveKindLink
+	}
+
 	switch typ.Kind() {
 	case reflect.Invalid:
 		return PrimitiveKindInvalid
@@ -361,6 +394,18 @@ func getPrimitiveKind(typ reflect.Type) PrimitiveKind {
 
 func TryCast[T any](v reflect.Value) (def T, ok bool) {
 	t := reflect.TypeOf((*T)(nil)).Elem()
+
+	if !v.IsValid() {
+		return def, false
+	}
+
+	if v.Kind() == reflect.Interface && v.IsNil() {
+		return def, false
+	}
+
+	if v.Kind() == reflect.Pointer && v.IsNil() {
+		return def, false
+	}
 
 	if v.CanConvert(t) {
 		return v.Convert(t).Interface().(T), true

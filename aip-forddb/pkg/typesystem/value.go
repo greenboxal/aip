@@ -30,5 +30,5 @@ func (v Value) AsNode() ipld.Node {
 }
 
 func (v Value) GetField(f Field) Value {
-	return f.Value(v)
+	return f.Resolve(v)
 }

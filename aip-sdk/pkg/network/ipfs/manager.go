@@ -288,6 +288,6 @@ func (m *Manager) PubSub() iface.PubSubAPI {
 	return m.psm
 }
 
-func (m *Manager) LinkingSystem() ipld.LinkSystem {
+func (m *Manager) LinkSystem() ipld.LinkSystem {
 	return m.linkSystem
 }

@@ -43,7 +43,7 @@ func NewDatabase(
 		resources: make(map[forddb.TypeID]*resourceTable),
 	}
 
-	db.lsys = ipfs.LinkingSystem()
+	db.lsys = ipfs.LinkSystem()
 
 	db.objectFetcher = newObjectFetcher(db)
 	db.objectFetchProcess = goprocess.Go(db.objectFetcher.Run)

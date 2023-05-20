@@ -23,16 +23,20 @@ func newNode(v Value) valueNode {
 }
 
 func (n valueNode) Kind() datamodel.Kind {
-	if n.v.Type().PrimitiveKind() == PrimitiveKindInterface {
+	t := n.v.Type()
+
+	if t.PrimitiveKind() == PrimitiveKindInterface {
 		if n.v.Value().IsNil() {
 			return datamodel.Kind_Null
 		}
 
-		if n.v.Value().Type().Implements(reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()) {
+		vt := n.v.Value().Type()
+
+		if Implements[encoding.TextMarshaler](vt) {
 			return datamodel.Kind_String
 		}
 
-		if n.v.Value().Type().Implements(reflect.TypeOf((*encoding.BinaryMarshaler)(nil)).Elem()) {
+		if Implements[encoding.BinaryMarshaler](vt) {
 			return datamodel.Kind_Bytes
 		}
 
@@ -74,7 +78,7 @@ func (n valueNode) LookupByString(key string) (datamodel.Node, error) {
 		return n.LookupByIndex(index)
 
 	case PrimitiveKindMap:
-		v := n.v.Value().MapIndex(reflect.ValueOf(key))
+		v := n.v.Indirect().MapIndex(reflect.ValueOf(key))
 
 		return ValueFrom(v).As(n.v.typ.Map().Value()).AsNode(), nil
 
@@ -202,27 +206,56 @@ func (n valueNode) Length() int64 {
 }
 
 func (n valueNode) AsBool() (bool, error) {
-	if n.v.Value().Kind() != reflect.Bool {
+	v := n.v.Indirect()
+
+	if v.Kind() != reflect.Bool {
 		return false, errors.New("cannot convert to bool")
 	}
 
-	return n.v.Indirect().Bool(), nil
+	return v.Bool(), nil
 }
 
 func (n valueNode) AsInt() (int64, error) {
+	v := n.v.Indirect()
+
 	if n.v.Type().PrimitiveKind() == PrimitiveKindUnsignedInt {
-		return int64(n.v.Value().Uint()), nil
+		return int64(v.Uint()), nil
 	}
 
-	return n.v.Indirect().Int(), nil
+	return v.Int(), nil
 }
 
 func (n valueNode) AsFloat() (float64, error) {
-	return n.v.Indirect().Float(), nil
+	v := n.v.Indirect()
+
+	switch n.v.Type().PrimitiveKind() {
+	case PrimitiveKindInt:
+		return float64(v.Int()), nil
+
+	case PrimitiveKindUnsignedInt:
+		return float64(v.Uint()), nil
+
+	case PrimitiveKindFloat:
+		return v.Float(), nil
+	}
+
+	return 0.0, errors.New("cannot convert to float")
 }
 
 func (n valueNode) AsString() (string, error) {
 	v := n.v.Indirect()
+
+	if !v.IsValid() {
+		return "", nil
+	}
+
+	if v.Kind() == reflect.Interface && v.IsNil() {
+		return "", nil
+	}
+
+	if v.Kind() == reflect.Pointer && v.IsNil() {
+		return "", nil
+	}
 
 	if m, ok := TryCast[encoding.TextMarshaler](v); ok {
 		str, err := m.MarshalText()
@@ -272,7 +305,13 @@ func (n valueNode) AsBytes() ([]byte, error) {
 }
 
 func (n valueNode) AsLink() (datamodel.Link, error) {
-	return n.v.Indirect().Interface().(datamodel.Link), nil
+	res, ok := TryCast[datamodel.Link](n.v.Indirect())
+
+	if !ok {
+		return nil, errors.New("cannot convert to link")
+	}
+
+	return res, nil
 }
 
 func (n valueNode) Prototype() datamodel.NodePrototype {
@@ -405,7 +444,7 @@ func (m *structIterator) Next() (key datamodel.Node, value datamodel.Node, err e
 	m.index++
 
 	f := m.t.FieldByIndex(i)
-	v := f.Value(m.v)
+	v := f.Resolve(m.v)
 
 	return ValueFrom(reflect.ValueOf(f.Name())).AsNode(), v.AsNode(), nil
 }

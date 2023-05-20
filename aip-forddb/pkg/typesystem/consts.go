@@ -14,4 +14,5 @@ const (
 	PrimitiveKindMap
 	PrimitiveKindStruct
 	PrimitiveKindInterface
+	PrimitiveKindLink
 )

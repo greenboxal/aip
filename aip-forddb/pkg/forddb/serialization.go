@@ -5,6 +5,7 @@ import (
 
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
+	"github.com/ipld/go-ipld-prime/schema"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
@@ -75,7 +76,7 @@ func ConvertNode[T any](node ipld.Node) (def T, _ error) {
 }
 
 func Encode(value any) (RawResource, error) {
-	return RawResource{typesystem.Wrap(value)}, nil
+	return RawResource{typesystem.Wrap(value).(schema.TypedNode)}, nil
 }
 
 func Decode(rawResource RawResource) (any, error) {

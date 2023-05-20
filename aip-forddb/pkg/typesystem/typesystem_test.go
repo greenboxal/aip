@@ -4,9 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
+	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/jaswdr/faker"
+	"github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,6 +47,20 @@ type TestScalars struct {
 	Duration time.Duration
 }
 
+type TestComplexScalars struct {
+	Cid     cid.Cid
+	CidLink cidlink.Link
+}
+
+type TestPointers struct {
+	A *bool
+	B *int
+	C *string
+
+	Time     *time.Time
+	Duration *time.Duration
+}
+
 type TestNils struct {
 	List []string
 }
@@ -70,8 +87,27 @@ type TestStruct1 struct {
 	Scalars TestScalars
 	Lists   TestLists
 	Maps    TestMaps
+	Complex TestComplexScalars
+
+	TestPointersNull TestPointers
+	TestPointers     TestPointers
 
 	TestIfaceNode interface{}
+}
+
+var testHash multihash.Multihash
+var testCid cid.Cid
+
+func init() {
+	var err error
+
+	testHash, err = multihash.Sum([]byte("LOL"), multihash.SHA2_256, -1)
+
+	if err != nil {
+		panic(err)
+	}
+
+	testCid = cid.NewCidV1(cid.Raw, testHash)
 }
 
 func TestTS(t *testing.T) {
@@ -93,6 +129,8 @@ func TestTS(t *testing.T) {
 
 	initialValue.Nils = TestNils{}
 	initialValue.TestIfaceNode = ifaceValue
+	initialValue.Complex.Cid = testCid
+	initialValue.Complex.CidLink = cidlink.Link{Cid: testCid}
 
 	typ := TypeOf(TestStruct1{})
 	wrapped := Wrap(initialValue)

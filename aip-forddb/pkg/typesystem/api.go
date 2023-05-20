@@ -48,8 +48,9 @@ type Field interface {
 	Name() string
 	Type() Type
 	DeclaringType() StructType
+	IsVirtual() bool
 
-	Value(v Value) Value
+	Resolve(v Value) Value
 }
 
 func Universe() *TypeSystem {
@@ -107,16 +108,30 @@ func MakeMap(k, v Type, length int) Value {
 	}
 }
 
-func Wrap(v any) schema.TypedNode {
+func Wrap(v any) ipld.Node {
+	if n, ok := v.(ipld.Node); ok {
+		return n
+	}
+
 	return ValueOf(v).AsNode().(schema.TypedNode)
 }
 
 func Unwrap(v ipld.Node) any {
-	val := v.(valueNode).v.Value()
+	res, ok := TryUnwrap[any](v)
 
-	if !val.IsValid() {
-		return nil
+	if !ok {
+		return v
 	}
 
-	return val.Interface()
+	return res
+}
+
+func TryUnwrap[T any](v ipld.Node) (def T, ok bool) {
+	val, ok := v.(valueNode)
+
+	if !ok {
+		return
+	}
+
+	return TryCast[T](val.v.Indirect())
 }

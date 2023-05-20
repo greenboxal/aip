@@ -15,13 +15,25 @@ type typeInitializer interface {
 type basicType struct {
 	self Type
 
-	name                   TypeName
-	primitiveKind          PrimitiveKind
-	runtimeType            reflect.Type
+	name TypeName
+
+	primitiveKind PrimitiveKind
+	runtimeType   reflect.Type
+
 	ipldType               schema.Type
 	ipldPrimitive          ipld.NodePrototype
 	ipldPrototype          schema.TypedPrototype
 	ipldRepresentationKind datamodel.Kind
+
+	operators   []Operator
+	operatorMap []map[string]Operator
+
+	universe *TypeSystem
+}
+
+func (bt *basicType) initialize(ts *TypeSystem) {
+	bt.universe = ts
+	bt.operatorMap = make([]map[string]Operator, len(bt.operators))
 }
 
 func (bt *basicType) Name() TypeName                         { return bt.name }
@@ -34,10 +46,6 @@ func (bt *basicType) IpldType() schema.Type                  { return bt.ipldTyp
 func (bt *basicType) IpldPrimitive() ipld.NodePrototype      { return bt.ipldPrimitive }
 func (bt *basicType) IpldPrototype() schema.TypedPrototype   { return bt.ipldPrototype }
 func (bt *basicType) IpldRepresentationKind() datamodel.Kind { return bt.ipldRepresentationKind }
-
-type scalarType struct {
-	basicType
-}
 
 type interfaceType struct {
 	basicType
@@ -71,20 +79,3 @@ type mapType struct {
 
 func (mt *mapType) Key() Type   { return mt.key }
 func (mt *mapType) Value() Type { return mt.val }
-
-type field struct {
-	declaringType StructType
-	name          string
-	typ           Type
-	runtimeField  reflect.StructField
-}
-
-func (f *field) Name() string              { return f.name }
-func (f *field) Type() Type                { return f.typ }
-func (f *field) DeclaringType() StructType { return f.declaringType }
-
-func (f *field) Value(receiver Value) Value {
-	v := reflect.Indirect(receiver.Value()).FieldByIndex(f.runtimeField.Index)
-
-	return ValueFrom(v).As(f.typ)
-}

@@ -119,7 +119,7 @@ func (ib *ifaceBuilder) AssembleValue() datamodel.NodeAssembler {
 			return newNodeBuilder(New(TypeFrom(reflect.TypeOf((*any)(nil)).Elem())))
 		}
 
-		v := fld.Value(ib.v)
+		v := fld.Resolve(ib.v)
 
 		return newNodeBuilder(v)
 	}

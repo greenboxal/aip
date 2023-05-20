@@ -75,35 +75,55 @@ func (bb *nodeBuilder) BeginList(sizeHint int64) (datamodel.ListAssembler, error
 }
 
 func (bb *nodeBuilder) AssignNull() error {
-	bb.v.Value().Set(reflect.Zero(bb.v.Type().RuntimeType()))
+	if bb.v.v.Kind() == reflect.Ptr {
+		bb.v.v.Set(reflect.Zero(bb.v.v.Type()))
+	} else {
+		bb.v.Indirect().Set(reflect.Zero(bb.v.Type().RuntimeType()))
+	}
 
 	return nil
 }
 
 func (bb *nodeBuilder) AssignBool(b bool) error {
-	bb.v.Value().SetBool(b)
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
+	bb.v.Indirect().SetBool(b)
 
 	return nil
 }
 
 func (bb *nodeBuilder) AssignInt(i int64) error {
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
 	if bb.v.Type().PrimitiveKind() == PrimitiveKindUnsignedInt {
-		bb.v.Value().SetUint(uint64(i))
+		bb.v.Indirect().SetUint(uint64(i))
 	} else {
-		bb.v.Value().SetInt(i)
+		bb.v.Indirect().SetInt(i)
 	}
 
 	return nil
 }
 
 func (bb *nodeBuilder) AssignFloat(f float64) error {
-	bb.v.Value().SetFloat(f)
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
+	bb.v.Indirect().SetFloat(f)
 
 	return nil
 }
 
 func (bb *nodeBuilder) AssignString(s string) error {
-	v := bb.v.Value()
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
+	v := bb.v.Indirect()
 
 	switch bb.v.typ.PrimitiveKind() {
 	case PrimitiveKindString:
@@ -138,6 +158,10 @@ func (bb *nodeBuilder) AssignString(s string) error {
 
 	default:
 		if u, ok := TryCast[encoding.TextUnmarshaler](v); ok {
+			if s == "" {
+				return nil
+			}
+
 			return u.UnmarshalText([]byte(s))
 		}
 
@@ -148,13 +172,21 @@ func (bb *nodeBuilder) AssignString(s string) error {
 }
 
 func (bb *nodeBuilder) AssignBytes(bytes []byte) error {
-	v := bb.v.Value()
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
+	v := bb.v.Indirect()
 
 	if v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
 		v.SetBytes(bytes)
 
 		return nil
 	} else if u, ok := TryCast[encoding.BinaryUnmarshaler](v); ok {
+		if len(bytes) == 0 {
+			return nil
+		}
+
 		return u.UnmarshalBinary(bytes)
 	} else {
 		return errors.New("cannot assign string to non-bytes type")
@@ -162,13 +194,31 @@ func (bb *nodeBuilder) AssignBytes(bytes []byte) error {
 }
 
 func (bb *nodeBuilder) AssignLink(link datamodel.Link) error {
-	//TODO implement me
-	panic("implement me")
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
+	bb.v.Indirect().Set(reflect.ValueOf(link))
+
+	return nil
 }
 
 func (bb *nodeBuilder) AssignNode(node datamodel.Node) error {
+	if bb.v.v.Kind() == reflect.Ptr && bb.v.v.IsNil() {
+		bb.v.v.Set(reflect.New(bb.v.v.Type().Elem()))
+	}
+
 	if vn, ok := node.(valueNode); ok {
 		bb.v = vn.v
+		return nil
+	}
+
+	vn := reflect.ValueOf(node)
+	vt := bb.v.Type()
+
+	if vn.Type().AssignableTo(vt.RuntimeType()) {
+		bb.v.Indirect().Set(vn)
+
 		return nil
 	}
 
@@ -205,6 +255,67 @@ func (bb *nodeBuilder) AssignNode(node datamodel.Node) error {
 			return err
 		}
 		return bb.AssignBytes(v)
+	case datamodel.Kind_Link:
+		v, err := node.AsLink()
+		if err != nil {
+			return err
+		}
+		return bb.AssignLink(v)
+	case datamodel.Kind_List:
+		it := node.ListIterator()
+		count := node.Length()
+
+		lb, err := bb.BeginList(count)
+
+		if err != nil {
+			return err
+		}
+
+		for !it.Done() {
+			_, n, err := it.Next()
+
+			if err != nil {
+				return err
+			}
+
+			if err := lb.AssembleValue().AssignNode(n); err != nil {
+				return err
+			}
+		}
+
+		if err := lb.Finish(); err != nil {
+			return err
+		}
+
+	case datamodel.Kind_Map:
+		it := node.MapIterator()
+		count := node.Length()
+
+		mb, err := bb.BeginMap(count)
+
+		if err != nil {
+			return err
+		}
+
+		for !it.Done() {
+			k, v, err := it.Next()
+
+			if err != nil {
+				return err
+			}
+
+			if err := mb.AssembleKey().AssignNode(k); err != nil {
+				return err
+			}
+
+			if err := mb.AssembleValue().AssignNode(v); err != nil {
+				return err
+			}
+		}
+
+		if err := mb.Finish(); err != nil {
+			return err
+		}
 	}
 
 	return errors.New("cannot assign node")
@@ -348,7 +459,7 @@ func (sa *structAssembler) AssembleValue() datamodel.NodeAssembler {
 		return newNodeBuilder(New(TypeFrom(reflect.TypeOf((*any)(nil)).Elem())))
 	}
 
-	v := fld.Value(sa.bb.v)
+	v := fld.Resolve(sa.bb.v)
 
 	return newNodeBuilder(v)
 }

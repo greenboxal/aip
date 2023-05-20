@@ -106,7 +106,7 @@ func (s *Storage) Get(ctx context.Context, typ forddb.TypeID, id forddb.BasicRes
 		return nil, forddb.ErrNotFound
 	}
 
-	resource, err := forddb.Deserialize(value, forddb.Json)
+	resource, err := ipld.Deserialize(value, forddb.Json)
 
 	if err != nil {
 		return nil, err

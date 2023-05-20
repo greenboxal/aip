@@ -233,6 +233,10 @@ func (rs *resourceSlot) doUpdate(
 		}
 	}
 
+	if err := metadataMap.Finish(); err != nil {
+		panic(err)
+	}
+
 	resource = forddb.RawResource{TypedNode: builder.Build().(schema.TypedNode)}
 
 	res, err := forddb.DecodeAs[forddb.BasicResource](resource)
@@ -242,14 +246,12 @@ func (rs *resourceSlot) doUpdate(
 	}
 
 	record, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
-		Kind:        forddb.LogEntryKindSet,
-		Type:        rs.table.typ,
-		ID:          rs.id.String(),
-		Version:     resource.GetResourceVersion(),
-		CurrentCid:  nil,
-		PreviousCid: nil,
-		Previous:    rs.lastRecord.Current,
-		Current:     res,
+		Kind:     forddb.LogEntryKindSet,
+		Type:     rs.table.typ,
+		ID:       rs.id.String(),
+		Version:  resource.GetResourceVersion(),
+		Previous: rs.lastRecord.Current,
+		Current:  res,
 	})
 
 	if err != nil {
@@ -299,14 +301,12 @@ func (rs *resourceSlot) doDelete(ctx context.Context) (forddb.RawResource, bool,
 
 	if !rs.table.typ.Type().IsRuntimeOnly() {
 		_, err := rs.table.db.log.Append(ctx, forddb.LogEntry{
-			Kind:        forddb.LogEntryKindDelete,
-			Type:        rs.table.typ,
-			ID:          rs.id.String(),
-			Version:     value.GetResourceVersion(),
-			CurrentCid:  nil,
-			PreviousCid: nil,
-			Previous:    res,
-			Current:     nil,
+			Kind:     forddb.LogEntryKindDelete,
+			Type:     rs.table.typ,
+			ID:       rs.id.String(),
+			Version:  value.GetResourceVersion(),
+			Previous: res,
+			Current:  nil,
 		})
 
 		if err != nil {

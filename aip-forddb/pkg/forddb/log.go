@@ -2,8 +2,6 @@ package forddb
 
 import (
 	"time"
-
-	"github.com/ipfs/go-cid"
 )
 
 type LogEntryKind int
@@ -63,9 +61,6 @@ type LogEntry struct {
 	Kind LogEntryKind `json:"kind"`
 
 	Version uint64 `json:"version,omitempty"`
-
-	CurrentCid  *cid.Cid `json:"current_cid,omitempty"`
-	PreviousCid *cid.Cid `json:"previous_cid,omitempty"`
 
 	Previous BasicResource `json:"previous,omitempty"`
 	Current  BasicResource `json:"current,omitempty"`
