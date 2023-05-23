@@ -8,6 +8,8 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
+import 'reactflow/dist/style.css';
+
 import "react-chat-elements/dist/main.css"
 
 import App from './App';

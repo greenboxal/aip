@@ -127,7 +127,7 @@ func (bb *nodeBuilder) AssignString(s string) error {
 
 	switch bb.v.typ.PrimitiveKind() {
 	case PrimitiveKindString:
-		reflect.Indirect(v).SetString(s)
+		v.SetString(s)
 
 	case PrimitiveKindInt:
 		i, err := strconv.ParseInt(s, 10, 64)

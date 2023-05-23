@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
+	"github.com/graph-gophers/dataloader"
 	"github.com/graphql-go/graphql"
+	"github.com/hashicorp/go-multierror"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 
@@ -15,11 +18,30 @@ import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
+var stringType = reflect.TypeOf((*string)(nil)).Elem()
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
 var timeType = reflect.TypeOf((*time.Time)(nil)).Elem()
 var rawResourceType = reflect.TypeOf((*forddb.RawResource)(nil)).Elem()
 var cidType = reflect.TypeOf((*cid.Cid)(nil)).Elem()
+
+func (q *GraphQL) RegisterQuery(fields ...*graphql.Field) {
+	for _, field := range fields {
+		q.rootQueryFields[field.Name] = field
+	}
+}
+
+func (q *GraphQL) RegisterMutation(fields ...*graphql.Field) {
+	for _, field := range fields {
+		q.rootMutationFields[field.Name] = field
+	}
+}
+
+func (q *GraphQL) RegisterSubscription(fields ...*graphql.Field) {
+	for _, field := range fields {
+		q.subscriptionFields[field.Name] = field
+	}
+}
 
 func (q *GraphQL) initializeTypeSystem() {
 	q.RegisterTypeMapping(timeType, graphql.DateTime, graphql.DateTime)
@@ -126,7 +148,7 @@ func (q *GraphQL) LookupInputType(typ typesystem.Type) graphql.Input {
 			lt := typ.List()
 			elem := q.LookupInputType(lt.Elem())
 
-			return graphql.NewList(elem)
+			result = graphql.NewList(elem)
 
 		case ipld.Kind_Map:
 			if typ.PrimitiveKind() == typesystem.PrimitiveKindStruct {
@@ -185,7 +207,7 @@ func (q *GraphQL) LookupInputType(typ typesystem.Type) graphql.Input {
 					},
 				})
 
-				return graphql.NewList(kvType)
+				result = graphql.NewList(kvType)
 			}
 
 		default:
@@ -232,52 +254,11 @@ func (q *GraphQL) LookupOutputType(typ typesystem.Type) graphql.Output {
 			lt := typ.List()
 			elem := q.LookupOutputType(lt.Elem())
 
-			return graphql.NewList(elem)
+			result = graphql.NewList(elem)
 
 		case ipld.Kind_Map:
 			if typ.PrimitiveKind() == typesystem.PrimitiveKindStruct {
-				fields := graphql.Fields{
-					"id": &graphql.Field{
-						Name: "id",
-						Type: graphql.String,
-					},
-				}
-
-				st := typ.Struct()
-
-				for i := 0; i < st.NumField(); i++ {
-					field := st.FieldByIndex(i)
-					fieldType := field.Type()
-
-					f := &graphql.Field{
-						Name: field.Name(),
-						Type: q.LookupOutputType(fieldType),
-					}
-
-					fields[f.Name] = f
-				}
-
-				if len(fields) == 0 {
-					result = graphql.String
-					break
-				}
-
-				name := typ.Name().NormalizedFullNameWithArguments()
-
-				resTyp := forddb.TypeSystem().LookupByType(typ.RuntimeType())
-
-				if typ, ok := resTyp.(forddb.BasicResourceType); ok {
-					name = typ.ResourceName().ToTitle()
-				}
-
-				name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
-
-				config := graphql.ObjectConfig{
-					Name:   name,
-					Fields: fields,
-				}
-
-				result = graphql.NewObject(config)
+				result = q.compileOutputStruct(typ)
 			} else {
 				mt := typ.Map()
 
@@ -297,7 +278,7 @@ func (q *GraphQL) LookupOutputType(typ typesystem.Type) graphql.Output {
 					},
 				})
 
-				return graphql.NewList(kvType)
+				result = graphql.NewList(kvType)
 			}
 
 		default:
@@ -310,20 +291,168 @@ func (q *GraphQL) LookupOutputType(typ typesystem.Type) graphql.Output {
 	return result
 }
 
-func (q *GraphQL) RegisterQuery(fields ...*graphql.Field) {
-	for _, field := range fields {
-		q.rootQueryFields[field.Name] = field
+func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
+
+	name := typ.Name().NormalizedFullNameWithArguments()
+
+	resTyp := forddb.TypeSystem().LookupByType(typ.RuntimeType())
+
+	if typ, ok := resTyp.(forddb.BasicResourceType); ok {
+		name = typ.ResourceName().ToTitle()
 	}
+
+	name = regexp.MustCompile("[^_a-zA-Z0-9]").ReplaceAllString(name, "_")
+
+	config := graphql.ObjectConfig{
+		Name: name,
+
+		Fields: graphql.FieldsThunk(func() graphql.Fields {
+			fields := graphql.Fields{
+				"id": &graphql.Field{
+					Name: "id",
+					Type: graphql.String,
+				},
+			}
+
+			st := typ.Struct()
+
+			for i := 0; i < st.NumField(); i++ {
+				field := st.FieldByIndex(i)
+				fieldType := field.Type()
+
+				f := &graphql.Field{
+					Name: field.Name(),
+					Type: q.LookupOutputType(fieldType),
+				}
+
+				if strings.HasSuffix(f.Name, "_id") && forddb.IsBasicResourceId(fieldType.RuntimeType()) {
+					expandedFieldType := forddb.TypeSystem().LookupByIDType(fieldType.RuntimeType())
+					expandedFieldGqlType := q.LookupOutputType(expandedFieldType.ActualType())
+
+					expandedField := &graphql.Field{
+						Name: strings.TrimSuffix(f.Name, "_id"),
+						Type: expandedFieldGqlType,
+
+						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+							receiver := p.Source.(map[string]interface{})
+							loaders := p.Context.Value("loaders").(*Loaders)
+							loader := loaders.Get(expandedFieldType.ActualType())
+
+							v := reflect.ValueOf(receiver[f.Name])
+
+							if v.Kind() != reflect.String {
+								if v.CanConvert(stringType) {
+									v = v.Convert(stringType)
+								} else if v.Kind() == reflect.Interface && v.Elem().Kind() == reflect.String {
+									v = v.Elem()
+								} else if v.Kind() == reflect.Pointer && v.Elem().Kind() == reflect.String {
+									v = v.Elem()
+								} else {
+									return nil, fmt.Errorf("invalid type for id: %s", v.Type().String())
+								}
+							}
+
+							ch := make(chan dataLoaderResult, 1)
+							thunk := loader.Load(p.Context, dataloader.StringKey(v.String()))
+
+							go func() {
+								res, err := thunk()
+
+								ch <- dataLoaderResult{res, err}
+							}()
+
+							return func() (any, error) {
+								result := <-ch
+
+								if result.Error != nil {
+									return nil, result.Error
+								}
+
+								return result.Value, nil
+							}, nil
+						},
+					}
+
+					fields[expandedField.Name] = expandedField
+				} else if strings.HasSuffix(f.Name, "_ids") && fieldType.PrimitiveKind() == typesystem.PrimitiveKindList {
+					lt := fieldType.List()
+
+					if forddb.IsBasicResourceId(lt.Elem().RuntimeType()) {
+						expandedFieldType := forddb.TypeSystem().LookupByIDType(lt.Elem().RuntimeType())
+						expandedFieldGqlType := q.LookupOutputType(expandedFieldType.ActualType())
+
+						expandedField := &graphql.Field{
+							Name: strings.TrimSuffix(f.Name, "_ids"),
+							Type: graphql.NewList(expandedFieldGqlType),
+
+							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+								receiver := p.Source.(map[string]interface{})
+								loaders := p.Context.Value("loaders").(*Loaders)
+								loader := loaders.Get(expandedFieldType.ActualType())
+
+								fieldValue := reflect.ValueOf(receiver[f.Name])
+								targetIds := make([]dataloader.Key, fieldValue.Len())
+
+								for i := 0; i < fieldValue.Len(); i++ {
+									v := fieldValue.Index(i)
+
+									if v.Kind() != reflect.String {
+										if v.CanConvert(stringType) {
+											v = v.Convert(stringType)
+										} else if v.Kind() == reflect.Interface && v.Elem().Kind() == reflect.String {
+											v = v.Elem()
+										} else if v.Kind() == reflect.Pointer && v.Elem().Kind() == reflect.String {
+											v = v.Elem()
+										} else {
+											return nil, fmt.Errorf("invalid type for id: %s", v.Type().String())
+										}
+									}
+
+									targetIds[i] = dataloader.StringKey(v.String())
+								}
+
+								ch := make(chan dataLoaderResult, 1)
+								thunk := loader.LoadMany(p.Context, targetIds)
+
+								go func() {
+									var merr error
+
+									res, err := thunk()
+
+									for _, e := range err {
+										merr = multierror.Append(merr, e)
+									}
+
+									ch <- dataLoaderResult{res, merr}
+								}()
+
+								return func() (any, error) {
+									result := <-ch
+
+									if result.Error != nil {
+										return nil, result.Error
+									}
+
+									return result.Value, nil
+								}, nil
+							},
+						}
+
+						fields[expandedField.Name] = expandedField
+					}
+				}
+
+				fields[f.Name] = f
+			}
+
+			return fields
+		}),
+	}
+
+	return graphql.NewObject(config)
 }
 
-func (q *GraphQL) RegisterMutation(fields ...*graphql.Field) {
-	for _, field := range fields {
-		q.rootMutationFields[field.Name] = field
-	}
-}
-
-func (q *GraphQL) RegisterSubscription(fields ...*graphql.Field) {
-	for _, field := range fields {
-		q.subscriptionFields[field.Name] = field
-	}
+type dataLoaderResult struct {
+	Value any
+	Error error
 }

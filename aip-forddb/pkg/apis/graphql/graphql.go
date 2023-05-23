@@ -1,18 +1,22 @@
 package graphql
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/eientei/wsgraphql/v1"
 	"github.com/eientei/wsgraphql/v1/compat/gorillaws"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
+	"github.com/graph-gophers/dataloader"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
+	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
@@ -84,10 +88,77 @@ func NewGraphQL(
 		Playground: true,
 	})
 
+	gql.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "loaders", &Loaders{
+				db:      db,
+				loaders: map[typesystem.Type]*dataloader.Loader{},
+			})
+
+			r = r.WithContext(ctx)
+
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	gql.Mount("/ws", wsHandler)
 	gql.Mount("/", httpHandler)
 
 	return gql
+}
+
+type Loaders struct {
+	m       sync.Mutex
+	db      forddb.Database
+	loaders map[typesystem.Type]*dataloader.Loader
+}
+
+func (l *Loaders) Get(typ typesystem.Type) *dataloader.Loader {
+	l.m.Lock()
+	defer l.m.Unlock()
+
+	if existing := l.loaders[typ]; existing != nil {
+		return existing
+	}
+
+	resourceType := forddb.TypeSystem().LookupByResourceType(typ.RuntimeType())
+
+	loader := dataloader.NewBatchedLoader(func(ctx context.Context, keys dataloader.Keys) (results []*dataloader.Result) {
+		var wg sync.WaitGroup
+
+		targetIds := lo.Map(keys, func(key dataloader.Key, _ int) forddb.BasicResourceID {
+			return resourceType.CreateID(key.String())
+		})
+
+		for _, id := range targetIds {
+			wg.Add(1)
+
+			id := id
+
+			result := &dataloader.Result{}
+			results = append(results, result)
+
+			go func() {
+				defer wg.Done()
+
+				res, err := l.db.Get(ctx, id.BasicResourceType().GetResourceID(), id)
+
+				if err != nil {
+					result.Error = err
+				} else {
+					result.Data = res
+				}
+			}()
+		}
+
+		wg.Wait()
+
+		return
+	})
+
+	l.loaders[typ] = loader
+
+	return loader
 }
 
 func prepareResource(res forddb.BasicResource) (any, error) {

@@ -11,13 +11,14 @@ import (
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/pelletier/go-toml/v2"
+	"github.com/samber/lo"
 	"sigs.k8s.io/yaml"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
 )
 
-func Put[T BasicResource](ctx context.Context, db Database, id T) (def T, _ error) {
-	resource, err := db.Put(ctx, id)
+func Put[T BasicResource](ctx context.Context, db Database, res T) (def T, _ error) {
+	resource, err := db.Put(ctx, res)
 
 	if err != nil {
 		return def, err
@@ -28,6 +29,23 @@ func Put[T BasicResource](ctx context.Context, db Database, id T) (def T, _ erro
 	}
 
 	return resource.(T), nil
+}
+
+func List[T BasicResource](
+	ctx context.Context,
+	db Database,
+	typ BasicResourceType,
+	opts ...ListOption,
+) ([]T, error) {
+	resources, err := db.List(ctx, typ.GetResourceID(), opts...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return lo.Map(resources, func(resource BasicResource, _ int) T {
+		return resource.(T)
+	}), nil
 }
 
 func Get[T BasicResource](ctx context.Context, db Database, id ResourceID[T]) (def T, _ error) {

@@ -34,8 +34,10 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import GroupIcon from '@mui/icons-material/Group';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
+import RouteIcon from '@mui/icons-material/Route';
 import {TraceList, TraceShow} from "./resources/Trace";
 import {SpanList, SpanShow} from "./resources/Span";
+import {DomainCreate, DomainList, DomainShow} from "./resources/Domain";
 
 type WikiAdminProps = {
     client: ApolloClient<any>,
@@ -69,7 +71,8 @@ const WikiAdmin: React.FC<WikiAdminProps> = ({ client, dataProvider, baseName })
                 recordRepresentation={(record) => `${record.id} : ${record.spec.title}`}
             />
 
-            <Resource name="Domain" icon={DnsIcon} list={ListGuesser} show={ShowGuesser} />
+            <Resource name="Domain" icon={DnsIcon} list={DomainList} show={DomainShow} create={DomainCreate} />
+            <Resource name="RouteBinding" icon={RouteIcon} list={ListGuesser} show={ShowGuesser} />
             <Resource name="Layout" icon={SpaceDashboardIcon} list={ListGuesser} show={ShowGuesser} />
 
             <Resource name="Job" icon={WorkIcon} list={JobList} show={JobShow} />

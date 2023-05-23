@@ -167,7 +167,7 @@ export default function buildDataProvider(): Promise<{ client: ApolloClient<any>
                             return "wikiPageManagerGetPage"
                     }
 
-                    return undefined
+                    return "create" + type.name
                 },
             },
         },
