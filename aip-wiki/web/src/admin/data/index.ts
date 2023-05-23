@@ -1,14 +1,15 @@
-import React from "react";
-import {DataProvider} from "react-admin";
+import {DataProvider, GET_LIST, GET_MANY, GET_MANY_REFERENCE} from "react-admin";
 import {ApolloClient, gql, HttpLink, InMemoryCache, split} from "@apollo/client";
 import {GraphQLWsLink} from "@apollo/client/link/subscriptions";
 import {createClient} from "graphql-ws";
 import {getMainDefinition} from "@apollo/client/utilities";
-import buildGraphQLProvider from "ra-data-graphql-simple";
+import buildGraphQLProvider, {buildQuery} from "./base";
 import {CREATE} from "ra-core";
 import {addSearchMethod} from "@react-admin/ra-search";
 import {setContext} from "@apollo/client/link/context";
 import {auth0} from "../../authProvider";
+import {IntrospectionResult} from "ra-data-graphql";
+import {IntrospectionField} from "graphql";
 
 function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataProvider): DataProvider {
     let subscriptions: any = {};
@@ -112,7 +113,7 @@ function enhanceDataProvider(client: ApolloClient<any>, baseDataProvider: DataPr
 const API_HTTP_BASE_URL = process.env.REACT_APP_AIP_API_HTTP_BASE_URL || "http://localhost:30100/v1/graphql"
 const API_WS_BASE_URL = process.env.REACT_APP_AIP_API_WS_BASE_URL || "ws://localhost:30100/v1/graphql/ws"
 
-export default function buildDataProvider(): Promise<{ client: ApolloClient<any>, dataProvider: DataProvider }> {
+export default async function buildDataProvider(): Promise<{ client: ApolloClient<any>, dataProvider: DataProvider }> {
     const httpLink = new HttpLink({
         uri: API_HTTP_BASE_URL,
     })
@@ -156,8 +157,54 @@ export default function buildDataProvider(): Promise<{ client: ApolloClient<any>
         cache: new InMemoryCache().restore({}),
     })
 
-    return buildGraphQLProvider({
+    const sanitizeResource = (data: any) => {
+        if (!data) {
+            return data
+        }
+
+        const metadata: any = data.metadata || {}
+
+        data.id = metadata.id || data.id
+
+        return data
+    }
+
+    const gqlBuildQuery = (introspectionResults: IntrospectionResult) => {
+        const baseQuery = buildQuery(introspectionResults)
+
+        return (raFetchMethod: string,
+                resource: string,
+                queryType: IntrospectionField
+        ) => {
+            const resourceQuery = baseQuery(raFetchMethod, resource, queryType)
+            const baseParseResponse = resourceQuery.parseResponse
+
+            resourceQuery.parseResponse = (response) => {
+                const baseResponse = baseParseResponse(response)
+
+                if (
+                    raFetchMethod === GET_LIST ||
+                    raFetchMethod === GET_MANY ||
+                    raFetchMethod === GET_MANY_REFERENCE
+                ) {
+                    return {
+                        data: baseResponse.data.map(sanitizeResource),
+                        total: baseResponse.total,
+                    };
+                }
+
+                return {
+                    data: sanitizeResource(baseResponse.data)
+                };
+            }
+
+            return resourceQuery
+        }
+    }
+
+    const gqlProvider = await buildGraphQLProvider({
         client: client,
+        buildQuery: gqlBuildQuery,
 
         introspection: {
             operationNames: {
@@ -172,7 +219,11 @@ export default function buildDataProvider(): Promise<{ client: ApolloClient<any>
             },
         },
     })
-        .then(graphQlDataProvider => {
-            return {client, dataProvider: enhanceDataProvider(client, graphQlDataProvider)}
-        })
+
+    const dataProvider = enhanceDataProvider(client, gqlProvider)
+
+    return {
+        client,
+        dataProvider,
+    }
 }

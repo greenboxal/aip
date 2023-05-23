@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
@@ -14,8 +13,6 @@ import (
 	"github.com/graph-gophers/dataloader"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
-	"github.com/ipld/go-ipld-prime"
-	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
@@ -123,30 +120,44 @@ func (l *Loaders) Get(typ typesystem.Type) *dataloader.Loader {
 
 	resourceType := forddb.TypeSystem().LookupByResourceType(typ.RuntimeType())
 
-	loader := dataloader.NewBatchedLoader(func(ctx context.Context, keys dataloader.Keys) (results []*dataloader.Result) {
+	loader := dataloader.NewBatchedLoader(func(
+		ctx context.Context,
+		keys dataloader.Keys,
+	) (results []*dataloader.Result) {
 		var wg sync.WaitGroup
 
-		targetIds := lo.Map(keys, func(key dataloader.Key, _ int) forddb.BasicResourceID {
-			return resourceType.CreateID(key.String())
+		results = make([]*dataloader.Result, len(keys))
+
+		targetIds := lo.Map(keys, func(key dataloader.Key, _ int) string {
+			return key.String()
 		})
 
-		for _, id := range targetIds {
+		for baseIndex := 0; baseIndex < len(keys); baseIndex += 30 {
 			wg.Add(1)
 
-			id := id
-
-			result := &dataloader.Result{}
-			results = append(results, result)
+			baseIndex := baseIndex
+			batchIds := targetIds[baseIndex:utils.Min(baseIndex+30, len(keys))]
 
 			go func() {
 				defer wg.Done()
 
-				res, err := l.db.Get(ctx, id.BasicResourceType().GetResourceID(), id)
+				resById := make(map[string]any, len(keys))
 
-				if err != nil {
-					result.Error = err
-				} else {
-					result.Data = res
+				res, err := l.db.List(
+					ctx,
+					resourceType.GetResourceID(),
+					forddb.WithListQueryOptions(
+						forddb.WithFilterExpression("resource.metadata.id in args.ids"),
+						forddb.WithFilterParameter("ids", batchIds),
+					),
+				)
+
+				for _, r := range res {
+					resById[r.GetResourceBasicID().String()] = r
+				}
+
+				for i, id := range batchIds {
+					results[baseIndex+i] = &dataloader.Result{Data: resById[id], Error: err}
 				}
 			}()
 		}
@@ -159,22 +170,4 @@ func (l *Loaders) Get(typ typesystem.Type) *dataloader.Loader {
 	l.loaders[typ] = loader
 
 	return loader
-}
-
-func prepareResource(res forddb.BasicResource) (any, error) {
-	var raw map[string]interface{}
-
-	data, err := ipld.Encode(typesystem.Wrap(res), dagjson.Encode)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, err
-	}
-
-	raw["id"] = res.GetResourceBasicID().String()
-
-	return raw, nil
 }

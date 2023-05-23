@@ -13,6 +13,7 @@ import (
 	"github.com/antonmedv/expr/ast"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -193,6 +194,10 @@ func parseConditions(node ast.Node, args any) ([]parsedCondition, error) {
 	walkValue = func(node ast.Node) (any, error) {
 		switch n := node.(type) {
 		case *ast.ConstantNode:
+			if m, ok := n.Value.(map[string]struct{}); ok {
+				return maps.Keys(m), nil
+			}
+
 			return n.Value, nil
 
 		case *ast.MemberNode:

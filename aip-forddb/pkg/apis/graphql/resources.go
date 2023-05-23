@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/antonmedv/expr/ast"
-	"github.com/antonmedv/expr/parser"
 	"github.com/graphql-go/graphql"
+	"github.com/hashicorp/go-multierror"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
+	"github.com/ipld/go-ipld-prime/fluent"
+	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
@@ -108,13 +110,7 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 				return nil, err
 			}
 
-			raw, err := prepareResource(res)
-
-			if err != nil {
-				return nil, err
-			}
-
-			return raw, nil
+			return prepareResource(res)
 		},
 	}
 
@@ -178,143 +174,10 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 		},
 
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			var options []forddb.ListOption
+			options, err := parseListOptions(typ, p)
 
-			pageIndex := 0
-			perPage := -1
-
-			if pageVal, ok := p.Args["page"]; ok {
-				pageIndex = pageVal.(int)
-			}
-
-			if perPageVal, ok := p.Args["perPage"]; ok {
-				perPage = perPageVal.(int)
-			}
-
-			if sortFieldVal, ok := p.Args["sortField"]; ok {
-				sortField := sortFieldVal.(string)
-				sortOrder := forddb.Asc
-
-				if sortOrderVal, ok := p.Args["sortOrder"]; ok {
-					sortOrder = forddb.SortOrder(sortOrderVal.(string))
-				}
-
-				options = append(options, forddb.WithSortField(sortField, sortOrder))
-			}
-
-			if filterVal, ok := p.Args["filter"]; ok {
-				var ids []forddb.BasicResourceID
-				var q string
-
-				filter := filterVal.(map[string]interface{})
-
-				if id, ok := filter["id"]; ok {
-					ids = append(ids, typ.CreateID(id.(string)))
-				}
-
-				if stringIds, ok := filter["ids"]; ok {
-					for _, id := range stringIds.([]interface{}) {
-						ids = append(ids, typ.CreateID(id.(string)))
-					}
-				}
-
-				if qVal, ok := filter["q"]; ok {
-					q = qVal.(string)
-				}
-
-				var filters []ast.Node
-
-				for key, val := range filter {
-					targetOp := "=="
-					fieldName := key
-					components := strings.Split(key, "_")
-
-					if key == "id" || key == "ids" || key == "q" {
-						continue
-					}
-
-					if len(components) > 1 {
-						op := components[len(components)-1]
-						mappedOp, ok := reverseOperatorMap[op]
-
-						if !ok {
-							continue
-						}
-
-						targetOp = mappedOp
-						fieldName = strings.Join(components[:len(components)-1], "_")
-					}
-
-					filters = append(filters, &ast.BinaryNode{
-						Left: &ast.MemberNode{
-							Name: fieldName,
-
-							Property: &ast.IdentifierNode{Value: fieldName},
-							Node:     &ast.IdentifierNode{Value: "resource"},
-						},
-
-						Operator: targetOp,
-
-						Right: &ast.ConstantNode{
-							Value: val,
-						},
-					})
-				}
-
-				if q != "" {
-					parsed, err := parser.Parse(q)
-
-					if err != nil {
-						return nil, err
-					}
-
-					filters = append(filters, parsed.Node)
-				}
-
-				for _, id := range ids {
-					filters = append(filters, &ast.BinaryNode{
-						Left: &ast.MemberNode{
-							Name:     "id",
-							Property: &ast.IdentifierNode{Value: "id"},
-
-							Node: &ast.MemberNode{
-								Name:     "metadata",
-								Property: &ast.IdentifierNode{Value: "metadata"},
-								Node:     &ast.IdentifierNode{Value: "resource"},
-							},
-						},
-
-						Operator: "==",
-						Right:    &ast.StringNode{Value: id.String()},
-					})
-				}
-
-				if len(filters) > 0 {
-					var rootNode ast.Node
-
-					for i, v := range filters {
-						if i == 0 {
-							rootNode = v
-
-							continue
-						}
-
-						rootNode = &ast.BinaryNode{
-							Left:     rootNode,
-							Operator: "&&",
-							Right:    v,
-						}
-					}
-
-					options = append(options, forddb.WithListQueryOptions(forddb.WithFilterExpressionNode(rootNode)))
-				}
-			}
-
-			if perPage != -1 {
-				options = append(options,
-					forddb.WithOffset(pageIndex*perPage),
-					forddb.WithLimit(perPage),
-				)
+			if err != nil {
+				return nil, err
 			}
 
 			results, err := r.db.List(
@@ -327,15 +190,7 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 				return nil, err
 			}
 
-			return lo.Map(results, func(item forddb.BasicResource, _index int) any {
-				raw, err := prepareResource(item)
-
-				if err != nil {
-					panic(err)
-				}
-
-				return raw
-			}), nil
+			return mapResources(results)
 		},
 	}
 
@@ -370,7 +225,13 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 		},
 
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			res, err := r.db.List(p.Context, typ.GetResourceID())
+			options, err := parseListOptions(typ, p)
+
+			if err != nil {
+				return nil, err
+			}
+
+			res, err := r.db.List(p.Context, typ.GetResourceID(), options...)
 
 			if err != nil {
 				return nil, err
@@ -420,9 +281,182 @@ func (r *DatabaseResourceBinding) compileResource(ctx BindingContext, typ forddb
 				return nil, err
 			}
 
-			return res, nil
+			return prepareResource(res)
 		},
 	}
 
 	ctx.RegisterMutation(createMutation)
+}
+
+func parseListOptions(typ forddb.BasicResourceType, p graphql.ResolveParams) ([]forddb.ListOption, error) {
+	var options []forddb.ListOption
+
+	pageIndex := 0
+	perPage := 10
+
+	if pageVal, ok := p.Args["page"]; ok {
+		pageIndex = pageVal.(int)
+	}
+
+	if perPageVal, ok := p.Args["perPage"]; ok {
+		perPage = perPageVal.(int)
+	}
+
+	if sortFieldVal, ok := p.Args["sortField"]; ok {
+		sortField := sortFieldVal.(string)
+		sortOrder := forddb.Asc
+
+		if sortOrderVal, ok := p.Args["sortOrder"]; ok {
+			sortOrder = forddb.SortOrder(sortOrderVal.(string))
+		}
+
+		options = append(options, forddb.WithSortField(sortField, sortOrder))
+	}
+
+	if filterVal, ok := p.Args["filter"]; ok {
+		var ids []forddb.BasicResourceID
+
+		filter := filterVal.(map[string]interface{})
+
+		if id, ok := filter["id"]; ok {
+			ids = append(ids, typ.CreateID(id.(string)))
+		}
+
+		if stringIds, ok := filter["ids"]; ok {
+			for _, id := range stringIds.([]interface{}) {
+				ids = append(ids, typ.CreateID(id.(string)))
+			}
+		}
+
+		var filters []ast.Node
+
+		for key, val := range filter {
+			targetOp := "=="
+			fieldName := key
+			components := strings.Split(key, "_")
+
+			if key == "id" || key == "ids" || key == "q" {
+				continue
+			}
+
+			if len(components) > 1 {
+				op := components[len(components)-1]
+				mappedOp, ok := reverseOperatorMap[op]
+
+				if ok {
+					targetOp = mappedOp
+					fieldName = strings.Join(components[:len(components)-1], "_")
+				}
+			}
+
+			filters = append(filters, &ast.BinaryNode{
+				Left: &ast.MemberNode{
+					Name: fieldName,
+
+					Property: &ast.IdentifierNode{Value: fieldName},
+					Node:     &ast.IdentifierNode{Value: "resource"},
+				},
+
+				Operator: targetOp,
+
+				Right: &ast.ConstantNode{
+					Value: val,
+				},
+			})
+		}
+
+		if len(ids) > 0 {
+			idStrs := lo.Map(ids, func(item forddb.BasicResourceID, index int) ast.Node {
+				return &ast.StringNode{
+					Value: item.String(),
+				}
+			})
+
+			filters = append(filters, &ast.BinaryNode{
+				Left: &ast.MemberNode{
+					Name:     "id",
+					Property: &ast.IdentifierNode{Value: "id"},
+
+					Node: &ast.MemberNode{
+						Name:     "metadata",
+						Property: &ast.IdentifierNode{Value: "metadata"},
+						Node:     &ast.IdentifierNode{Value: "resource"},
+					},
+				},
+
+				Operator: "in",
+
+				Right: &ast.ArrayNode{
+					Nodes: idStrs,
+				},
+			})
+		}
+
+		if len(filters) > 0 {
+			var rootNode ast.Node
+
+			for i, v := range filters {
+				if i == 0 {
+					rootNode = v
+
+					continue
+				}
+
+				rootNode = &ast.BinaryNode{
+					Left:     rootNode,
+					Operator: "&&",
+					Right:    v,
+				}
+			}
+
+			options = append(options, forddb.WithListQueryOptions(forddb.WithFilterExpressionNode(rootNode)))
+		}
+	}
+
+	if perPage != -1 {
+		options = append(options,
+			forddb.WithOffset(pageIndex*perPage),
+			forddb.WithLimit(perPage),
+		)
+	}
+
+	return options, nil
+}
+
+func mapResources(results []forddb.BasicResource) (interface{}, error) {
+	var merr error
+
+	mappedResources := make([]interface{}, len(results))
+
+	for i, v := range results {
+		mapped, err := prepareResource(v)
+
+		if err != nil {
+			merr = multierror.Append(merr, err)
+		}
+
+		mappedResources[i] = mapped
+	}
+
+	return mappedResources, merr
+}
+
+func prepareResource(resource forddb.BasicResource) (any, error) {
+	baseNode := typesystem.Wrap(resource)
+
+	if typed, ok := baseNode.(schema.TypedNode); ok {
+		baseNode = typed.Representation()
+	}
+
+	patchedValue, err := fluent.ToInterface(baseNode)
+
+	if err != nil {
+		return nil, err
+	}
+
+	patchedMap := patchedValue.(map[string]interface{})
+
+	patchedMap["id"] = resource.GetResourceBasicID().String()
+
+	return patchedMap, nil
 }

@@ -74,7 +74,7 @@ func (r *Router2) getRoute(request *http.Request, domain *models.Domain) (*model
 		r.db,
 		models.RouteBindingType,
 		forddb.WithListQueryOptions(
-			forddb.WithFilterExpression("resource.domain_id == parameters.domain_id"),
+			forddb.WithFilterExpression("resource.domain_id == args.domain_id"),
 			forddb.WithFilterParameter("domain_id", domain.ID),
 		),
 	)

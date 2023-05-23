@@ -1,5 +1,5 @@
 Arguments: 
-  /Users/jonathanlima/.nodenv/versions/18.13.0/bin/node /Users/jonathanlima/.nodenv/versions/18.13.0/bin/yarn start
+  /Users/jonathanlima/.nodenv/versions/18.13.0/bin/node /Users/jonathanlima/.nodenv/versions/18.13.0/bin/yarn add graphql-ast-types-browser
 
 PATH: 
   /Users/jonathanlima/.nodenv/versions/18.13.0/bin:/opt/homebrew/Cellar/nodenv/1.4.0/libexec:/opt/homebrew/Cellar/go/1.20.3/libexec/bin:/Users/jonathanlima/go/bin:/Users/jonathanlima/IdeaProjects/aip/venv/bin:/Users/jonathanlima/.wasmer/bin:/Users/jonathanlima/.pyenv/libexec/pyenv:/Users/jonathanlima/.pyenv/libexec:/Users/jonathanlima/.pyenv/shims:/Users/jonathanlima/.pyenv/bin:/Users/jonathanlima/.nodenv/shims:/opt/homebrew/bin:/opt/homebrew/opt/llvm/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/jonathanlima/IdeaProjects/aip/node_modules/.bin:/Users/jonathanlima/go/bin:/Users/jonathanlima/.rover/bin/rover:/Users/jonathanlima/.wasmer/globals/wapm_packages/.bin

@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
+	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-forddb/pkg/typesystem"
@@ -334,31 +336,33 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 						Type: expandedFieldGqlType,
 
 						Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-							receiver := p.Source.(map[string]interface{})
+							receiver := reflect.ValueOf(p.Source)
 							loaders := p.Context.Value("loaders").(*Loaders)
 							loader := loaders.Get(expandedFieldType.ActualType())
 
-							v := reflect.ValueOf(receiver[f.Name])
+							fieldValue := receiver.MapIndex(reflect.ValueOf(name))
 
-							if v.Kind() != reflect.String {
-								if v.CanConvert(stringType) {
-									v = v.Convert(stringType)
-								} else if v.Kind() == reflect.Interface && v.Elem().Kind() == reflect.String {
-									v = v.Elem()
-								} else if v.Kind() == reflect.Pointer && v.Elem().Kind() == reflect.String {
-									v = v.Elem()
-								} else {
-									return nil, fmt.Errorf("invalid type for id: %s", v.Type().String())
-								}
+							if !fieldValue.IsValid() {
+								return nil, nil
 							}
 
-							ch := make(chan dataLoaderResult, 1)
+							if fieldValue.CanInterface() && reflect.DeepEqual(fieldValue.Interface(), reflect.Zero(fieldValue.Type()).Interface()) {
+								return nil, nil
+							}
+
+							v, ok := typesystem.TryCast[forddb.BasicResourceID](fieldValue)
+
+							if !ok {
+								return nil, errors.New("invalid id")
+							}
+
+							ch := make(chan dataLoaderSingleResult, 1)
 							thunk := loader.Load(p.Context, dataloader.StringKey(v.String()))
 
 							go func() {
 								res, err := thunk()
 
-								ch <- dataLoaderResult{res, err}
+								ch <- dataLoaderSingleResult{res.(forddb.BasicResource), err}
 							}()
 
 							return func() (any, error) {
@@ -368,7 +372,7 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 									return nil, result.Error
 								}
 
-								return result.Value, nil
+								return prepareResource(result.Value)
 							}, nil
 						},
 					}
@@ -386,32 +390,31 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 							Type: graphql.NewList(expandedFieldGqlType),
 
 							Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-								receiver := p.Source.(map[string]interface{})
+								var targetIds []dataloader.Key
+
+								receiver := reflect.ValueOf(p.Source)
 								loaders := p.Context.Value("loaders").(*Loaders)
 								loader := loaders.Get(expandedFieldType.ActualType())
 
-								fieldValue := reflect.ValueOf(receiver[f.Name])
-								targetIds := make([]dataloader.Key, fieldValue.Len())
+								fieldValue := receiver.MapIndex(reflect.ValueOf(name))
 
-								for i := 0; i < fieldValue.Len(); i++ {
-									v := fieldValue.Index(i)
+								if fieldValue.IsValid() && !fieldValue.IsNil() {
+									targetIds = make([]dataloader.Key, fieldValue.Len())
 
-									if v.Kind() != reflect.String {
-										if v.CanConvert(stringType) {
-											v = v.Convert(stringType)
-										} else if v.Kind() == reflect.Interface && v.Elem().Kind() == reflect.String {
-											v = v.Elem()
-										} else if v.Kind() == reflect.Pointer && v.Elem().Kind() == reflect.String {
-											v = v.Elem()
-										} else {
-											return nil, fmt.Errorf("invalid type for id: %s", v.Type().String())
+									for i := 0; i < fieldValue.Len(); i++ {
+										v, ok := typesystem.TryCast[forddb.BasicResourceID](fieldValue.Index(i))
+
+										if !ok {
+											return nil, errors.New("invalid id")
 										}
-									}
 
-									targetIds[i] = dataloader.StringKey(v.String())
+										targetIds[i] = dataloader.StringKey(v.String())
+									}
+								} else {
+									return nil, nil
 								}
 
-								ch := make(chan dataLoaderResult, 1)
+								ch := make(chan dataLoaderManyResult, 1)
 								thunk := loader.LoadMany(p.Context, targetIds)
 
 								go func() {
@@ -423,7 +426,11 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 										merr = multierror.Append(merr, e)
 									}
 
-									ch <- dataLoaderResult{res, merr}
+									resources := lo.Map(res, func(item any, index int) forddb.BasicResource {
+										return item.(forddb.BasicResource)
+									})
+
+									ch <- dataLoaderManyResult{resources, merr}
 								}()
 
 								return func() (any, error) {
@@ -433,7 +440,7 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 										return nil, result.Error
 									}
 
-									return result.Value, nil
+									return mapResources(result.Value)
 								}, nil
 							},
 						}
@@ -452,7 +459,12 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 	return graphql.NewObject(config)
 }
 
-type dataLoaderResult struct {
-	Value any
+type dataLoaderSingleResult struct {
+	Value forddb.BasicResource
+	Error error
+}
+
+type dataLoaderManyResult struct {
+	Value []forddb.BasicResource
 	Error error
 }

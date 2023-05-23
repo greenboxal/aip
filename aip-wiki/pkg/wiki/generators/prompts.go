@@ -45,7 +45,6 @@ You should follow the following rules:
 * Add real references and citations in the footer
 * Add inline links to other pages within the text of article. Be sure to link every occurrence of any term that deserves its own page.
 * Add at least one image. Add alt tags to all images with a proper description. All image URLs should include the description of the image.
-* Make it pretty, using modern design and typography
 * Make it funny. Use satire, irony, exaggeration, ridicule, or the like, in exposing, denouncing, or deriding vice, folly, etc.
 * Write it in {{.PageSettings.Language}}.
 `,

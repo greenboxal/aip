@@ -9050,6 +9050,11 @@ grapheme-splitter@^1.0.4:
   resolved "https://registry.npmjs.org/grapheme-splitter/-/grapheme-splitter-1.0.4.tgz"
   integrity sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==
 
+graphql-ast-types-browser@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/graphql-ast-types-browser/-/graphql-ast-types-browser-1.0.2.tgz#474305af7e76f9692df6e50a88fb668ce258c4a4"
+  integrity sha512-QuKZ+Et3dE7SyO5c41eNPlJc7+HwQxOzHfmIhqzj4cUgAGyhSwVkKb7K24zom8y6y0VnG7Xb3RRypjIVvfIevQ==
+
 graphql-ast-types-browser@~1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/graphql-ast-types-browser/-/graphql-ast-types-browser-1.0.2.tgz"
