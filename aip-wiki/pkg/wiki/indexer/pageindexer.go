@@ -19,15 +19,17 @@ type PageIndexer struct {
 	forddb.LogConsumer
 
 	db       forddb.Database
-	index    vectorstore.Index
+	index    vectorstore.Indexer
 	embedder llm.Embedder
 }
 
 func NewPageIndexer(
 	db forddb.Database,
 	oai *openai.Client,
-	index vectorstore.Index,
+	indexProvider vectorstore.Provider,
 ) *PageIndexer {
+	index := indexProvider.Collection("global_index", 1536)
+
 	pi := &PageIndexer{}
 	pi.db = db
 	pi.index = index

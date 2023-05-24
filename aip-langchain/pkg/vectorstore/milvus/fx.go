@@ -14,7 +14,7 @@ var Module = fx.Module(
 
 	fx.Provide(NewStorage),
 	fx.Provide(NewMilvus),
-	fx.Provide(NewIndexProvider),
+	fx.Provide(NewProvider),
 
 	config.RegisterConfig[Config]("storage.milvus"),
 )
@@ -37,7 +37,7 @@ func WithIndexStorage() fx.Option {
 			return s
 		}),
 
-		fx.Provide(func(s *IndexProvider) vectorstore.Index {
+		fx.Provide(func(s *Provider) vectorstore.Provider {
 			return s
 		}),
 	)

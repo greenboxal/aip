@@ -42,10 +42,12 @@ func NewPageGenerator(
 	tracer tracing.Tracer,
 	client *openai.Client,
 	cache *ContentCache,
-	index vectorstore.Index,
+	indexProvider vectorstore.Provider,
 	oai *openai.Client,
 ) (*PageGenerator, error) {
 	var err error
+
+	index := indexProvider.Collection("global_index", 1536)
 
 	w := &PageGenerator{}
 	w.tracer = tracer
