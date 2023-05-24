@@ -6,6 +6,7 @@ import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/apimachinery"
 	"github.com/greenboxal/aip/aip-forddb/pkg/apis/rpc"
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
+	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/api"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/indexer"
@@ -18,6 +19,7 @@ var Module = fx.Module(
 	config.RegisterConfig[cms.FileManagerConfig]("wiki.filemanager"),
 
 	jobs.Module,
+	api.Module,
 
 	fx.Provide(NewWiki),
 	fx.Provide(cms.NewPageManager),
