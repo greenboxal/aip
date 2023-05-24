@@ -23,16 +23,16 @@ type Retriever interface {
 }
 
 type SearchHit struct {
-	DocumentChunkReference
+	DocumentChunkReference `json:"reference"`
 
-	Score float32
+	Score float32 `json:"score"`
 
-	Embeddings []float32
-	Content    string
+	Embeddings []float32 `json:"embeddings"`
+	Content    string    `json:"content"`
 }
 
 type SearchResult struct {
-	Hits []SearchHit
+	Hits []SearchHit `json:"hits"`
 }
 
 type SearchDocumentOptions struct {

@@ -250,14 +250,12 @@ func (r *runningJob) setCompleted(ctx context.Context, err error) {
 	if r.err == nil {
 		if r.result != nil {
 			r.job.Status.Result = r.result
-			r.updateState(ctx, JobStateCompleted)
-		} else {
-			r.updateState(ctx, JobStateCompleted)
 		}
-	}
 
-	if r.err != nil {
+		r.updateState(ctx, JobStateCompleted)
+	} else {
 		r.job.Status.LastError = r.err.Error()
+
 		r.updateState(ctx, JobStateFailed)
 	}
 

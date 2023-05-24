@@ -327,7 +327,9 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 					Type: q.LookupOutputType(fieldType),
 				}
 
-				if strings.HasSuffix(f.Name, "_id") && forddb.IsBasicResourceId(fieldType.RuntimeType()) {
+				fields[f.Name] = f
+
+				if forddb.IsBasicResourceId(fieldType.RuntimeType()) {
 					expandedFieldType := forddb.TypeSystem().LookupByIDType(fieldType.RuntimeType())
 					expandedFieldGqlType := q.LookupOutputType(expandedFieldType.ActualType())
 
@@ -378,7 +380,7 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 					}
 
 					fields[expandedField.Name] = expandedField
-				} else if strings.HasSuffix(f.Name, "_ids") && fieldType.PrimitiveKind() == typesystem.PrimitiveKindList {
+				} else if fieldType.PrimitiveKind() == typesystem.PrimitiveKindList {
 					lt := fieldType.List()
 
 					if forddb.IsBasicResourceId(lt.Elem().RuntimeType()) {
@@ -448,8 +450,6 @@ func (q *GraphQL) compileOutputStruct(typ typesystem.Type) graphql.Output {
 						fields[expandedField.Name] = expandedField
 					}
 				}
-
-				fields[f.Name] = f
 			}
 
 			return fields

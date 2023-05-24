@@ -1,9 +1,14 @@
 package search
 
-type Request struct {
+import "context"
+
+type Options struct {
 }
 
+type Option func(opts *Options)
+
 type Hit struct {
+	Score float32
 }
 
 type Result struct {
@@ -11,5 +16,5 @@ type Result struct {
 }
 
 type Index interface {
-	Search(req Request) (*Result, error)
+	Search(ctx context.Context, query string, options ...Option) (*Result, error)
 }

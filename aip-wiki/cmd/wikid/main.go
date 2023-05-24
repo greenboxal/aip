@@ -24,10 +24,10 @@ import (
 	"github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore"
 	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
 	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
+	"github.com/greenboxal/aip/aip-langchain/pkg/vectorstore/milvus"
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/p2p"
-	"github.com/greenboxal/aip/aip-sdk/pkg/storage/milvus"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
 

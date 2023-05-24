@@ -51,7 +51,7 @@ func (i *ChannelChatMemory) Load(ctx chain.ChainContext) (chat.Message, error) {
 		forddb.WithSortField("metadata.created_at", forddb.Desc),
 		forddb.WithListQueryOptions(
 			forddb.WithFilterParameter("channel", i.Channel.String()),
-			forddb.WithFilterExpression(`resource.channel == args.channel`),
+			forddb.WithFilterExpression(`resource.channel_id == args.channel`),
 		),
 	)
 

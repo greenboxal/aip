@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/cockroachdb/errors"
+
 	"github.com/greenboxal/aip/aip-forddb/pkg/tracing"
 )
 
@@ -38,6 +40,7 @@ func (s *basicChain) Run(ctx ChainContext) (err error) {
 				err = er
 			} else {
 				err = fmt.Errorf("%v", e)
+				err = errors.Wrap(err, "panic in chain")
 			}
 		}
 	}()
