@@ -88,7 +88,7 @@ func (a *API) HandleAPI(req *http.Request) (any, error) {
 
 	commit, err = forddb.Put(req.Context(), a.db, commit)
 
-	if err != nil {
+	if err != forddb.ErrVersionMismatch && err != nil {
 		return nil, err
 	}
 
