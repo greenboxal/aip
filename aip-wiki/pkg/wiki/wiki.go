@@ -15,10 +15,12 @@ func NewWiki(
 	lc fx.Lifecycle,
 	client *openai.Client,
 	pageIndexer *indexer.PageIndexer,
+	commitIndexer *indexer.CommitIndexer,
 ) (*Wiki, error) {
 	w := &Wiki{}
 	w.client = client
 	w.pageIndexer = pageIndexer
+	w.commitIndexer = commitIndexer
 
 	w.model = &openai.ChatLanguageModel{
 		Client: client,
@@ -42,11 +44,13 @@ type Wiki struct {
 	model     *openai.ChatLanguageModel
 	tokenizer *tokenizers.TikTokenTokenizer
 
-	pageIndexer *indexer.PageIndexer
+	pageIndexer   *indexer.PageIndexer
+	commitIndexer *indexer.CommitIndexer
 }
 
 func (w *Wiki) Start(ctx context.Context) error {
 	goprocess.Go(w.pageIndexer.Run)
+	goprocess.Go(w.commitIndexer.Run)
 
 	return nil
 }

@@ -26,6 +26,7 @@ var Module = fx.Module(
 	fx.Provide(cms.NewFileManager),
 	fx.Provide(cms.NewService),
 	fx.Provide(indexer.NewPageIndexer),
+	fx.Provide(indexer.NewCommitIndexer),
 	fx.Provide(generators.NewContentCache),
 	fx.Provide(generators.NewImageGenerator),
 	fx.Provide(generators.NewPageGenerator),
