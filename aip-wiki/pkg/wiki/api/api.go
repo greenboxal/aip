@@ -1,19 +1,18 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
-	"net/url"
+	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/samber/lo"
 
 	"github.com/greenboxal/aip/aip-forddb/pkg/forddb"
 	"github.com/greenboxal/aip/aip-langchain/pkg/chunkers"
 	"github.com/greenboxal/aip/aip-langchain/pkg/providers/openai"
 	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
-	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/models"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki/sema"
 )
 
@@ -46,8 +45,8 @@ func NewAPI(db forddb.Database, oai *openai.Client) *API {
 
 	sema.InitializeSemanticContext(&api.sctx)
 
-	api.Get("/", func(writer http.ResponseWriter, request *http.Request) {
-		res, err := api.HandleAPI(request.Context(), request.URL.Query())
+	api.Post("/", func(writer http.ResponseWriter, request *http.Request) {
+		res, err := api.HandleAPI(request)
 
 		if err != nil {
 			panic(err)
@@ -67,41 +66,15 @@ func NewAPI(db forddb.Database, oai *openai.Client) *API {
 	return api
 }
 
-func (a *API) HandleAPI(ctx context.Context, query url.Values) (any, error) {
-	basePageIds := lo.Map(query["base_page_id"], func(s string, _ int) models.PageID {
-		return forddb.NewStringID[models.PageID](s)
-	})
-
-	basePages := lo.Map(basePageIds, func(id models.PageID, _ int) *models.Page {
-		basePage, err := forddb.Get[*models.Page](ctx, a.db, id)
-
-		if err != nil {
-			panic(err)
-		}
-
-		return basePage
-	})
-
-	baseNodes := lo.Map(basePages, func(p *models.Page, _ int) *sema.SemanticNode {
-		node := &sema.SemanticNode{}
-		node.ID = forddb.NewStringID[sema.SemanticNodeID](p.ID.String())
-		node.Status.Value = a.sctx.Unit(a.sctx.Content(p.Status.Markdown))
-		return node
-	})
-
-	for _, n := range baseNodes {
-		if err := a.sctx.Append(ctx, n); err != nil {
-			return nil, err
-		}
-	}
-
-	rootNode := baseNodes[0]
-
-	result, err := a.sctx.Refine(ctx, rootNode)
+func (a *API) HandleAPI(req *http.Request) (any, error) {
+	body, err := io.ReadAll(req.Body)
+	// body.commmits[0].message
 
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	fmt.Fprintf(os.Stderr, "%s\n", body)
+
+	return "Hello world", nil
 }
