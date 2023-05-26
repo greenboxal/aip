@@ -28,7 +28,7 @@ type Config struct {
 
 func (c *Config) SetDefaults() {
 	if c.ProjectID == "" {
-		c.ProjectID = "uncyclo-385820"
+		c.ProjectID = "brex-ai-toolkit"
 	}
 
 	if c.CollectionID == "" {
