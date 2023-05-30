@@ -1,4 +1,4 @@
-# Crazy AI Stuff™
+# AI Pipelines™
 
 ## Setup
 
