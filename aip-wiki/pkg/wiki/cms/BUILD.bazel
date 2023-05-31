@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cms",
+    srcs = [
+        "documentindex.go",
+        "filemanager.go",
+        "pagemanager.go",
+        "service.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/cms",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/jobs",
+        "//aip-langchain/pkg/llm/chat",
+        "//aip-langchain/pkg/memory",
+        "//aip-langchain/pkg/memoryctx",
+        "//aip-wiki/pkg/wiki/generators",
+        "//aip-wiki/pkg/wiki/models",
+        "@com_github_multiformats_go_multihash//:go-multihash",
+        "@com_google_cloud_go_storage//:storage",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

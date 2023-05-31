@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "uast",
+    srcs = ["node.go"],
+    importpath = "github.com/greenboxal/aip/aip-psi/pkg/uast",
+    visibility = ["//visibility:public"],
+    deps = ["//aip-psi/pkg/psi"],
+)

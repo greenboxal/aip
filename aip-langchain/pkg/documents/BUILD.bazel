@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "documents",
+    srcs = [
+        "alternative.go",
+        "document.go",
+        "node.go",
+        "store.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/documents",
+    visibility = ["//visibility:public"],
+    deps = ["//aip-forddb/pkg/forddb"],
+)

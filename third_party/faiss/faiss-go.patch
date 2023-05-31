@@ -1,0 +1,10 @@
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -10,6 +10,7 @@
+         "index_io.go",
+         "selector.go",
+     ],
++    cdeps = ["@com_github_facebookresearch_faiss//:faiss"],
+     cgo = True,
+     clinkopts = ["-lfaiss_c"],
+     importpath = "github.com/DataIntelligenceCrew/go-faiss",

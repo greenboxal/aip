@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "compressors",
+    srcs = [
+        "compressor.go",
+        "mip.go",
+        "simple.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/compressors",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-langchain/pkg/chain",
+        "//aip-langchain/pkg/documents",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/tokenizers",
+    ],
+)

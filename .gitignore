@@ -1,5 +1,13 @@
+.idea
 .env
+
 venv
+node_modules
 
 /data
 deploy/milvus
+
+/bazel-aip
+/bazel-bin
+/bazel-out
+/bazel-testlogs

@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "chain",
+    srcs = [
+        "basic.go",
+        "chain.go",
+        "context.go",
+        "empty.go",
+        "helpers.go",
+        "io.go",
+        "options.go",
+        "parser.go",
+        "predict.go",
+        "prompt.go",
+        "sequential.go",
+        "subchain.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/chain",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/tracing",
+        "//aip-langchain/pkg/documents",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/tokenizers",
+        "@com_github_cockroachdb_errors//:errors",
+    ],
+)

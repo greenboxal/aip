@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "wikictl_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/greenboxal/aip/aip-wiki/cmd/wikictl",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//aip-controller/pkg/collective/comms",
+        "//aip-controller/pkg/collective/msn",
+        "//aip-controller/pkg/daemon",
+        "//aip-controller/pkg/ford",
+        "//aip-forddb/pkg/apimachinery",
+        "//aip-forddb/pkg/apis",
+        "//aip-forddb/pkg/impl",
+        "//aip-forddb/pkg/jobs",
+        "//aip-forddb/pkg/objectstore/firestore",
+        "//aip-forddb/pkg/tracing",
+        "//aip-langchain/pkg/providers/openai",
+        "//aip-langchain/pkg/vectorstore/milvus",
+        "//aip-sdk/pkg/cli",
+        "//aip-sdk/pkg/config",
+        "//aip-sdk/pkg/network/ipfs",
+        "//aip-sdk/pkg/network/p2p",
+        "//aip-wiki/pkg/wiki",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_fx//fxevent",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "wikictl",
+    embed = [":wikictl_lib"],
+    visibility = ["//visibility:public"],
+)

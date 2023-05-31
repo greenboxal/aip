@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "apis",
+    srcs = ["fx.go"],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/apis",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/apis/memorylink",
+        "//aip-forddb/pkg/apis/graphql",
+        "//aip-forddb/pkg/apis/rest",
+        "//aip-forddb/pkg/apis/rpc",
+        "//aip-forddb/pkg/apis/supervisor",
+        "@org_uber_go_fx//:fx",
+    ],
+)

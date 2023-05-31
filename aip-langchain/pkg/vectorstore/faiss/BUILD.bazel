@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "faiss",
+    srcs = ["index.go"],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/vectorstore/faiss",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-langchain/pkg/vectorstore",
+        "@com_github_dataintelligencecrew_go_faiss//:go-faiss",
+    ],
+)

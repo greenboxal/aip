@@ -1,0 +1,10 @@
+go 1.20
+
+use (
+	./aip-controller
+	./aip-forddb
+	./aip-langchain
+	./aip-psi
+	./aip-sdk
+	./aip-wiki
+)

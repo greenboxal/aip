@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "tot",
+    srcs = [
+        "algo.go",
+        "evaluator.go",
+        "tree.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/tot",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/chunkers",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/llm/chat",
+        "//aip-langchain/pkg/tokenizers",
+    ],
+)

@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "api",
+    srcs = [
+        "api.go",
+        "fx.go",
+        "search.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/api",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/apimachinery",
+        "//aip-forddb/pkg/apis/rpc",
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/chunkers",
+        "//aip-langchain/pkg/providers/openai",
+        "//aip-langchain/pkg/tokenizers",
+        "//aip-langchain/pkg/vectorstore",
+        "//aip-wiki/pkg/wiki/models",
+        "//aip-wiki/pkg/wiki/sema",
+        "@com_github_go_chi_chi_v5//:chi",
+        "@com_github_samber_lo//:lo",
+        "@org_uber_go_fx//:fx",
+    ],
+)

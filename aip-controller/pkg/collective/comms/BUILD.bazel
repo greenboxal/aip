@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "comms",
+    srcs = [
+        "fx.go",
+        "manager.go",
+        "room.go",
+        "routing.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/collective/comms",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/comms/transports",
+        "//aip-controller/pkg/collective/comms/transports/local",
+        "//aip-controller/pkg/collective/comms/transports/pubsub",
+        "//aip-controller/pkg/collective/comms/transports/slack",
+        "@com_github_zyedidia_generic//mapset",
+        "@org_uber_go_fx//:fx",
+    ],
+)

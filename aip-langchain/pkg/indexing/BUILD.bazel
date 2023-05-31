@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "indexing",
+    srcs = [
+        "context.go",
+        "index.go",
+        "iterator.go",
+        "reducer.go",
+        "session.go",
+        "storage.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/indexing",
+    visibility = ["//visibility:public"],
+    deps = ["//aip-controller/pkg/collective"],
+)

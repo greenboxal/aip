@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "models",
+    srcs = [
+        "domain.go",
+        "image.go",
+        "layout.go",
+        "models.go",
+        "page.go",
+        "pagetree.go",
+        "route.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/models",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/jobs",
+        "@com_github_multiformats_go_multibase//:go-multibase",
+        "@com_github_multiformats_go_multihash//:go-multihash",
+    ],
+)

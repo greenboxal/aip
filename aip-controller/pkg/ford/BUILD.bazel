@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "ford",
+    srcs = [
+        "fx.go",
+        "manager.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/ford",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/ford/agent",
+        "//aip-controller/pkg/ford/reconcilers",
+        "//aip-forddb/pkg/reconciliation",
+        "//aip-langchain/pkg/indexing",
+        "//aip-langchain/pkg/indexing/impl",
+        "//aip-langchain/pkg/summarizers",
+        "//aip-langchain/pkg/tokenizers",
+        "@com_github_sashabaranov_go_openai//:go-openai",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

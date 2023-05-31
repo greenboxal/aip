@@ -2,11 +2,11 @@ package psi
 
 import "github.com/ipld/go-ipld-prime"
 
-type NodeList struct {
-	Nodes []Node
+type ElementList struct {
+	Nodes []Element
 }
 
-type Node interface {
+type Element interface {
 	Attributes() ipld.Node
-	Children() NodeList
+	Children() ElementList
 }

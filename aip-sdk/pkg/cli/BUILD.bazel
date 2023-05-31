@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cli",
+    srcs = [
+        "fx.go",
+        "index.go",
+        "root.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-sdk/pkg/cli",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_ipfs_go_unixfsnode//data/builder",
+        "@com_github_ipld_go_ipld_prime//datamodel",
+        "@com_github_ipld_go_ipld_prime//linking",
+        "@com_github_ipld_go_ipld_prime//linking/cid",
+        "@com_github_ipld_go_ipld_prime//node/basicnode",
+        "@com_github_ipld_go_ipld_prime//storage/memstore",
+        "@com_github_ipld_go_ipld_prime//traversal",
+        "@com_github_ipld_go_ipld_prime//traversal/selector/builder",
+        "@com_github_spf13_cobra//:cobra",
+        "@org_uber_go_fx//:fx",
+    ],
+)

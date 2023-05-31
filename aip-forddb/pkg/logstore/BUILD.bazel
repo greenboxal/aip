@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "logstore",
+    srcs = [
+        "filelogiterator.go",
+        "filelogstore.go",
+        "memorylogiterator.go",
+        "memorylogstore.go",
+        "oldfilelogiterator.go",
+        "oldfilelogstore.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/logstore",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/typesystem",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_ipld_go_ipld_prime//codec/dagjson",
+        "@com_github_tidwall_wal//:wal",
+        "@org_mongodb_go_mongo_driver//bson",
+    ],
+)

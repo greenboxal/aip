@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "templates",
+    srcs = ["templates.go"],
+    embedsrcs = [
+        "article.tmpl.html",
+        "index.tmpl.html",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/templates",
+    visibility = ["//visibility:public"],
+)

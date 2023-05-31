@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "reconciliation",
+    srcs = [
+        "api.go",
+        "fx.go",
+        "reconciler.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/reconciliation",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/apis/graphql",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/typesystem",
+        "@com_github_graphql_go_graphql//:graphql",
+        "@com_github_jbenet_goprocess//:goprocess",
+        "@com_github_modern_go_reflect2//:reflect2",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

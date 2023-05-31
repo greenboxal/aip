@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "qdrant",
+    srcs = [
+        "collection.go",
+        "fx.go",
+        "provider.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/vectorstore/qdrant",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-langchain/pkg/vectorstore",
+        "//aip-sdk/pkg/config",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

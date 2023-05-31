@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "msn",
+    srcs = [
+        "api.go",
+        "channel.go",
+        "consumer.go",
+        "endpoint.go",
+        "fx.go",
+        "message.go",
+        "realtime.go",
+        "role.go",
+        "router.go",
+        "service.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/collective/msn",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/apis/graphql",
+        "//aip-forddb/pkg/apis/rpc",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/typesystem",
+        "@com_github_graphql_go_graphql//:graphql",
+        "@com_github_jbenet_goprocess//:goprocess",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

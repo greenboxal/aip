@@ -1,0 +1,33 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "p2p",
+    srcs = [
+        "fx.go",
+        "p2p.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-sdk/pkg/network/p2p",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-sdk/pkg/config",
+        "@com_github_ipfs_go_datastore//:go-datastore",
+        "@com_github_ipfs_go_datastore//sync",
+        "@com_github_libp2p_go_libp2p//:go-libp2p",
+        "@com_github_libp2p_go_libp2p//core/crypto",
+        "@com_github_libp2p_go_libp2p//core/host",
+        "@com_github_libp2p_go_libp2p//core/peer",
+        "@com_github_libp2p_go_libp2p//core/peerstore",
+        "@com_github_libp2p_go_libp2p//core/routing",
+        "@com_github_libp2p_go_libp2p//p2p/discovery/mdns",
+        "@com_github_libp2p_go_libp2p//p2p/net/connmgr",
+        "@com_github_libp2p_go_libp2p//p2p/security/noise",
+        "@com_github_libp2p_go_libp2p//p2p/security/tls",
+        "@com_github_libp2p_go_libp2p_kad_dht//:go-libp2p-kad-dht",
+        "@com_github_libp2p_go_libp2p_kad_dht//dual",
+        "@com_github_libp2p_go_libp2p_kad_dht//providers",
+        "@com_github_libp2p_go_libp2p_pubsub//:go-libp2p-pubsub",
+        "@com_github_multiformats_go_multiaddr//:go-multiaddr",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "supervisor",
+    srcs = [
+        "config.go",
+        "errors.go",
+        "manager.go",
+        "process.go",
+        "protocol.go",
+        "supervisor.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/collective/supervisor",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/comms/transports",
+        "//aip-controller/pkg/collective/msn",
+        "@com_github_jbenet_goprocess//:goprocess",
+        "@com_github_jbenet_goprocess//context",
+        "@org_golang_x_sync//errgroup",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

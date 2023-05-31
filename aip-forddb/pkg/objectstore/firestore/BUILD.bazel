@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "firestore",
+    srcs = [
+        "firestore.go",
+        "fx.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/objectstore/firestore",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/objectstore",
+        "//aip-sdk/pkg/config",
+        "@com_github_antonmedv_expr//:expr",
+        "@com_github_antonmedv_expr//ast",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_ipld_go_ipld_prime//codec/dagjson",
+        "@com_google_cloud_go_firestore//:firestore",
+        "@com_google_firebase_go//:go",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_golang_x_exp//maps",
+        "@org_golang_x_exp//slices",
+        "@org_uber_go_fx//:fx",
+    ],
+)

@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "supd_lib",
+    srcs = [
+        "chat.go",
+        "main.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/cmd/supd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//aip-controller/pkg/collective/comms",
+        "//aip-controller/pkg/collective/msn",
+        "//aip-controller/pkg/daemon",
+        "//aip-controller/pkg/ford",
+        "//aip-forddb/pkg/apimachinery",
+        "//aip-forddb/pkg/apis",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/impl",
+        "//aip-forddb/pkg/jobs",
+        "//aip-forddb/pkg/objectstore/firestore",
+        "//aip-forddb/pkg/tracing",
+        "//aip-langchain/pkg/chain",
+        "//aip-langchain/pkg/compressors",
+        "//aip-langchain/pkg/llm/chat",
+        "//aip-langchain/pkg/providers/openai",
+        "//aip-langchain/pkg/tokenizers",
+        "//aip-langchain/pkg/vectorstore/milvus",
+        "//aip-sdk/pkg/config",
+        "//aip-sdk/pkg/network/ipfs",
+        "//aip-sdk/pkg/network/p2p",
+        "//aip-wiki/pkg/wiki",
+        "@com_github_jbenet_goprocess//:goprocess",
+        "@com_github_jbenet_goprocess//context",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_fx//fxevent",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "supd",
+    embed = [":supd_lib"],
+    visibility = ["//visibility:public"],
+)

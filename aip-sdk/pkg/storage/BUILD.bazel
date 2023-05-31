@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "storage",
+    srcs = [
+        "composite.go",
+        "vectorindex.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-sdk/pkg/storage",
+    visibility = ["//visibility:public"],
+    deps = ["//aip-forddb/pkg/forddb"],
+)

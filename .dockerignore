@@ -1,4 +1,10 @@
 .env
 venv
+node_modules
 
 /data
+
+/bazel-aip/
+/bazel-bin/
+/bazel-out/
+/bazel-testlogs/

@@ -1,0 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "git",
+    srcs = ["git.go"],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/models/git",
+    visibility = ["//visibility:public"],
+)

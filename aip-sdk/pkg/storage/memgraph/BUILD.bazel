@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "memgraph",
+    srcs = [
+        "fx.go",
+        "storage.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-sdk/pkg/storage/memgraph",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/objectstore",
+        "//aip-sdk/pkg/config",
+        "@com_github_prahaladd_gograph//core",
+        "@com_github_prahaladd_gograph//memgraph",
+        "@com_github_prahaladd_gograph//neo",
+        "@com_github_prahaladd_gograph//omg",
+        "@org_uber_go_fx//:fx",
+    ],
+)

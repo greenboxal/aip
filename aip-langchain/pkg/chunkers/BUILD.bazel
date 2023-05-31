@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "chunkers",
+    srcs = [
+        "chunker.go",
+        "splitter.go",
+        "tiktoken.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/chunkers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-sdk/pkg/utils",
+        "@com_github_pkoukk_tiktoken_go//:tiktoken-go",
+        "@com_github_samber_lo//:lo",
+    ],
+)

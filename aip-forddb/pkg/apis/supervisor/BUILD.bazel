@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "supervisor",
+    srcs = ["supervisor.go"],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/apis/supervisor",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/supervisor",
+        "//aip-controller/pkg/daemon",
+        "@com_github_samber_lo//:lo",
+    ],
+)

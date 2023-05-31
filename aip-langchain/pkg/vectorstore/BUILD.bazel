@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "vectorstore",
+    srcs = [
+        "collection.go",
+        "document.go",
+        "index.go",
+        "indexer.go",
+        "provider.go",
+        "retriever.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/vectorstore",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-langchain/pkg/chunkers",
+        "//aip-langchain/pkg/llm",
+    ],
+)

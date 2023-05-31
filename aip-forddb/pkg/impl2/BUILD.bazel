@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "impl2",
+    srcs = [
+        "database.go",
+        "eventdispatcher.go",
+        "fx.go",
+        "node.go",
+        "objectfetcher.go",
+        "objectindexer.go",
+        "resourceslot.go",
+        "resourcetable.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/impl2",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/logstore",
+        "//aip-forddb/pkg/objectstore",
+        "//aip-forddb/pkg/tracing",
+        "//aip-forddb/pkg/typesystem",
+        "//aip-sdk/pkg/config",
+        "//aip-sdk/pkg/network/ipfs",
+        "@com_github_cockroachdb_errors//:errors",
+        "@com_github_dgraph_io_ristretto//:ristretto",
+        "@com_github_hashicorp_go_multierror//:go-multierror",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_jbenet_goprocess//:goprocess",
+        "@com_github_jbenet_goprocess//context",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_zyedidia_generic//mapset",
+        "@org_uber_go_fx//:fx",
+    ],
+)

@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "rpc",
+    srcs = [
+        "docs.go",
+        "fx.go",
+        "rpc.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/apis/rpc",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/apimachinery",
+        "//aip-sdk/pkg/utils",
+        "@com_github_go_chi_chi_v5//:chi",
+        "@com_github_swaggest_jsonrpc//:jsonrpc",
+        "@com_github_swaggest_swgui//:swgui",
+        "@com_github_swaggest_swgui//v3cdn",
+        "@com_github_swaggest_usecase//:usecase",
+        "@org_uber_go_fx//:fx",
+    ],
+)

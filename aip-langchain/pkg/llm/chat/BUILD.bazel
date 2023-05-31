@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "chat",
+    srcs = [
+        "composer.go",
+        "history.go",
+        "memory.go",
+        "message.go",
+        "model.go",
+        "predict.go",
+        "prompt.go",
+        "session.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/llm/chat",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "//aip-langchain/pkg/chain",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/tokenizers",
+        "@com_github_samber_lo//:lo",
+    ],
+)
+
+go_test(
+    name = "chat_test",
+    srcs = ["message_test.go"],
+    embed = [":chat"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "@com_github_stretchr_testify//require",
+    ],
+)

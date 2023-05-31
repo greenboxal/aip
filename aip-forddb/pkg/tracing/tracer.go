@@ -79,10 +79,6 @@ func (t *tracer) OnTraceFinished(tc *traceContext, trace Trace) {
 
 func (t *tracer) Start() error {
 	t.worker = goprocess.Go(func(proc goprocess.Process) {
-		ctx := goprocessctx.OnClosingContext(proc)
-
-		InitializeTracing(ctx)
-
 		proc.Go(func(proc goprocess.Process) {
 			ctx := goprocessctx.OnClosingContext(proc)
 
@@ -121,8 +117,6 @@ func (t *tracer) Shutdown(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	ShutdownTracing(ctx)
 
 	return nil
 }

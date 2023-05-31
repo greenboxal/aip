@@ -1,0 +1,51 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "typesystem",
+    srcs = [
+        "api.go",
+        "builder.go",
+        "consts.go",
+        "errors.go",
+        "field.go",
+        "node.go",
+        "operator.go",
+        "prototype.go",
+        "reflect.go",
+        "scalars.go",
+        "type.go",
+        "typedlink.go",
+        "typename.go",
+        "typesystem.go",
+        "value.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/typesystem",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-sdk/pkg/utils",
+        "@com_github_gertd_go_pluralize//:go-pluralize",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_ipld_go_ipld_prime//datamodel",
+        "@com_github_ipld_go_ipld_prime//node/basicnode",
+        "@com_github_ipld_go_ipld_prime//node/mixins",
+        "@com_github_ipld_go_ipld_prime//schema",
+        "@com_github_samber_lo//:lo",
+        "@com_github_stoewer_go_strcase//:go-strcase",
+        "@org_golang_x_exp//slices",
+    ],
+)
+
+go_test(
+    name = "typesystem_test",
+    srcs = ["typesystem_test.go"],
+    embed = [":typesystem"],
+    deps = [
+        "@com_github_ipfs_go_cid//:go-cid",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_ipld_go_ipld_prime//codec/dagjson",
+        "@com_github_ipld_go_ipld_prime//linking/cid",
+        "@com_github_jaswdr_faker//:faker",
+        "@com_github_multiformats_go_multihash//:go-multihash",
+        "@com_github_stretchr_testify//require",
+    ],
+)

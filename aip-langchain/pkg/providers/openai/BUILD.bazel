@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "openai",
+    srcs = [
+        "client.go",
+        "embedder.go",
+        "fx.go",
+        "languagemodel.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/providers/openai",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/llm/chat",
+        "@com_github_sashabaranov_go_openai//:go-openai",
+        "@org_uber_go_fx//:fx",
+    ],
+)

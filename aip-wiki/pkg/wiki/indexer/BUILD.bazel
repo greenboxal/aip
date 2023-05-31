@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "indexer",
+    srcs = ["pageindexer.go"],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/indexer",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/providers/openai",
+        "//aip-langchain/pkg/vectorstore",
+        "//aip-wiki/pkg/wiki/models",
+    ],
+)

@@ -32,6 +32,7 @@ type PageSettings struct {
 	Language    string
 }
 
+// change you are to we are
 var PageGeneratorHeader = chat.EntryTemplate(
 	msn.RoleSystem,
 	chain.NewTemplatePrompt(`

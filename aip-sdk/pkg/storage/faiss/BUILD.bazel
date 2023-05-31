@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "faiss",
+    srcs = [
+        "flatvectorindex.go",
+        "inversevectorindex.go",
+        "mapvectorindex.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-sdk/pkg/storage/faiss",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_dataintelligencecrew_go_faiss//:go-faiss"],
+)

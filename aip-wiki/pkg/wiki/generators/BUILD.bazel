@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "generators",
+    srcs = [
+        "anonymizer.go",
+        "contentcache.go",
+        "imagegenerator.go",
+        "pagegenerator.go",
+        "prompts.go",
+        "utils.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/generators",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/tracing",
+        "//aip-langchain/pkg/chain",
+        "//aip-langchain/pkg/llm/chat",
+        "//aip-langchain/pkg/memory",
+        "//aip-langchain/pkg/memoryctx",
+        "//aip-langchain/pkg/providers/openai",
+        "//aip-langchain/pkg/tokenizers",
+        "//aip-langchain/pkg/vectorstore",
+        "//aip-wiki/pkg/wiki/models",
+        "@com_github_gomarkdown_markdown//:markdown",
+        "@com_github_gomarkdown_markdown//ast",
+        "@com_github_gomarkdown_markdown//html",
+        "@com_github_gomarkdown_markdown//parser",
+    ],
+)

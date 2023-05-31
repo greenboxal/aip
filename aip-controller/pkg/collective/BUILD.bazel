@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "collective",
+    srcs = [
+        "agent.go",
+        "data.go",
+        "memory.go",
+        "models.go",
+        "pipeline.go",
+        "pointer.go",
+        "port.go",
+        "profile.go",
+        "segment.go",
+        "task.go",
+        "team.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/collective",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/tokenizers",
+        "//aip-sdk/pkg/utils",
+        "@com_github_ipfs_go_cid//:go-cid",
+        "@com_github_multiformats_go_multihash//:go-multihash",
+    ],
+)

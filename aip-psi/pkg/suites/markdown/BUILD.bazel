@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "markdown",
+    srcs = ["markdown.go"],
+    importpath = "github.com/greenboxal/aip/aip-psi/pkg/suites/markdown",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-psi/pkg/psi",
+        "//aip-psi/pkg/uast",
+        "@com_github_gomarkdown_markdown//ast",
+        "@com_github_gomarkdown_markdown//parser",
+    ],
+)

@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "reducers",
+    srcs = ["diffusion.go"],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/indexing/reducers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-langchain/pkg/chunkers",
+        "//aip-langchain/pkg/indexing",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/summarizers",
+        "//aip-langchain/pkg/tokenizers",
+    ],
+)

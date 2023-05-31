@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "badger",
+    srcs = [
+        "badger.go",
+        "btree.go",
+        "fx.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/objectstore/badger",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/objectstore",
+        "//aip-forddb/pkg/typesystem",
+        "//aip-sdk/pkg/config",
+        "@com_github_dgraph_io_badger_v4//:badger",
+        "@com_github_ipfs_go_cid//:go-cid",
+        "@com_github_samber_lo//:lo",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

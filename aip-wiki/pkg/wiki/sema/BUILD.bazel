@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "sema",
+    srcs = [
+        "context.go",
+        "node.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-wiki/pkg/wiki/sema",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/chain",
+        "//aip-langchain/pkg/chunkers",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/llm/chat",
+        "//aip-langchain/pkg/tokenizers",
+        "//aip-langchain/pkg/vectorstore",
+        "//aip-langchain/pkg/vectorstore/faiss",
+        "@com_github_samber_lo//:lo",
+    ],
+)

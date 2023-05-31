@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "public",
+    srcs = ["static.go"],
+    embedsrcs = ["css/styles.css"],
+    importpath = "github.com/greenboxal/aip/aip-wiki/public",
+    visibility = ["//visibility:public"],
+)

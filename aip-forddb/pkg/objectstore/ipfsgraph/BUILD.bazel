@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "ipfsgraph",
+    srcs = ["storage.go"],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/objectstore/ipfsgraph",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-sdk/pkg/network/ipfs",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_ipld_go_ipld_prime//linking",
+    ],
+)

@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "memorylink",
+    srcs = ["memorylink.go"],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/apis/memorylink",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-controller/pkg/ford",
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/indexing",
+        "@org_uber_go_zap//:zap",
+    ],
+)

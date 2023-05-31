@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "inmemory",
+    srcs = [
+        "fx.go",
+        "inmemory.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-sdk/pkg/storage/inmemory",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/objectstore",
+        "//aip-langchain/pkg/indexing",
+        "@org_uber_go_fx//:fx",
+    ],
+)

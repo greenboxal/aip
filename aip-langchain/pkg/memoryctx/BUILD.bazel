@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "memoryctx",
+    srcs = ["context.go"],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/memoryctx",
+    visibility = ["//visibility:public"],
+    deps = ["//aip-langchain/pkg/llm/chat"],
+)

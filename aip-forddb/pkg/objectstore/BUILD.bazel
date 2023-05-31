@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "objectstore",
+    srcs = [
+        "index.go",
+        "linksystem.go",
+        "object.go",
+        "objectstore.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/objectstore",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/typesystem",
+        "//aip-sdk/pkg/network/ipfs",
+        "@com_github_ipfs_go_cid//:go-cid",
+        "@com_github_ipld_go_ipld_prime//:go-ipld-prime",
+        "@com_github_ipld_go_ipld_prime//linking",
+    ],
+)

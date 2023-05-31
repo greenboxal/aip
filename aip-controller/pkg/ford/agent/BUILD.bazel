@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "agent",
+    srcs = ["manager.go"],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/ford/agent",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-controller/pkg/collective/comms",
+        "//aip-controller/pkg/collective/supervisor",
+        "//aip-forddb/pkg/forddb",
+        "//aip-sdk/pkg/config",
+        "@org_uber_go_zap//:zap",
+    ],
+)

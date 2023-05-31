@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "daemon",
+    srcs = [
+        "daemon.go",
+        "fx.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/daemon",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/comms",
+        "//aip-controller/pkg/collective/supervisor",
+        "@org_uber_go_fx//:fx",
+    ],
+)

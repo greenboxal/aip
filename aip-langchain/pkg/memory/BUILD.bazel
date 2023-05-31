@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "memory",
+    srcs = [
+        "channelchatmemory.go",
+        "contextualmemory.go",
+        "memory.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/memory",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/chain",
+        "//aip-langchain/pkg/llm",
+        "//aip-langchain/pkg/llm/chat",
+        "//aip-langchain/pkg/vectorstore",
+    ],
+)

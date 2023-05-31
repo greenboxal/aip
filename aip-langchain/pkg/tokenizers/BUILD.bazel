@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "tokenizers",
+    srcs = [
+        "tiktoken.go",
+        "tokenizer.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/tokenizers",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_pkoukk_tiktoken_go//:tiktoken-go"],
+)

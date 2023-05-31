@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "jobs",
+    srcs = [
+        "errors.go",
+        "fx.go",
+        "handler.go",
+        "helpers.go",
+        "job.go",
+        "manager.go",
+        "reconciler.go",
+        "supervisor.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/jobs",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/reconciliation",
+        "//aip-forddb/pkg/tracing",
+        "//aip-sdk/pkg/utils",
+        "@com_github_google_uuid//:uuid",
+        "@com_github_hashicorp_go_multierror//:go-multierror",
+        "@com_github_jbenet_goprocess//:goprocess",
+        "@com_github_jbenet_goprocess//context",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "impl",
+    srcs = [
+        "context.go",
+        "index.go",
+        "iterator.go",
+        "session.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-langchain/pkg/indexing/impl",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-forddb/pkg/forddb",
+        "//aip-langchain/pkg/indexing",
+    ],
+)

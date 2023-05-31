@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "apimachinery",
+    srcs = [
+        "fx.go",
+        "http.go",
+        "mux.go",
+        "server.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-forddb/pkg/apimachinery",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-sdk/pkg/utils",
+        "@com_github_arl_statsviz//:statsviz",
+        "@com_github_go_chi_chi_v5//:chi",
+        "@com_github_go_chi_chi_v5//middleware",
+        "@com_github_go_chi_cors//:cors",
+        "@com_github_prometheus_client_golang//prometheus/promhttp",
+        "@com_github_riandyrn_otelchi//:otelchi",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_zap//:zap",
+    ],
+)

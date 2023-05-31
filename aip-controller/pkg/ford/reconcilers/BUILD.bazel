@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "reconcilers",
+    srcs = [
+        "agentreconciler.go",
+        "portreconciler.go",
+        "taskreconciler.go",
+    ],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/ford/reconcilers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective",
+        "//aip-controller/pkg/ford/agent",
+        "//aip-forddb/pkg/forddb",
+        "//aip-forddb/pkg/reconciliation",
+        "@org_uber_go_zap//:zap",
+    ],
+)

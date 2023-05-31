@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "pubsub",
+    srcs = ["pubsub.go"],
+    importpath = "github.com/greenboxal/aip/aip-controller/pkg/collective/comms/transports/pubsub",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aip-controller/pkg/collective/msn",
+        "@com_github_libp2p_go_libp2p_pubsub//:go-libp2p-pubsub",
+    ],
+)
