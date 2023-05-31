@@ -1,6 +1,6 @@
 # AI Pipelines™
 
-## Setup
+## Python Setup
 
 ```sh
 # Create python venv
