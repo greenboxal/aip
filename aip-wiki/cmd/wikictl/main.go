@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,6 +29,7 @@ import (
 	"github.com/greenboxal/aip/aip-sdk/pkg/config"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/ipfs"
 	"github.com/greenboxal/aip/aip-sdk/pkg/network/p2p"
+	"github.com/greenboxal/aip/aip-wiki/exp"
 	"github.com/greenboxal/aip/aip-wiki/pkg/wiki"
 )
 
@@ -63,6 +65,7 @@ func main() {
 		forddbimpl.Module,
 		wiki.Module,
 		tracing.Module,
+		exp.Module,
 
 		milvus.WithIndexStorage(),
 		firestore.WithObjectStore(),
@@ -90,7 +93,8 @@ func main() {
 	}
 
 	if err := cliManager.Run(); err != nil {
-		panic(err)
+		_, _ = fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(1)
 	}
 }
 

@@ -17,10 +17,9 @@ go_library(
         "//aip-langchain/pkg/providers/openai",
         "//aip-langchain/pkg/tokenizers",
         "//aip-langchain/pkg/vectorstore",
-        "//aip-wiki/pkg/wiki/models",
         "//aip-wiki/pkg/wiki/sema",
         "@com_github_go_chi_chi_v5//:chi",
-        "@com_github_samber_lo//:lo",
+        "@com_github_google_go_github_v52//github",
         "@org_uber_go_fx//:fx",
     ],
 )

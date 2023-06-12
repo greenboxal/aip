@@ -1,0 +1,16 @@
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+
+# gazelle:exclude web
+
+pkg_tar(
+    name = "aip-wiki-tar",
+    srcs = ["//aip-wiki/cmd/wikid"],
+)
+
+oci_image(
+    name = "aip-wiki-image",
+    base = "@distroless_base",
+    entrypoint = ["/wikid"],
+    tars = [":aip-wiki-tar"],
+)
