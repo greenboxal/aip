@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/datamodel"
 	"github.com/ipld/go-ipld-prime/schema"
 )
@@ -31,6 +32,10 @@ func (n valueNode) Kind() datamodel.Kind {
 		}
 
 		vt := n.v.Value().Type()
+
+		if Implements[ipld.Node](vt) {
+			return n.v.Value().Interface().(ipld.Node).Kind()
+		}
 
 		if Implements[encoding.TextMarshaler](vt) {
 			return datamodel.Kind_String
@@ -305,6 +310,20 @@ func (n valueNode) AsBytes() ([]byte, error) {
 }
 
 func (n valueNode) AsLink() (datamodel.Link, error) {
+	v := n.v.Indirect()
+
+	if !v.IsValid() {
+		return nil, nil
+	}
+
+	if v.Kind() == reflect.Interface && v.IsNil() {
+		return nil, nil
+	}
+
+	if v.Kind() == reflect.Pointer && v.IsNil() {
+		return nil, nil
+	}
+
 	res, ok := TryCast[datamodel.Link](n.v.Indirect())
 
 	if !ok {

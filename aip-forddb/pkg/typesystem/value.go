@@ -23,7 +23,14 @@ func (v Value) As(typ Type) Value {
 
 func (v Value) AsNode() ipld.Node {
 	if !v.v.IsValid() {
+
 		return ipld.Null
+	}
+
+	if v.typ.RuntimeType() == reflect.TypeOf((*ipld.Node)(nil)).Elem() {
+		if n, ok := TryCast[ipld.Node](v.Indirect()); ok {
+			return n
+		}
 	}
 
 	return newNode(v)

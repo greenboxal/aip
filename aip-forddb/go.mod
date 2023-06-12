@@ -54,9 +54,6 @@ require (
 	github.com/tidwall/wal v1.1.7
 	github.com/zyedidia/generic v1.2.1
 	go.mongodb.org/mongo-driver v1.11.6
-	go.opentelemetry.io/otel v1.16.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.16.0
-	go.opentelemetry.io/otel/sdk v1.16.0
 	go.uber.org/fx v1.19.3
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
@@ -75,7 +72,6 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
@@ -117,7 +113,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/greenboxal/aip/aip-langchain v0.0.0-00010101000000-000000000000 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/hannahhoward/go-pubsub v0.0.0-20200423002714-8d62886cc36e // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
@@ -232,11 +227,9 @@ require (
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib v1.0.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.16.0 // indirect
+	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
-	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/dig v1.16.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

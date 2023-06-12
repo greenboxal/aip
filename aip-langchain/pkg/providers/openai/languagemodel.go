@@ -85,6 +85,89 @@ func (lm *ChatLanguageModel) Predict(ctx context.Context, prompt string, options
 
 func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.Message, error) {
 	opts := llm.NewPredictOptions(options...)
+	messages := buildChatMessages(msg)
+
+	result, err := lm.Client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model:       lm.Model,
+		Temperature: opts.Temperature,
+		MaxTokens:   opts.MaxTokens,
+		Messages:    messages,
+	})
+
+	if err != nil {
+		return chat.Message{}, nil
+	}
+
+	return buildMsnMessages(result.Choices), nil
+}
+
+type messageStream struct {
+	stream *openai.ChatCompletionStream
+}
+
+func (m *messageStream) Recv() (chat.MessageFragment, error) {
+	reply, err := m.stream.Recv()
+
+	if err != nil {
+		return chat.MessageFragment{}, err
+	}
+
+	return chat.MessageFragment{
+		MessageIndex: reply.Choices[0].Index,
+		Delta:        reply.Choices[0].Delta.Content,
+	}, nil
+}
+
+func (m *messageStream) Close() error {
+	return m.Close()
+}
+
+func (lm *ChatLanguageModel) PredictChatStream(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.MessageStream, error) {
+	opts := llm.NewPredictOptions(options...)
+	messages := buildChatMessages(msg)
+
+	stream, err := lm.Client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
+		Model:       lm.Model,
+		Temperature: opts.Temperature,
+		MaxTokens:   opts.MaxTokens,
+		Messages:    messages,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &messageStream{stream: stream}, nil
+}
+
+func buildMsnMessages(choices []openai.ChatCompletionChoice) chat.Message {
+	entries := make([]chat.MessageEntry, len(choices))
+
+	for i, c := range choices {
+		var role msn.Role
+
+		switch c.Message.Role {
+		case "system":
+			role = msn.RoleSystem
+		case "user":
+			role = msn.RoleUser
+		case "assistant":
+			role = msn.RoleAI
+		default:
+			panic("unknown role")
+		}
+
+		entries[i] = chat.MessageEntry{
+			Role: role,
+			Name: c.Message.Name,
+			Text: c.Message.Content,
+		}
+	}
+
+	return chat.Compose(entries...)
+}
+
+func buildChatMessages(msg chat.Message) []openai.ChatCompletionMessage {
 	messages := make([]openai.ChatCompletionMessage, len(msg.Entries))
 
 	for i, m := range msg.Entries {
@@ -107,39 +190,5 @@ func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat.Message, 
 		}
 	}
 
-	result, err := lm.Client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model:       lm.Model,
-		Temperature: opts.Temperature,
-		MaxTokens:   opts.MaxTokens,
-		Messages:    messages,
-	})
-
-	if err != nil {
-		return chat.Message{}, nil
-	}
-
-	entries := make([]chat.MessageEntry, len(result.Choices))
-
-	for i, c := range result.Choices {
-		var role msn.Role
-
-		switch c.Message.Role {
-		case "system":
-			role = msn.RoleSystem
-		case "user":
-			role = msn.RoleUser
-		case "assistant":
-			role = msn.RoleAI
-		default:
-			panic("unknown role")
-		}
-
-		entries[i] = chat.MessageEntry{
-			Role: role,
-			Name: c.Message.Name,
-			Text: c.Message.Content,
-		}
-	}
-
-	return chat.Compose(entries...), nil
+	return messages
 }

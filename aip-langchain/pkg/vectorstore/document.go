@@ -23,7 +23,7 @@ type DocumentChunk struct {
 	DocumentChunkReference
 
 	Content    string
-	Embeddings llm.Embeddings
+	Embeddings llm.Embedding
 }
 
 type IndexedDocument struct {

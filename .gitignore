@@ -11,3 +11,5 @@ deploy/milvus
 /bazel-bin
 /bazel-out
 /bazel-testlogs
+
+.buildt

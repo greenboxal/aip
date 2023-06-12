@@ -39,8 +39,8 @@ func (o *Embedder) MaxTokensPerChunk() int {
 	return 2048
 }
 
-func (o *Embedder) GetEmbeddings(ctx context.Context, chunks []string) ([]llm.Embeddings, error) {
-	embeddings := make([]llm.Embeddings, len(chunks))
+func (o *Embedder) GetEmbeddings(ctx context.Context, chunks []string) ([]llm.Embedding, error) {
+	embeddings := make([]llm.Embedding, len(chunks))
 
 	result, err := o.Client.CreateEmbeddings(ctx, openai.EmbeddingRequest{
 		Input: chunks,
@@ -48,7 +48,6 @@ func (o *Embedder) GetEmbeddings(ctx context.Context, chunks []string) ([]llm.Em
 	})
 
 	for i, v := range result.Data {
-		embeddings[i].Dim = 1536
 		embeddings[i].Embeddings = v.Embedding
 	}
 

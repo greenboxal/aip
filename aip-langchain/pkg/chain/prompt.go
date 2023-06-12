@@ -2,8 +2,10 @@ package chain
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"strings"
 
 	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
@@ -73,7 +75,70 @@ type TemplatePrompt struct {
 
 func NewTemplatePrompt(templateText string, options ...PromptOption) *TemplatePrompt {
 	opts := NewPromptOptions(options...)
-	tmpl := template.Must(template.New("TemplatePrompt").Parse(templateText))
+	tmpl := template.New("TemplatePrompt")
+
+	tmpl = tmpl.Funcs(map[string]any{
+		"json": func(input any) string {
+			data, err := json.Marshal(input)
+
+			if err != nil {
+				panic(err)
+			}
+
+			return string(data)
+		},
+
+		"markdownTree": func(input any) string {
+			var payload any
+
+			data, err := json.Marshal(input)
+
+			if err != nil {
+				panic(err)
+			}
+
+			if err := json.Unmarshal(data, &payload); err != nil {
+				panic(err)
+			}
+
+			result := ""
+
+			var walk func(any, int, string)
+
+			walk = func(node any, depth int, key string) {
+				header := ""
+
+				if key != "" {
+					header = strings.Repeat("#", depth) + " " + key
+				}
+
+				if header != "" {
+					result += fmt.Sprintf("%s\n\n", header)
+				}
+
+				switch node := node.(type) {
+				case map[string]any:
+					for k, v := range node {
+						walk(v, depth+1, k)
+					}
+
+				case []any:
+					for _, v := range node {
+						walk(v, depth+1, "")
+					}
+
+				default:
+					result += fmt.Sprintf("%s\n\n", node)
+				}
+			}
+
+			walk(payload, 0, "")
+
+			return result
+		},
+	})
+
+	tmpl = template.Must(tmpl.Parse(templateText))
 
 	return &TemplatePrompt{
 		Template:     tmpl,

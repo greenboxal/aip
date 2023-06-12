@@ -1,2 +1,14 @@
 build --host_cxxopt=-std=c++20
 build --cxxopt=-std=c++20
+
+build:remote --bes_results_url=https://app.buildbuddy.io/invocation/
+build:remote --bes_backend=grpcs://remote.buildbuddy.io
+build:remote --remote_cache=grpcs://remote.buildbuddy.io
+build:remote --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
+build:remote --remote_timeout=3600
+build:remote --remote_executor=grpcs://remote.buildbuddy.io
+build:remote --host_platform=@buildbuddy_toolchain//:platform
+build:remote --platforms=@buildbuddy_toolchain//:platform
+build:remote --extra_execution_platforms=@buildbuddy_toolchain//:platform
+build:remote --crosstool_top=@buildbuddy_toolchain//:toolchain
+build:remote --extra_toolchains=@buildbuddy_toolchain//:cc_toolchain

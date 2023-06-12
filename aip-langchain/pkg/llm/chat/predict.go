@@ -1,6 +1,12 @@
 package chat
 
 import (
+	"errors"
+	"io"
+	"os"
+
+	"go.uber.org/zap"
+
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
 )
@@ -8,13 +14,18 @@ import (
 const MemoryContextKey chain.ContextKey[Memory] = "MemoryKey"
 
 type predictChain struct {
-	model   LanguageModel
-	prompt  Prompt
-	outputs []chain.OutputParser
+	prompt Prompt
+	model  LanguageModel
+
 	memory  *chain.ContextKey[Memory]
+	outputs []chain.OutputParser
+
+	debug  bool
+	logger *zap.SugaredLogger
 }
 
 func (p *predictChain) Run(ctx chain.ChainContext) error {
+	var result Message
 	var memory Memory
 
 	if p.memory != nil {
@@ -35,10 +46,57 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 		return err
 	}
 
-	result, err := p.model.PredictChat(ctx.Context(), prompt)
+	if p.debug {
+		_, _ = os.Stdout.Write([]byte("Request:\n\n"))
+		_, _ = os.Stdout.Write([]byte(prompt.AsText()))
+	}
 
-	if err != nil {
-		return err
+	shouldStream := p.debug
+
+	if shouldStream {
+		var entry MessageEntry
+
+		stream, err := p.model.PredictChatStream(ctx.Context(), prompt)
+
+		if err != nil {
+			return err
+		}
+
+		if p.debug {
+			_, _ = os.Stdout.Write([]byte("Reply:\n\n"))
+		}
+
+		for {
+			frag, err := stream.Recv()
+
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
+				return err
+			}
+
+			entry.Text += frag.Delta
+
+			if p.debug {
+				_, _ = os.Stdout.Write([]byte(frag.Delta))
+			}
+		}
+
+		if p.debug {
+			_, _ = os.Stdout.Write([]byte("\n"))
+		}
+
+		entry.Role = msn.RoleAI
+
+		result.Entries = append(result.Entries, entry)
+	} else {
+		result, err = p.model.PredictChat(ctx.Context(), prompt)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	if memory != nil {
@@ -113,6 +171,8 @@ func Predict(model LanguageModel, prompt Prompt, options ...ChatOption) chain.Ha
 		prompt:  prompt,
 		outputs: opts.OutputParsers,
 		memory:  opts.ChatMemory,
+
+		debug: true,
 	}
 
 	return chain.New(
