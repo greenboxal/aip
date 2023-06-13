@@ -2,18 +2,30 @@ package chain
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"html/template"
-	"strings"
 
 	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type PromptOption func(*PromptOptions)
 
+var defaultMarkdownHelpers = map[string]any{}
+
+func RegisterDefaultMarkdownHelpers(helpers map[string]any) {
+	for k, v := range helpers {
+		defaultMarkdownHelpers[k] = v
+	}
+}
+
 func NewPromptOptions(options ...PromptOption) *PromptOptions {
 	opts := &PromptOptions{}
+
+	opts.TemplateFunctions = map[string]any{}
+
+	for k, v := range defaultMarkdownHelpers {
+		opts.TemplateFunctions[k] = v
+	}
 
 	for _, option := range options {
 		option(opts)
@@ -42,8 +54,25 @@ func WithRequiredOutput(keys ...BasicContextKey) PromptOption {
 	return WithRequirement(IOKindOutput, keys...)
 }
 
+func WithTemplateFunctions(functions map[string]any) PromptOption {
+	return func(opts *PromptOptions) {
+		if opts.TemplateFunctions == nil {
+			opts.TemplateFunctions = map[string]any{}
+		}
+
+		for k, v := range functions {
+			opts.TemplateFunctions[k] = v
+		}
+	}
+}
+
+func WithTemplateFunction(name string, fn any) PromptOption {
+	return WithTemplateFunctions(map[string]any{name: fn})
+}
+
 type PromptOptions struct {
-	Requirements []IOAddress
+	Requirements      []IOAddress
+	TemplateFunctions map[string]any
 }
 
 type Prompt interface {
@@ -75,68 +104,12 @@ type TemplatePrompt struct {
 
 func NewTemplatePrompt(templateText string, options ...PromptOption) *TemplatePrompt {
 	opts := NewPromptOptions(options...)
+
 	tmpl := template.New("TemplatePrompt")
 
-	tmpl = tmpl.Funcs(map[string]any{
-		"json": func(input any) string {
-			data, err := json.Marshal(input)
-
-			if err != nil {
-				panic(err)
-			}
-
-			return string(data)
-		},
-
-		"markdownTree": func(input any) string {
-			var payload any
-
-			data, err := json.Marshal(input)
-
-			if err != nil {
-				panic(err)
-			}
-
-			if err := json.Unmarshal(data, &payload); err != nil {
-				panic(err)
-			}
-
-			result := ""
-
-			var walk func(any, int, string)
-
-			walk = func(node any, depth int, key string) {
-				header := ""
-
-				if key != "" {
-					header = strings.Repeat("#", depth) + " " + key
-				}
-
-				if header != "" {
-					result += fmt.Sprintf("%s\n\n", header)
-				}
-
-				switch node := node.(type) {
-				case map[string]any:
-					for k, v := range node {
-						walk(v, depth+1, k)
-					}
-
-				case []any:
-					for _, v := range node {
-						walk(v, depth+1, "")
-					}
-
-				default:
-					result += fmt.Sprintf("%s\n\n", node)
-				}
-			}
-
-			walk(payload, 0, "")
-
-			return result
-		},
-	})
+	if opts.TemplateFunctions != nil {
+		tmpl = tmpl.Funcs(opts.TemplateFunctions)
+	}
 
 	tmpl = template.Must(tmpl.Parse(templateText))
 
