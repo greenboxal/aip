@@ -8,6 +8,7 @@ import (
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
 	"github.com/greenboxal/aip/aip-langchain/pkg/llm/chat"
+	"github.com/greenboxal/aip/aip-langchain/pkg/tokenizers"
 )
 
 type LanguageModel struct {
@@ -18,12 +19,22 @@ type LanguageModel struct {
 }
 
 func (lm *LanguageModel) MaxTokens() int {
-	// FIXME: Wrong
-	return 4096
+	return lm.Client.MaxTokensForModel(lm.Model)
 }
 
 func (lm *LanguageModel) Predict(ctx context.Context, prompt string, options ...llm.PredictOption) (string, error) {
 	opts := llm.NewPredictOptions(options...)
+
+	if opts.AutoMaxTokens {
+		tokenizer := tokenizers.TikTokenForModel(lm.Model)
+		count, err := tokenizer.Count(prompt)
+
+		if err != nil {
+			return "", err
+		}
+
+		opts.MaxTokens = lm.MaxTokens() - count
+	}
 
 	result, err := lm.Client.CreateCompletion(ctx, openai.CompletionRequest{
 		Model:       lm.Model,
@@ -64,8 +75,7 @@ type ChatLanguageModel struct {
 }
 
 func (lm *ChatLanguageModel) MaxTokens() int {
-	// FIXME: Return actual number
-	return 4096
+	return lm.Client.MaxTokensForModel(lm.Model)
 }
 
 func (lm *ChatLanguageModel) Predict(ctx context.Context, prompt string, options ...llm.PredictOption) (string, error) {
@@ -86,6 +96,17 @@ func (lm *ChatLanguageModel) Predict(ctx context.Context, prompt string, options
 func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.Message, error) {
 	opts := llm.NewPredictOptions(options...)
 	messages := buildChatMessages(msg)
+
+	if opts.AutoMaxTokens {
+		tokenizer := tokenizers.TikTokenForModel(lm.Model)
+		count, err := tokenizer.Count(msg.String())
+
+		if err != nil {
+			return chat.Message{}, err
+		}
+
+		opts.MaxTokens = lm.MaxTokens() - count
+	}
 
 	result, err := lm.Client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model:       lm.Model,
@@ -125,6 +146,21 @@ func (m *messageStream) Close() error {
 func (lm *ChatLanguageModel) PredictChatStream(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.MessageStream, error) {
 	opts := llm.NewPredictOptions(options...)
 	messages := buildChatMessages(msg)
+
+	if opts.AutoMaxTokens {
+		tokenizer := tokenizers.TikTokenForModel(lm.Model)
+		count, err := tokenizer.Count(msg.String())
+
+		if err != nil {
+			return nil, err
+		}
+
+		opts.MaxTokens = opts.MaxTokens - count
+	}
+
+	if opts.MaxTokens <= 0 {
+		opts.MaxTokens = lm.MaxTokens() / 2
+	}
 
 	stream, err := lm.Client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
 		Model:       lm.Model,

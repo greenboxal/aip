@@ -9,19 +9,22 @@ import (
 
 	"github.com/greenboxal/aip/aip-controller/pkg/collective/msn"
 	"github.com/greenboxal/aip/aip-langchain/pkg/chain"
+	"github.com/greenboxal/aip/aip-langchain/pkg/llm"
 )
 
 const MemoryContextKey chain.ContextKey[Memory] = "MemoryKey"
 
 type predictChain struct {
+	logger *zap.SugaredLogger
+
 	prompt Prompt
 	model  LanguageModel
 
 	memory  *chain.ContextKey[Memory]
 	outputs []chain.OutputParser
 
-	debug  bool
-	logger *zap.SugaredLogger
+	debug     bool
+	maxTokens int
 }
 
 func (p *predictChain) Run(ctx chain.ChainContext) error {
@@ -56,7 +59,12 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 	if shouldStream {
 		var entry MessageEntry
 
-		stream, err := p.model.PredictChatStream(ctx.Context(), prompt)
+		stream, err := p.model.PredictChatStream(
+			ctx.Context(),
+			prompt,
+			llm.WithMaxTokens(p.maxTokens),
+			llm.WithAutoMaxTokens(),
+		)
 
 		if err != nil {
 			return err
@@ -133,6 +141,7 @@ func CompletionMessageParser(key chain.ContextKey[Message]) chain.OutputParser {
 type ChatOptions struct {
 	OutputParsers []chain.OutputParser
 	ChatMemory    *chain.ContextKey[Memory]
+	MaxTokens     int
 }
 
 type ChatOption func(*ChatOptions)
@@ -143,6 +152,12 @@ func NewChatOptions(options ...ChatOption) (result ChatOptions) {
 	}
 
 	return
+}
+
+func WithMaxTokens(maxTokens int) ChatOption {
+	return func(options *ChatOptions) {
+		options.MaxTokens = maxTokens
+	}
 }
 
 func WithOutputParsers(parsers ...chain.OutputParser) ChatOption {
@@ -166,11 +181,16 @@ func Predict(model LanguageModel, prompt Prompt, options ...ChatOption) chain.Ha
 		}
 	}
 
+	if opts.MaxTokens == 0 {
+		opts.MaxTokens = model.MaxTokens()
+	}
+
 	handler := &predictChain{
-		model:   model,
-		prompt:  prompt,
-		outputs: opts.OutputParsers,
-		memory:  opts.ChatMemory,
+		model:     model,
+		prompt:    prompt,
+		outputs:   opts.OutputParsers,
+		memory:    opts.ChatMemory,
+		maxTokens: opts.MaxTokens,
 
 		debug: true,
 	}

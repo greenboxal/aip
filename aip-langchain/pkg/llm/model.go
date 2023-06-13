@@ -6,6 +6,7 @@ type PredictOptions struct {
 	MaxTokens     int
 	Temperature   float32
 	StopSequences []string
+	AutoMaxTokens bool
 }
 
 type PredictOption func(opts *PredictOptions)
@@ -35,6 +36,12 @@ func WithTemperatureScale(scale float32) PredictOption {
 func WithMaxTokens(maxTokens int) PredictOption {
 	return func(opts *PredictOptions) {
 		opts.MaxTokens = maxTokens
+	}
+}
+
+func WithAutoMaxTokens() PredictOption {
+	return func(opts *PredictOptions) {
+		opts.AutoMaxTokens = true
 	}
 }
 

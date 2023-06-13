@@ -31,7 +31,7 @@ const (
 )
 
 type Embedder struct {
-	Client *openai.Client
+	Client *Client
 	Model  openai.EmbeddingModel
 }
 
