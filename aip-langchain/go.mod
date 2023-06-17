@@ -24,7 +24,7 @@ require (
 	github.com/milvus-io/milvus-sdk-go/v2 v2.2.2
 	github.com/pkoukk/tiktoken-go v0.1.1
 	github.com/samber/lo v1.38.1
-	github.com/sashabaranov/go-openai v1.9.5
+	github.com/sashabaranov/go-openai v1.11.3-0.20230617135729-e49d771fff3b
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/fx v1.19.3
 	go.uber.org/zap v1.24.0

@@ -664,6 +664,10 @@ github.com/santhosh-tekuri/jsonschema/v2 v2.2.0 h1:72xCpK0g27Y1is2lreGNcZhIX3ZCt
 github.com/santhosh-tekuri/jsonschema/v2 v2.2.0/go.mod h1:yzJzKUGV4RbWqWIBBP4wSOBqavX5saE02yirLS0OTyg=
 github.com/sashabaranov/go-openai v1.9.5 h1:z1VCMXsfnug+U0ceTTIXr/L26AYl9jafqA9lptlSX0c=
 github.com/sashabaranov/go-openai v1.9.5/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+github.com/sashabaranov/go-openai v1.10.1 h1:6WyHJaNzF266VaEEuW6R4YW+Ei0wpMnqRYPGK7fhuhQ=
+github.com/sashabaranov/go-openai v1.10.1/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+github.com/sashabaranov/go-openai v1.11.3-0.20230617135729-e49d771fff3b h1:UVnMkILwKJJjwOSNyC+eGFIVYOUqs4RugL7nMhe+/ro=
+github.com/sashabaranov/go-openai v1.11.3-0.20230617135729-e49d771fff3b/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
 github.com/schollz/closestmatch v2.1.0+incompatible/go.mod h1:RtP1ddjLong6gTkbtmuhtR2uUrrJOpYzYRvbcPAid+g=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.2.0 h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=

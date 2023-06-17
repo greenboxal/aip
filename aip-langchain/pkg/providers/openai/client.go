@@ -26,7 +26,7 @@ func NewClient() *Client {
 func (c *Client) MaxTokensForModel(model string) int {
 	switch model {
 	case "gpt-3.5-turbo":
-		return 4096
+		return 4090
 	case "gpt-3.5-turbo-16k":
 		return 16384
 	case "gpt-4":

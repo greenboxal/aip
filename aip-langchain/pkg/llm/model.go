@@ -2,14 +2,45 @@ package llm
 
 import "context"
 
+type FunctionDeclaration struct {
+	Name        string
+	Description string
+	Parameters  []any
+}
+
 type PredictOptions struct {
-	MaxTokens     int
 	Temperature   float32
 	StopSequences []string
+
+	MaxTokens     int
 	AutoMaxTokens bool
+
+	Functions map[string]FunctionDeclaration
 }
 
 type PredictOption func(opts *PredictOptions)
+
+func WithFunctions(functions []FunctionDeclaration) PredictOption {
+	return func(opts *PredictOptions) {
+		if opts.Functions == nil {
+			opts.Functions = make(map[string]FunctionDeclaration)
+		}
+
+		for _, v := range functions {
+			opts.Functions[v.Name] = v
+		}
+	}
+}
+
+func WithFunction(fn FunctionDeclaration) PredictOption {
+	return func(opts *PredictOptions) {
+		if opts.Functions == nil {
+			opts.Functions = make(map[string]FunctionDeclaration)
+		}
+
+		opts.Functions[fn.Name] = fn
+	}
+}
 
 func WithStopSequences(stopSequences ...string) PredictOption {
 	return func(opts *PredictOptions) {

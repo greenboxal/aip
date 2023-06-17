@@ -95,25 +95,13 @@ func (lm *ChatLanguageModel) Predict(ctx context.Context, prompt string, options
 
 func (lm *ChatLanguageModel) PredictChat(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.Message, error) {
 	opts := llm.NewPredictOptions(options...)
-	messages := buildChatMessages(msg)
+	request, err := lm.buildChatCompletionRequest(msg, opts)
 
-	if opts.AutoMaxTokens {
-		tokenizer := tokenizers.TikTokenForModel(lm.Model)
-		count, err := tokenizer.Count(msg.String())
-
-		if err != nil {
-			return chat.Message{}, err
-		}
-
-		opts.MaxTokens = lm.MaxTokens() - count
+	if err != nil {
+		return chat.Message{}, err
 	}
 
-	result, err := lm.Client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model:       lm.Model,
-		Temperature: opts.Temperature,
-		MaxTokens:   opts.MaxTokens,
-		Messages:    messages,
-	})
+	result, err := lm.Client.CreateChatCompletion(ctx, *request)
 
 	if err != nil {
 		return chat.Message{}, nil
@@ -145,6 +133,22 @@ func (m *messageStream) Close() error {
 
 func (lm *ChatLanguageModel) PredictChatStream(ctx context.Context, msg chat.Message, options ...llm.PredictOption) (chat.MessageStream, error) {
 	opts := llm.NewPredictOptions(options...)
+	request, err := lm.buildChatCompletionRequest(msg, opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	stream, err := lm.Client.CreateChatCompletionStream(ctx, *request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &messageStream{stream: stream}, nil
+}
+
+func (lm *ChatLanguageModel) buildChatCompletionRequest(msg chat.Message, opts llm.PredictOptions) (*openai.ChatCompletionRequest, error) {
 	messages := buildChatMessages(msg)
 
 	if opts.AutoMaxTokens {
@@ -155,25 +159,20 @@ func (lm *ChatLanguageModel) PredictChatStream(ctx context.Context, msg chat.Mes
 			return nil, err
 		}
 
-		opts.MaxTokens = opts.MaxTokens - count
+		opts.MaxTokens = lm.MaxTokens() - count - len(messages)*4
 	}
 
 	if opts.MaxTokens <= 0 {
 		opts.MaxTokens = lm.MaxTokens() / 2
 	}
 
-	stream, err := lm.Client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
+	return &openai.ChatCompletionRequest{
 		Model:       lm.Model,
 		Temperature: opts.Temperature,
 		MaxTokens:   opts.MaxTokens,
+		Stop:        opts.StopSequences,
 		Messages:    messages,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &messageStream{stream: stream}, nil
+	}, nil
 }
 
 func buildMsnMessages(choices []openai.ChatCompletionChoice) chat.Message {
@@ -189,15 +188,24 @@ func buildMsnMessages(choices []openai.ChatCompletionChoice) chat.Message {
 			role = msn.RoleUser
 		case "assistant":
 			role = msn.RoleAI
+		case "function":
+			role = msn.RoleFunction
 		default:
 			panic("unknown role")
 		}
 
-		entries[i] = chat.MessageEntry{
+		msg := chat.MessageEntry{
 			Role: role,
 			Name: c.Message.Name,
 			Text: c.Message.Content,
 		}
+
+		if c.Message.FunctionCall != nil {
+			msg.Fn = c.Message.FunctionCall.Name
+			msg.FnArgs = c.Message.FunctionCall.Arguments
+		}
+
+		entries[i] = msg
 	}
 
 	return chat.Compose(entries...)
@@ -216,14 +224,26 @@ func buildChatMessages(msg chat.Message) []openai.ChatCompletionMessage {
 			role = "user"
 		case msn.RoleAI:
 			role = "assistant"
+		case msn.RoleFunction:
+			role = "function"
 		default:
 			panic("unknown role")
 		}
 
-		messages[i] = openai.ChatCompletionMessage{
+		msg := openai.ChatCompletionMessage{
+			Name:    m.Name,
 			Role:    role,
 			Content: m.Text,
 		}
+
+		if m.Fn != "" {
+			msg.FunctionCall = &openai.FunctionCall{
+				Name:      m.Fn,
+				Arguments: m.FnArgs,
+			}
+		}
+
+		messages[i] = msg
 	}
 
 	return messages
