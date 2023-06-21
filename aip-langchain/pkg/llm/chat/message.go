@@ -16,6 +16,18 @@ func Compose(entries ...MessageEntry) Message {
 	}
 }
 
+func Merge(messages ...Message) Message {
+	entries := make([]MessageEntry, 0, len(messages))
+
+	for _, msg := range messages {
+		entries = append(entries, msg.Entries...)
+	}
+
+	return Message{
+		Entries: entries,
+	}
+}
+
 func Entry(role msn.Role, content string) MessageEntry {
 	return MessageEntry{
 		Role: role,
@@ -72,6 +84,9 @@ func (m MessageEntry) CalculateTokenCount(tokenizer tokenizers.BasicTokenizer) (
 }
 
 func (m MessageEntry) String() string {
+	if m.Fn != "" {
+		return fmt.Sprintf("%s (%s): %s(%s)", m.Role, m.Name, m.Fn, m.FnArgs)
+	}
 	if m.Name != "" {
 		return fmt.Sprintf("%s (%s): %s", m.Role, m.Name, m.Text)
 	}

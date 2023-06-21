@@ -23,8 +23,8 @@ type predictChain struct {
 	memory  *chain.ContextKey[Memory]
 	outputs []chain.OutputParser
 
-	debug     bool
-	maxTokens int
+	opts  ChatOptions
+	debug bool
 }
 
 func (p *predictChain) Run(ctx chain.ChainContext) error {
@@ -56,22 +56,19 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 
 	shouldStream := p.debug
 
+	opts := p.buildOptions()
+
 	if shouldStream {
 		var entry MessageEntry
 
-		stream, err := p.model.PredictChatStream(
-			ctx.Context(),
-			prompt,
-			llm.WithMaxTokens(p.maxTokens),
-			llm.WithAutoMaxTokens(),
-		)
+		stream, err := p.model.PredictChatStream(ctx.Context(), prompt, opts...)
 
 		if err != nil {
 			return err
 		}
 
 		if p.debug {
-			_, _ = os.Stdout.Write([]byte("Reply:\n\n"))
+			_, _ = os.Stdout.Write([]byte("\n"))
 		}
 
 		for {
@@ -100,7 +97,7 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 
 		result.Entries = append(result.Entries, entry)
 	} else {
-		result, err = p.model.PredictChat(ctx.Context(), prompt)
+		result, err = p.model.PredictChat(ctx.Context(), prompt, opts...)
 
 		if err != nil {
 			return err
@@ -128,6 +125,30 @@ func (p *predictChain) Run(ctx chain.ChainContext) error {
 	return nil
 }
 
+func (p *predictChain) buildOptions() []llm.PredictOption {
+	opts := []llm.PredictOption{
+		llm.WithMaxTokens(p.opts.MaxTokens),
+	}
+
+	if p.opts.AutoMaxTokens {
+		opts = append(opts, llm.WithAutoMaxTokens(p.opts.MaxTokens))
+	}
+
+	if p.opts.Functions != nil {
+		opts = append(opts, llm.WithFunctions(p.opts.Functions))
+	}
+
+	if p.opts.AllowFunctionCall {
+		opts = append(opts, llm.WithAllowFunctionCall())
+	}
+
+	if p.opts.ForceFunctionCall != nil {
+		opts = append(opts, llm.WithForceFunctionCall(*p.opts.ForceFunctionCall))
+	}
+
+	return opts
+}
+
 func CompletionMessageParser(key chain.ContextKey[Message]) chain.OutputParser {
 	return chain.OutputParserFunc(func(ctx chain.ChainContext, result string) error {
 		msg := Compose(Entry(msn.RoleAI, result))
@@ -139,12 +160,78 @@ func CompletionMessageParser(key chain.ContextKey[Message]) chain.OutputParser {
 }
 
 type ChatOptions struct {
+	Temperature   float32
+	StopSequences []string
+
 	OutputParsers []chain.OutputParser
 	ChatMemory    *chain.ContextKey[Memory]
+
 	MaxTokens     int
+	AutoMaxTokens bool
+
+	Functions         map[string]llm.FunctionDeclaration
+	AllowFunctionCall bool
+	ForceFunctionCall *string
 }
 
 type ChatOption func(*ChatOptions)
+
+func WithStopSequences(stopSequences ...string) ChatOption {
+	return func(opts *ChatOptions) {
+		opts.StopSequences = stopSequences
+	}
+}
+
+func WithTemperature(temperature float32) ChatOption {
+	return func(opts *ChatOptions) {
+		opts.Temperature = temperature
+	}
+}
+
+func WithTemperatureScale(scale float32) ChatOption {
+	return func(opts *ChatOptions) {
+		opts.Temperature *= scale
+
+		if opts.Temperature > 1 {
+			opts.Temperature = 1
+		}
+	}
+}
+
+func WithFunctions(functions []llm.FunctionDeclaration) ChatOption {
+	return func(opts *ChatOptions) {
+		if opts.Functions == nil {
+			opts.Functions = make(map[string]llm.FunctionDeclaration)
+		}
+
+		for _, v := range functions {
+			opts.Functions[v.Name] = v
+		}
+	}
+}
+
+func WithAllowFunctionCall() ChatOption {
+	return func(opts *ChatOptions) {
+		opts.AllowFunctionCall = true
+	}
+}
+
+func WithForceFunctionCall(functionName string) ChatOption {
+	return func(opts *ChatOptions) {
+		opts.AllowFunctionCall = true
+		opts.ForceFunctionCall = &functionName
+	}
+}
+
+func WithFunction(fn llm.FunctionDeclaration) ChatOption {
+	return func(opts *ChatOptions) {
+		if opts.Functions == nil {
+			opts.Functions = make(map[string]llm.FunctionDeclaration)
+		}
+
+		opts.Functions[fn.Name] = fn
+	}
+}
 
 func NewChatOptions(options ...ChatOption) (result ChatOptions) {
 	for _, opt := range options {
@@ -157,6 +244,13 @@ func NewChatOptions(options ...ChatOption) (result ChatOptions) {
 func WithMaxTokens(maxTokens int) ChatOption {
 	return func(options *ChatOptions) {
 		options.MaxTokens = maxTokens
+	}
+}
+
+func WithAuthMaxTokens(targetMaxTokens int) ChatOption {
+	return func(options *ChatOptions) {
+		options.MaxTokens = targetMaxTokens
+		options.AutoMaxTokens = true
 	}
 }
 
@@ -182,15 +276,15 @@ func Predict(model LanguageModel, prompt Prompt, options ...ChatOption) chain.Ha
 	}
 
 	if opts.MaxTokens == 0 {
-		opts.MaxTokens = model.MaxTokens()
+		opts.MaxTokens = model.MaxTokens() / 2
 	}
 
 	handler := &predictChain{
-		model:     model,
-		prompt:    prompt,
-		outputs:   opts.OutputParsers,
-		memory:    opts.ChatMemory,
-		maxTokens: opts.MaxTokens,
+		model:   model,
+		prompt:  prompt,
+		outputs: opts.OutputParsers,
+		memory:  opts.ChatMemory,
+		opts:    opts,
 
 		debug: true,
 	}

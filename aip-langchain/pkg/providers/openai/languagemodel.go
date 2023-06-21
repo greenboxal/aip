@@ -166,13 +166,44 @@ func (lm *ChatLanguageModel) buildChatCompletionRequest(msg chat.Message, opts l
 		opts.MaxTokens = lm.MaxTokens() / 2
 	}
 
-	return &openai.ChatCompletionRequest{
+	req := &openai.ChatCompletionRequest{
 		Model:       lm.Model,
 		Temperature: opts.Temperature,
 		MaxTokens:   opts.MaxTokens,
 		Stop:        opts.StopSequences,
 		Messages:    messages,
-	}, nil
+	}
+
+	if opts.Functions != nil {
+		req.Functions = make([]*openai.FunctionDefine, 0, len(opts.Functions))
+
+		for _, v := range opts.Functions {
+
+			req.Functions = append(req.Functions, &openai.FunctionDefine{
+				Name:        v.Name,
+				Description: v.Description,
+				Parameters: &openai.FunctionParams{
+					Type:       v.Parameters.Type,
+					Required:   v.Parameters.Required,
+					Properties: v.Parameters.Properties,
+				},
+			})
+		}
+	}
+
+	if len(req.Functions) > 0 {
+		if opts.AllowFunctionCall {
+			if opts.ForceFunctionCall != nil {
+				panic("not supported by the OpenAI client yet")
+			} else {
+				req.FunctionCall = "auto"
+			}
+		} else {
+			req.FunctionCall = "none"
+		}
+	}
+
+	return req, nil
 }
 
 func buildMsnMessages(choices []openai.ChatCompletionChoice) chat.Message {

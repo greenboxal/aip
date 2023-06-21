@@ -66,6 +66,10 @@ func TransformIO[Src, Dst any, SrcKey IContextKey[Src], DstKey IContextKey[Dst]]
 			ToKey:    dst,
 
 			Mapper: func(v any) any {
+				if v == nil {
+					return nil
+				}
+
 				return fn(v.(Src))
 			},
 		}

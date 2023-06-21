@@ -19,4 +19,7 @@ type Message struct {
 	Name      string     `json:"username"`
 	Role      Role       `json:"role"`
 	Text      string     `json:"text"`
+
+	Fn     string
+	FnArgs string
 }

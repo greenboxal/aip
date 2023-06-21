@@ -2,25 +2,13 @@ package llm
 
 import "context"
 
-type FunctionDeclaration struct {
-	Name        string
-	Description string
-	Parameters  []any
+type LanguageModel interface {
+	MaxTokens() int
+
+	Predict(ctx context.Context, prompt string, options ...PredictOption) (string, error)
 }
 
-type PredictOptions struct {
-	Temperature   float32
-	StopSequences []string
-
-	MaxTokens     int
-	AutoMaxTokens bool
-
-	Functions map[string]FunctionDeclaration
-}
-
-type PredictOption func(opts *PredictOptions)
-
-func WithFunctions(functions []FunctionDeclaration) PredictOption {
+func WithFunctions(functions map[string]FunctionDeclaration) PredictOption {
 	return func(opts *PredictOptions) {
 		if opts.Functions == nil {
 			opts.Functions = make(map[string]FunctionDeclaration)
@@ -29,6 +17,43 @@ func WithFunctions(functions []FunctionDeclaration) PredictOption {
 		for _, v := range functions {
 			opts.Functions[v.Name] = v
 		}
+	}
+}
+
+type PredictOption func(opts *PredictOptions)
+
+type PredictOptions struct {
+	Temperature   float32
+	StopSequences []string
+
+	MaxTokens     int
+	AutoMaxTokens bool
+
+	Functions         map[string]FunctionDeclaration
+	AllowFunctionCall bool
+	ForceFunctionCall *string
+}
+
+func NewPredictOptions(options ...PredictOption) PredictOptions {
+	opts := PredictOptions{}
+
+	for _, opt := range options {
+		opt(&opts)
+	}
+
+	return opts
+}
+
+func WithAllowFunctionCall() PredictOption {
+	return func(opts *PredictOptions) {
+		opts.AllowFunctionCall = true
+	}
+}
+
+func WithForceFunctionCall(functionName string) PredictOption {
+	return func(opts *PredictOptions) {
+		opts.AllowFunctionCall = true
+		opts.ForceFunctionCall = &functionName
 	}
 }
 
@@ -70,24 +95,9 @@ func WithMaxTokens(maxTokens int) PredictOption {
 	}
 }
 
-func WithAutoMaxTokens() PredictOption {
+func WithAutoMaxTokens(targetMaxTokens int) PredictOption {
 	return func(opts *PredictOptions) {
+		opts.MaxTokens = targetMaxTokens
 		opts.AutoMaxTokens = true
 	}
-}
-
-func NewPredictOptions(options ...PredictOption) PredictOptions {
-	opts := PredictOptions{}
-
-	for _, opt := range options {
-		opt(&opts)
-	}
-
-	return opts
-}
-
-type LanguageModel interface {
-	MaxTokens() int
-
-	Predict(ctx context.Context, prompt string, options ...PredictOption) (string, error)
 }
